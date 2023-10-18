@@ -22,6 +22,8 @@ from IPython.display import display
 from typing import List, Tuple
 from datetime import datetime
 import seaborn as sns
+import gc
+import cProfile
 
 
 ###############################################################################
@@ -77,10 +79,10 @@ pathing     = pathings[5]# dataRateOG is the original datarate. If we want to ma
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically. 20 dor feep and 1 for q learning
-drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-MIN_EPSILON = 0.50      # Minimum value that the exploration parameter can have
+MIN_EPSILON = 0.01      # Minimum value that the exploration parameter can have
 
 # number of gateways to be tested
 GTs = [2]
@@ -161,9 +163,9 @@ TrainThis   = Train     # Local for a single scenario with a certain number of G
 
 # nnpath = f'./Results/latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath = f'./latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
-nnpath = './pre_trained_NNs/qNetwork_7GTs.h5'
-outputPath = './Results/latency Test/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
-
+nnpath          = './pre_trained_NNs/qNetwork_7GTs.h5'
+outputPath      = './Results/latency Test/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
+populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
 
 ###############################################################################
 #################################    Simpy    #################################
@@ -377,6 +379,7 @@ class OrbitalPlane:
             sat.rotate(delta_t, self.longitude, self.period)
 
 
+@profile
 class Satellite:
     def __init__(self, ID, in_plane, i_in_plane, h, longitude, inclination, n_sat, env, orbitalPlane, quota = 500, power = 10):
         self.ID = ID                    # A unique ID given to every satellite
@@ -892,6 +895,7 @@ class DataBlock:
         )
 
 
+@profile
 class Gateway:
     """
     Class for the gateways (or concentrators). Each gateway will exist as an instance of this class
@@ -1511,6 +1515,7 @@ class Cell:
 
 
 # Earth consisting of cells
+@profile
 class Earth:
     def __init__(self, env, img_path, gt_path, constellation, inputParams, deltaT, totalLocations, getRates = False, window=None):
         # Input the population count data
@@ -3093,6 +3098,7 @@ class hyperparam:
         self.w2)
 
 
+@profile
 class QLearning:
     def __init__(self, NGT, hyperparams, earth, g, sat, qTable = None):
         '''
@@ -3219,6 +3225,7 @@ class QLearning:
             self.qTable)
 
 
+@profile
 class DDQNAgent:
     def __init__(self, NGT, hyperparams):   
         self.actions        = ('U', 'D', 'R', 'L')
@@ -3494,6 +3501,7 @@ class DDQNAgent:
         sat.orbPlane.earth.loss.append([loss.history['loss'][0], sat.env.now])
         
 
+@profile
 class ExperienceReplay:
     def __init__(self, maxlen = 100):
         '''
@@ -3544,6 +3552,7 @@ class ExperienceReplay:
 ###############################################################################
 
 
+@profile
 def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementTime, totalLocations):
     """
     Initializes an instance of the earth with cells from a population map and gateways from a csv file.
@@ -3670,6 +3679,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
     return earth, graph, bottleneck1, bottleneck2
 
 
+@profile
 def findBottleneck(path, earth, plot = False, minimum = None):
     # Find the bottleneck of a route.
     bottleneck = [[], [], [], []]
@@ -3716,6 +3726,7 @@ def findBottleneck(path, earth, plot = False, minimum = None):
     return bottleneck, minimum
 
 
+@profile
 def create_Constellation(specific_constellation, env, earth):
 
     if specific_constellation == "small":               # Small Walker star constellation for tests.
@@ -4253,6 +4264,7 @@ def getSatScore(satA, satB, g):
         return 0
 
 
+@profile
 def getDeepSatScore(queueLength):
     return queueVals if queueLength > infQueue else int(np.floor(queueVals*np.log10(queueLength + 1)/np.log10(infQueue)))
 
@@ -4390,12 +4402,14 @@ def getState(Block, satA, g, earth):
 
     return state
 
+
 def getBiasedlatitude(sat):
     try:
         return int(math.degrees(sat.latitude))+90
     except AttributeError as e:
         # print(f"getBiasedlatitude Caught an exception: {e}")
         return -1
+
 
 def getBiasedLongitude(sat):
     try:
@@ -4404,6 +4418,7 @@ def getBiasedLongitude(sat):
         # print(f"getBiasedLongitude Caught an exception: {e}")
         return -1
     
+
 def getDeepState(block, sat, linkedSats):
     satDest = block.destination.linkedSat[1]
     if satDest is None:
@@ -4552,6 +4567,7 @@ def createQTable(NGT):
 ###############################################################################
 
 
+@profile
 def getSlantRange(satA, satB):
     '''
     given 2 satellites, it will return the slant range between them (With the method used at 'get_slant_range_optimized')
@@ -4559,6 +4575,7 @@ def getSlantRange(satA, satB):
     return np.linalg.norm(np.array((satA.x, satA.y, satA.z)) - np.array((satB.x, satB.y, satB.z)))  # posA - posB
 
 
+@profile
 def getQueueReward(queueTime, w1):
     '''
     Given the queue time in seconds, this function will return the queue reward.
@@ -4567,6 +4584,7 @@ def getQueueReward(queueTime, w1):
     return w1*(1-10**queueTime)
 
 
+@profile
 def getDistanceReward(satA, satB, destination, w2):
     '''
     This function will return the instant reward regarding to the slant range reduction from actual node to destination
@@ -4793,8 +4811,6 @@ def create_latency_plots(df, window_size=20, marker_size=50, GTnumber=-1):
     df['Path'] = df['Source'].astype(str) + ' -> ' + df['Destination'].astype(str)
     df['Latency_Rolling_Avg'] = df.groupby('Path')['Latency'].transform(lambda x: x.rolling(window=window_size).mean())
     
-
-    
     # Metrics for x-axis
     # metrics = ['Arrival Time', 'Block Index', 'Creation Time']
     metrics = ['Arrival Time', 'Creation Time']
@@ -4822,7 +4838,6 @@ def create_latency_plots(df, window_size=20, marker_size=50, GTnumber=-1):
     sns.set(font_scale=1.0)
 
 
-
 def plotRatesFigures():
     values = [upGSLRates, downGSLRates, interRates, intraRate]
 
@@ -4844,7 +4859,7 @@ def plotRatesFigures():
     plt.ylabel('Empirical CDF')
     plt.xlabel('Data rate [Gbps]')
 
-
+@profile
 def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
     start_time = datetime.now()
     # this is requiresd for the bar plot at the end of the simulation
@@ -4951,7 +4966,10 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             blocks.append(BlocksForPickle(block))
         blockPath = f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
         os.makedirs(blockPath, exist_ok=True)
-        np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
+        try:
+            np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
+        except pickle.PicklingError:
+            print('Error with pickle and profiling')
 
         
         receivedDataBlocks.clear()
@@ -4963,6 +4981,8 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         elif pathing == 'Deep Q-Learning':
             saveDeepNetworks(outputPath + '/NNs/', earth1)
 
+    del earth1
+    gc.collect()
     plotLatenciesBars(percentages, outputPath)
 
     print('----------------------------------')
@@ -4984,4 +5004,5 @@ if __name__ == '__main__':
     os.makedirs(outputPath, exist_ok=True) 
     sys.stdout = Logger(outputPath + 'logfile.log')
 
-    RunSimulation(GTs, './', outputPath, 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif', radioKM=rKM)
+    RunSimulation(GTs, './', outputPath, populationMap, radioKM=rKM)
+    # cProfile.run("RunSimulation(GTs, './', outputPath, populationMap, radioKM=rKM)")
