@@ -78,7 +78,7 @@ pySmartDL==1.3.4
 python-dateutil==2.8.2
 pytz==2022.1
 pytz-deprecation-shim==0.1.0.post0
-pywin32==304
+# pywin32==304
 pyzmq==23.2.0
 requests==2.28.1
 requests-oauthlib==1.3.1
@@ -94,7 +94,7 @@ tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
 tensorflow==2.11.0
 tensorflow-estimator==2.11.0
-tensorflow-intel==2.11.0
+# tensorflow-intel==2.11.0
 tensorflow-io-gcs-filesystem==0.29.0
 termcolor==2.1.1
 tornado==6.2

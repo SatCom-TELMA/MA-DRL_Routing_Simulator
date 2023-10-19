@@ -75,11 +75,11 @@ if len(physical_devices) > 0:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 w1          = 20        # rewards the getting to empty queues
-w2          = 20        # rewards getting closes phisically. 20 dor feep and 1 for q learning
-drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
+w2          = 1        # rewards getting closes phisically. 20 dor feep and 1 for q learning
+drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.01      # Minimum value that the exploration parameter can have
@@ -379,7 +379,7 @@ class OrbitalPlane:
             sat.rotate(delta_t, self.longitude, self.period)
 
 
-@profile
+# @profile
 class Satellite:
     def __init__(self, ID, in_plane, i_in_plane, h, longitude, inclination, n_sat, env, orbitalPlane, quota = 500, power = 10):
         self.ID = ID                    # A unique ID given to every satellite
@@ -895,7 +895,7 @@ class DataBlock:
         )
 
 
-@profile
+# @profile
 class Gateway:
     """
     Class for the gateways (or concentrators). Each gateway will exist as an instance of this class
@@ -1515,7 +1515,7 @@ class Cell:
 
 
 # Earth consisting of cells
-@profile
+# @profile
 class Earth:
     def __init__(self, env, img_path, gt_path, constellation, inputParams, deltaT, totalLocations, getRates = False, window=None):
         # Input the population count data
@@ -3098,7 +3098,7 @@ class hyperparam:
         self.w2)
 
 
-@profile
+# @profile
 class QLearning:
     def __init__(self, NGT, hyperparams, earth, g, sat, qTable = None):
         '''
@@ -3225,7 +3225,7 @@ class QLearning:
             self.qTable)
 
 
-@profile
+# @profile
 class DDQNAgent:
     def __init__(self, NGT, hyperparams):   
         self.actions        = ('U', 'D', 'R', 'L')
@@ -3501,7 +3501,7 @@ class DDQNAgent:
         sat.orbPlane.earth.loss.append([loss.history['loss'][0], sat.env.now])
         
 
-@profile
+# @profile
 class ExperienceReplay:
     def __init__(self, maxlen = 100):
         '''
@@ -3552,7 +3552,7 @@ class ExperienceReplay:
 ###############################################################################
 
 
-@profile
+# @profile
 def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementTime, totalLocations):
     """
     Initializes an instance of the earth with cells from a population map and gateways from a csv file.
@@ -3679,7 +3679,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
     return earth, graph, bottleneck1, bottleneck2
 
 
-@profile
+# @profile
 def findBottleneck(path, earth, plot = False, minimum = None):
     # Find the bottleneck of a route.
     bottleneck = [[], [], [], []]
@@ -3726,7 +3726,7 @@ def findBottleneck(path, earth, plot = False, minimum = None):
     return bottleneck, minimum
 
 
-@profile
+# @profile
 def create_Constellation(specific_constellation, env, earth):
 
     if specific_constellation == "small":               # Small Walker star constellation for tests.
@@ -4264,7 +4264,7 @@ def getSatScore(satA, satB, g):
         return 0
 
 
-@profile
+# @profile
 def getDeepSatScore(queueLength):
     return queueVals if queueLength > infQueue else int(np.floor(queueVals*np.log10(queueLength + 1)/np.log10(infQueue)))
 
@@ -4567,7 +4567,7 @@ def createQTable(NGT):
 ###############################################################################
 
 
-@profile
+# @profile
 def getSlantRange(satA, satB):
     '''
     given 2 satellites, it will return the slant range between them (With the method used at 'get_slant_range_optimized')
@@ -4575,7 +4575,7 @@ def getSlantRange(satA, satB):
     return np.linalg.norm(np.array((satA.x, satA.y, satA.z)) - np.array((satB.x, satB.y, satB.z)))  # posA - posB
 
 
-@profile
+# @profile
 def getQueueReward(queueTime, w1):
     '''
     Given the queue time in seconds, this function will return the queue reward.
@@ -4584,7 +4584,7 @@ def getQueueReward(queueTime, w1):
     return w1*(1-10**queueTime)
 
 
-@profile
+# @profile
 def getDistanceReward(satA, satB, destination, w2):
     '''
     This function will return the instant reward regarding to the slant range reduction from actual node to destination
@@ -4859,7 +4859,7 @@ def plotRatesFigures():
     plt.ylabel('Empirical CDF')
     plt.xlabel('Data rate [Gbps]')
 
-@profile
+# @profile
 def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
     start_time = datetime.now()
     # this is requiresd for the bar plot at the end of the simulation
