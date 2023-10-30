@@ -1,4 +1,5 @@
 **/pictures/
-**/results/
+# **/Results/
+output
 SatNEx
 .venv

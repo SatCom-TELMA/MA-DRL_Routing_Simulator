@@ -1,27 +1,28 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
+
 # The name to show in queue lists for this job:
-#SBATCH -J Q_Learning
+#SBATCH -J DQL_{1024}_{12}GTs_NoGPU
 
 # Number of desired cpus:
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=1
 
 # Amount of RAM needed for this job:
-#SBATCH --mem=256gb
+#SBATCH --mem=1024gb
 
 # The time the job will be running:
-#SBATCH --time=30:00:00
+#SBATCH --time=50:00:00
 
 #############################################
 # To use GPUs you have to request them:
-#SBATCH --gres=gpu:1
-#SBATCH --constraint=dgx 
-##SBATCH --constraint=cal 
+##SBATCH --gres=gpu:1
+##SBATCH --constraint=dgx 
+#SBATCH --constraint=cal 
 #############################################
 
 # Set output and error files
-#SBATCH --error=./output/{SLURM_JOB_NAME}.%J.err
-#SBATCH --output=./output/{SLURM_JOB_NAME}.%J.out
+#SBATCH --error=./output/error.%J.err
+#SBATCH --output=./output/output.%J.out
 
 # Load your virtual environment as a module
 source load /mnt/home/users/tic_102_2_uma/fedeloz/Q-Learning/SatNEx/bin/activate

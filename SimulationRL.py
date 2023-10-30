@@ -68,24 +68,28 @@ from collections import deque
 physical_devices = tf.config.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    # print('Using GPU!!!')
+
+print(f'GPUS used: {physical_devices}')
 
 ###############################################################################
 ###############################    Constants    ###############################
 ###############################################################################
 
-# HOT PARAMS
+# HOT PARAMS    0       1               2           3               4               5
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 w1          = 20        # rewards the getting to empty queues
-w2          = 1        # rewards getting closes phisically. 20 dor feep and 1 for q learning
+w2          = 20        # rewards getting closes phisically. 20 dor feep and 1 for q learning
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-MIN_EPSILON = 0.01      # Minimum value that the exploration parameter can have
+MIN_EPSILON = 0.1       # Minimum value that the exploration parameter can have
+show_legend = False     # shows the legend in the all latencies subplots
 
 # number of gateways to be tested
-GTs = [2]
+GTs = [12]
 # GTs = [i for i in range(2,19)] # 19
 
 # Physical constants
