@@ -6,7 +6,7 @@ Alpha: 0.25
 Gamma: 0.8
 Epsilon: 0.1
 Max epsilon: 0.99
-Min epsilon: 0.01
+Min epsilon: 0.4
 Arrive Reward: 10
 w1: 20
 w2: 20
