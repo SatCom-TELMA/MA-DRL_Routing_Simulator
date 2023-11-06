@@ -78,11 +78,13 @@ pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'De
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 w1          = 20        # rewards the getting to empty queues
-w2          = 1        # rewards getting closes phisically. 20 for deep Q and 1 for Q learning
-drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
+w2          = 20        # rewards getting closes phisically. 20 for deep Q and 1 for Q learning
+drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-MIN_EPSILON = 0.4      # Minimum value that the exploration parameter can have 
+MIN_EPSILON = 0.4       # Minimum value that the exploration parameter can have 
+importQVals = True      # imports either QTables or NN from a certain path
+explore     = False     # If set to false, it makes only exploitation
 
 # number of gateways to be tested
 GTs = [2]
@@ -117,7 +119,7 @@ movementTime= 10 * 3600 # should be in the order of 10's of hours. If the test i
 ndeltas     = 25        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
 # Deep & Q Learning
-importQVals = False     # imports either QTables or NN from a certain path
+# importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate
 gamma       = 0.8       # greedy factor
@@ -163,7 +165,7 @@ TrainThis   = Train     # Local for a single scenario with a certain number of G
 
 # nnpath = f'./Results/latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath = f'./latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
-nnpath          = './pre_trained_NNs/qNetwork_7GTs.h5'
+nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
 outputPath      = './Results/latency Test/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
 populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
 
@@ -3307,7 +3309,7 @@ class DDQNAgent:
         Given a new observed state and the linkied satellites, it will return the next hop
         '''
         # randomly (Exploration)
-        if random.uniform(0, 1)<self.alignEpsilon(self.step):
+        if random.uniform(0, 1)<self.alignEpsilon(self.step) and explore:
             actIndex = random.randrange(self.actionSize)
             action   = self.actions[actIndex]
             while(linkedSats[action] == None):   # if that direction has no linked satellite
