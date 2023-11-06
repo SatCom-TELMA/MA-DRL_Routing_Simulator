@@ -78,11 +78,11 @@ pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'De
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 w1          = 20        # rewards the getting to empty queues
-w2          = 20        # rewards getting closes phisically. 20 dor feep and 1 for q learning
+w2          = 1        # rewards getting closes phisically. 20 for deep Q and 1 for Q learning
 drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-MIN_EPSILON = 0.4      # Minimum value that the exploration parameter can have
+MIN_EPSILON = 0.4      # Minimum value that the exploration parameter can have 
 
 # number of gateways to be tested
 GTs = [2]
