@@ -167,7 +167,7 @@ TrainThis   = Train     # Local for a single scenario with a certain number of G
 
 # nnpath = f'./Results/latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath = f'./latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
-nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
+nnpath          = './pre_trained_NNs/qNetwork_8GTs.h5'
 outputPath      = './Results/latency Test/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
 populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
 
