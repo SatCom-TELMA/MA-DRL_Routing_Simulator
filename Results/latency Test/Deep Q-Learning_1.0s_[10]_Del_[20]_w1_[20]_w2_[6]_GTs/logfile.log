@@ -2,7 +2,7 @@ Nº of Gateways: 18
 Routing metric: Deep Q-Learning
 ----------------------------------
 Time:
-16:31:05
+16:36:32
 Locations:
 0    Los Angeles
 1         Malaga
@@ -13,7 +13,7 @@ Locations:
 Name: Locations, dtype: object
 Movement Time: 36000
 Rotation Factor: 25
-Minimum epsilon: 0.1
+Minimum epsilon: 0.4
 Reward for deliver: 10
 Stop Loss: False, number of samples considered: 50, threshold: 0.5
 ----------------------------------
@@ -25,8 +25,8 @@ total divisions in x = 1440
  window of operation (latitudes) = (0, 720)
 
 Finding cells within coverage area of GT 1 of 6Finding cells within coverage area of GT 2 of 6Finding cells within coverage area of GT 3 of 6Finding cells within coverage area of GT 4 of 6Finding cells within coverage area of GT 5 of 6Finding cells within coverage area of GT 6 of 6
-Time taken to find cells that are within range of all GTs: 2.168160915374756 seconds
-Time taken to add cell information to all GTs: 0.07881855964660645 seconds
+Time taken to find cells that are within range of all GTs: 2.1739115715026855 seconds
+Time taken to add cell information to all GTs: 0.059880733489990234 seconds
 
 State Space:
  ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')

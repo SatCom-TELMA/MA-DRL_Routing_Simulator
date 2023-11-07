@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{128}_{2}GTs_NoGPU_0_4
+#SBATCH -J DQL_{1024}_{8}GTs_0_3secs
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
 
 # Amount of RAM needed for this job:
-#SBATCH --mem=128gb
+#SBATCH --mem=1024gb
 
 # The time the job will be running:
-#SBATCH --time=50:00:00
+#SBATCH --time=100:00:00
 
 #############################################
 # To use GPUs you have to request them:

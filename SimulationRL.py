@@ -76,18 +76,20 @@ if len(physical_devices) > 0:
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically. 20 for deep Q and 1 for Q learning
-drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
-decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower
+drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
+
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.4       # Minimum value that the exploration parameter can have 
 importQVals = True      # imports either QTables or NN from a certain path
-explore     = False     # If set to false, it makes only exploitation
+explore     = False     # If True, makes random actions eventually, if false only exploitation
+gamma       = 0.8       # greedy factor
 
 # number of gateways to be tested
-GTs = [2]
+GTs = [8]
 # GTs = [i for i in range(2,19)] # 19.
 
 # Physical constants
@@ -122,7 +124,7 @@ ndeltas     = 25        # This number will multiply deltaT. If bigger, will make
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate
-gamma       = 0.8       # greedy factor
+# gamma       = 0.6       # greedy factor
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 # drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
@@ -144,7 +146,7 @@ unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a 
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
 # MIN_EPSILON = 0.50      # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
-# decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower
+decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
 hardUpdate  = 1         # if up, the Q-network weights are copied inside the target network every updateF iterations. if down, this is done gradually
 updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
@@ -4622,7 +4624,8 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
                 'Update freq: ' + str(hyperparams.updateF),
                 'Batch Size: ' + str(hyperparams.batchSize),
                 'Buffer Size: ' + str(hyperparams.bufferSize),
-                'Hard Update: ' + str(hyperparams.hardUpdate)]
+                'Hard Update: ' + str(hyperparams.hardUpdate),
+                'Exploration: ' + str(explore)]
 
     # save hyperparams
     with open(outputPath + 'hyperparams.txt', 'w') as f:
