@@ -75,7 +75,7 @@ if len(physical_devices) > 0:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[1]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 w1          = 20        # rewards the getting to empty queues
@@ -89,8 +89,8 @@ explore     = False     # If True, makes random actions eventually, if false onl
 gamma       = 0.8       # greedy factor
 
 # number of gateways to be tested
-GTs = [8]
-# GTs = [i for i in range(2,19)] # 19.
+# GTs = [8]
+GTs = [i for i in range(2,19)] # 19.
 
 # Physical constants
 rKM = 500               # radio in km of the coverage of each gateway
