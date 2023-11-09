@@ -77,21 +77,16 @@ if len(physical_devices) > 0:
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
-ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-w1          = 20        # rewards the getting to empty queues
-w2          = 20        # rewards getting closes phisically. 20 for deep Q and 1 for Q learning
-drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
-
+drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.1       # Minimum value that the exploration parameter can have 
-importQVals = True      # imports either QTables or NN from a certain path
-explore     = True      # If True, makes random actions eventually, if false only exploitation
-gamma       = 0.8       # greedy factor
+importQVals = True     # imports either QTables or NN from a certain path
+explore     = False      # If True, makes random actions eventually, if false only exploitation
 
 # number of gateways to be tested
-# GTs = [10]
+GTs = [2]
 # GTs = [i for i in range(2,19)] # 19.
-GTs = [i for i in range(2,11)] # 19.
+# GTs = [i for i in range(2,11)] # 19.
 
 # Physical constants
 rKM = 500               # radio in km of the coverage of each gateway
@@ -125,7 +120,7 @@ ndeltas     = 25        # This number will multiply deltaT. If bigger, will make
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate
-# gamma       = 0.6       # greedy factor
+gamma       = 0.6       # greedy factor
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 # drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
@@ -137,9 +132,9 @@ infQueue    = 5000      # Upper boundary from where a queue is considered as inf
 queueVals   = 10        # Values that the observed Queue can have, being 0 the best (Queue of 0) and max the worst (Huge queue or inexistent link).
 
 # rewards
-# ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-# w1          = 20        # rewards the getting to empty queues
-# w2          = 20        # rewards getting closes phisically
+ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
+w1          = 20        # rewards the getting to empty queues
+w2          = 20        # rewards getting closes phisically
 againPenalty= -0.5      # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
 
@@ -147,7 +142,7 @@ unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a 
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
 # MIN_EPSILON = 0.50      # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
-decayRate   = 6         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is faster. If lower, the decay is slower
+decayRate   = 3         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is faster. If lower, the decay is slower
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
 hardUpdate  = 1         # if up, the Q-network weights are copied inside the target network every updateF iterations. if down, this is done gradually
 updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
@@ -3297,6 +3292,7 @@ class DDQNAgent:
         else:
             # if import models, it will import a trained model
             try:
+                global nnpath
                 self.qNetwork = keras.models.load_model(nnpath)
                 print('----------------------------------')
                 print(f"Neural Network imported from:\n {nnpath}!!!")

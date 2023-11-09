@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{1024}_{10}GTs_0_NoCongestion
+#SBATCH -J DQL_{124}_{2}GTs_exploitation_images
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
 
 # Amount of RAM needed for this job:
-#SBATCH --mem=1024gb
+#SBATCH --mem=124gb
 
 # The time the job will be running:
 #SBATCH --time=100:00:00
