@@ -75,7 +75,7 @@ if len(physical_devices) > 0:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[1]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 w1          = 20        # rewards the getting to empty queues
@@ -85,12 +85,12 @@ drawDeliver = False      # create pictures of the path every 1/10 times a data b
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.4       # Minimum value that the exploration parameter can have 
 importQVals = True      # imports either QTables or NN from a certain path
-explore     = False     # If True, makes random actions eventually, if false only exploitation
+explore     = True     # If True, makes random actions eventually, if false only exploitation
 gamma       = 0.8       # greedy factor
 
 # number of gateways to be tested
-# GTs = [8]
-GTs = [i for i in range(2,19)] # 19.
+GTs = [10]
+# GTs = [i for i in range(2,19)] # 19.
 
 # Physical constants
 rKM = 500               # radio in km of the coverage of each gateway
@@ -167,7 +167,7 @@ TrainThis   = Train     # Local for a single scenario with a certain number of G
 
 # nnpath = f'./Results/latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath = f'./latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
-nnpath          = './pre_trained_NNs/qNetwork_8GTs.h5'
+nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
 outputPath      = './Results/latency Test/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
 populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
 
