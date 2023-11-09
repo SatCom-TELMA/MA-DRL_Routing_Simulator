@@ -88,6 +88,8 @@ GTs = [2]
 # GTs = [i for i in range(2,19)] # 19.
 # GTs = [i for i in range(2,11)] # 19.
 
+CurrentGTnumber        = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
+
 # Physical constants
 rKM = 500               # radio in km of the coverage of each gateway
 Re  = 6378e3            # Radius of the earth [m]
@@ -164,6 +166,7 @@ TrainThis   = Train     # Local for a single scenario with a certain number of G
 # nnpath = f'./Results/latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath = f'./latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
+nnpath          = ''
 outputPath      = './Results/latency Test/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
 populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
 
@@ -3424,8 +3427,8 @@ class DDQNAgent:
         5000  -> 0.091
         10000 -> 0.01667
         '''
-        global      GTnumber
-        epsilon     = self.minEps + (self.maxEps - self.minEps) * math.exp(-LAMBDA * step/(decayRate*GTnumber))
+        global      CurrentGTnumber
+        epsilon     = self.minEps + (self.maxEps - self.minEps) * math.exp(-LAMBDA * step/(decayRate*CurrentGTnumber))
         self        .epsilon.append(epsilon)
         return epsilon
 
@@ -4887,6 +4890,13 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
 
     firstGT = True
     for GTnumber in GTs:
+        global CurrentGTnumber
+        global nnpath
+        global Train
+        global TrainThis
+        TrainThis       = Train
+        CurrentGTnumber = GTnumber
+        
         if firstGT:
             nnpath  = f'./pre_trained_NNs/qNetwork_1GTs.h5'
             firstGT = False
@@ -4894,10 +4904,6 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             nnpath  = f'{outputPath}/NNs/qNetwork_{GTnumber-1}GTs.h5'
 
         env = simpy.Environment()
-
-        global Train
-        global TrainThis
-        TrainThis = Train
 
         inputParams['Locations'] = locations[:GTnumber]
         print('----------------------------------')

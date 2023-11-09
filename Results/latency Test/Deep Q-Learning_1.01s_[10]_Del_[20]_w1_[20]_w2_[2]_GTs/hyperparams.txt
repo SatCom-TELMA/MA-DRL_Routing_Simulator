@@ -1,5 +1,5 @@
 Constellation: Kepler
-Import QTables: False
+Import QTables: True
 printPath: False
 Test length: 1.01
 Alpha: 0.25
@@ -14,4 +14,4 @@ Update freq: 1000
 Batch Size: 16
 Buffer Size: 50
 Hard Update: True
-Exploration: True
+Exploration: False

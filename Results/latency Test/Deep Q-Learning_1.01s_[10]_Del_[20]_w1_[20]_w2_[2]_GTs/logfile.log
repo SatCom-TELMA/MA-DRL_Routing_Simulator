@@ -107,3 +107,347 @@ State Space:
  ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
 Action Space:
  ('U', 'D', 'R', 'L')
+Nº of Gateways: 18
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+12:36:17
+Locations:
+0    Los Angeles
+1         Malaga
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.1
+Reward for deliver: 10
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 2Finding cells within coverage area of GT 2 of 2
+Time taken to find cells that are within range of all GTs: 0.6005103588104248 seconds
+Time taken to add cell information to all GTs: 0.09212923049926758 seconds
+
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+Action Space:
+ ('U', 'D', 'R', 'L')
+Nº of Gateways: 18
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+12:48:12
+Locations:
+0    Los Angeles
+1         Malaga
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.1
+Reward for deliver: 10
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 2Finding cells within coverage area of GT 2 of 2
+Time taken to find cells that are within range of all GTs: 0.623309850692749 seconds
+Time taken to add cell information to all GTs: 0.07574963569641113 seconds
+
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+Action Space:
+ ('U', 'D', 'R', 'L')
+Nº of Gateways: 18
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+12:49:41
+Locations:
+0    Los Angeles
+1         Malaga
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.1
+Reward for deliver: 10
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 2Finding cells within coverage area of GT 2 of 2
+Time taken to find cells that are within range of all GTs: 0.5914618968963623 seconds
+Time taken to add cell information to all GTs: 0.09082841873168945 seconds
+
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+Action Space:
+ ('U', 'D', 'R', 'L')
+----------------------------------
+Neural Network imported from:
+ ./pre_trained_NNs/qNetwork_1GTs.h5!!!
+----------------------------------
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense (Dense)               (None, 32)                928       
+                                                                 
+ dense_1 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_2 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2,116
+Trainable params: 2,116
+Non-trainable params: 0
+_________________________________________________________________
+Saving hyperparams at: ./Results/latency Test/Deep Q-Learning_1.01s_[10]_Del_[20]_w1_[20]_w2_[2]_GTs/
+Simulation progress: 1% Estimated time remaining: 297 seconds Current simulation time: 0.0101Nº of Gateways: 18
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+12:53:00
+Locations:
+0    Los Angeles
+1         Malaga
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.1
+Reward for deliver: 10
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 2Finding cells within coverage area of GT 2 of 2
+Time taken to find cells that are within range of all GTs: 0.7452690601348877 seconds
+Time taken to add cell information to all GTs: 0.16011929512023926 seconds
+
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+Action Space:
+ ('U', 'D', 'R', 'L')
+----------------------------------
+Neural Network imported from:
+ ./pre_trained_NNs/qNetwork_1GTs.h5!!!
+----------------------------------
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense (Dense)               (None, 32)                928       
+                                                                 
+ dense_1 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_2 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2,116
+Trainable params: 2,116
+Non-trainable params: 0
+_________________________________________________________________
+Saving hyperparams at: ./Results/latency Test/Deep Q-Learning_1.01s_[10]_Del_[20]_w1_[20]_w2_[2]_GTs/
+Nº of Gateways: 18
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+12:55:07
+Locations:
+0    Los Angeles
+1         Malaga
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.1
+Reward for deliver: 10
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 2Finding cells within coverage area of GT 2 of 2
+Time taken to find cells that are within range of all GTs: 0.6002089977264404 seconds
+Time taken to add cell information to all GTs: 0.10230636596679688 seconds
+
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+Action Space:
+ ('U', 'D', 'R', 'L')
+----------------------------------
+Neural Network imported from:
+ ./pre_trained_NNs/qNetwork_1GTs.h5!!!
+----------------------------------
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense (Dense)               (None, 32)                928       
+                                                                 
+ dense_1 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_2 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2,116
+Trainable params: 2,116
+Non-trainable params: 0
+_________________________________________________________________
+Saving hyperparams at: ./Results/latency Test/Deep Q-Learning_1.01s_[10]_Del_[20]_w1_[20]_w2_[2]_GTs/
+0.9899258364235253
+2
+0.989851679027091
+2
+0.9897775278101825
+2
+0.9897033827722844
+2
+0.9896292439128821
+2
+0.9895551112314607
+2
+0.9894809847275052
+2
+0.9894068644005012
+2
+0.9893327502499336
+2
+0.9892586422752879
+2
+0.9891845404760495
+2
+0.9891104448517037
+2
+0.9890363554017361
+2
+0.9889622721256319
+2
+0.9888881950228771
+2
+0.9888141240929567
+2
+0.9887400593353567
+2
+0.9886660007495627
+2
+0.9885919483350603
+2
+0.9885179020913355
+2
+0.9884438620178737
+2
+0.9883698281141611
+2
+0.9882958003796833
+2
+0.9882217788139265
+2
+0.9881477634163763
+2
+0.988073754186519
+2
+0.9879997511238406
+2
+0.9879257542278271
+2
+0.9878517634979647
+2
+0.9877777789337394
+2
+0.9877038005346378
+2
+0.9876298283001458
+2
+0.9875558622297499
+2
+0.9874819023229363
+2
+0.9874079485791916
+2
+0.987334000998002
+2
+0.9872600595788541
+2
+0.9871861243212343
+2
+0.9871121952246293
+2
+0.9870382722885257
+2
+0.9869643555124101
+2
+0.9868904448957693
+2
+0.9868165404380899
+2
+0.9867426421388585
+2
+0.9866687499975622
+2
+0.9865948640136879
+2
+0.9865209841867223
+2
+0.9864471105161524
+2
+0.9863732430014652
+2
+0.9862993816421478
+2
+0.9862255264376873
+2
+0.9861516773875706
+2
+0.986077834491285
+2
+0.9860039977483178
+2
+0.9859301671581561
+2
+0.9858563427202872
+2
+0.9857825244341986
+2
+0.9857087122993773
+2
+0.985634906315311
+2
+Simulation progress: 1% Estimated time remaining: 343 seconds Current simulation time: 0.01010.9855611064814872
+2
+0.9854873127973933
+2
+0.9854135252625169
+2
+0.9853397438763455
+2
+0.9852659686383667
+2
+0.9851921995480684
+2
+0.9851184366049379
+2
+0.9850446798084634
+2
