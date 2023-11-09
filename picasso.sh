@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{124}_{2}GTs_exploitation_images
+#SBATCH -J DQL_{1024}_{2-10}GTs_recycling
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
 
 # Amount of RAM needed for this job:
-#SBATCH --mem=124gb
+#SBATCH --mem=1024gb
 
 # The time the job will be running:
 #SBATCH --time=100:00:00
