@@ -3321,7 +3321,7 @@ class DDQNAgent:
         # highest value (Exploitation)
         else:
             # Predict 
-            qValues = self.qNetwork.predict(newState, verbose = 0)               # NOTE NN.predict. state structure in debugging
+            qValues = self.qNetwork.predict(newState, verbose = 0)               # NOTE NN.predict. Gets next hop. state structure in debugging
             actIndex = np.argmax(qValues)
             action   = self.actions[actIndex]
             while(linkedSats[action] == None):              # the chosen action has no linked satellite. NEGATIVE REWARD and store it, motherfucker.
@@ -3451,7 +3451,7 @@ class DDQNAgent:
         if hardUpdate:
             self.i += 1
             if self.i == self.updateF:
-                self.qTarget.set_weights(self.qNetwork.get_weights())
+                self.qTarget.set_weights(self.qNetwork.get_weights()) # NOTE qTarget gets qNetrowk values
                 print(f"Q-Target network hard updated!!!")
                 self.i = 0
 
@@ -3478,7 +3478,7 @@ class DDQNAgent:
         nextStates  = nextStates.reshape((self.batchS,self.stateSize))
          
         # 2. Compute expected reward
-        futureRewards = self.qNetwork.predict(nextStates, verbose = 0)
+        futureRewards = self.qNetwork.predict(nextStates, verbose = 0)          # NOTE NN.predict. Gets future rewards
         expectedRewards = rewards + self.gamma*np.max(futureRewards, axis=1)
 
         # 3. Mask for the actions
@@ -3501,7 +3501,7 @@ class DDQNAgent:
                 return 0
 
         # 5. fit the model and save the loss
-        loss = self.qNetwork.fit(states, acts * expectedRewards[:, None], batch_size=self.batchS, epochs=1, verbose=0)
+        loss = self.qNetwork.fit(states, acts * expectedRewards[:, None], batch_size=self.batchS, epochs=1, verbose=0) # NOTE qNetwork fit
         sat.orbPlane.earth.loss.append([loss.history['loss'][0], sat.env.now])
         
 
