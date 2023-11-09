@@ -83,14 +83,15 @@ w2          = 20        # rewards getting closes phisically. 20 for deep Q and 1
 drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-MIN_EPSILON = 0.4       # Minimum value that the exploration parameter can have 
+MIN_EPSILON = 0.1       # Minimum value that the exploration parameter can have 
 importQVals = True      # imports either QTables or NN from a certain path
-explore     = True     # If True, makes random actions eventually, if false only exploitation
+explore     = True      # If True, makes random actions eventually, if false only exploitation
 gamma       = 0.8       # greedy factor
 
 # number of gateways to be tested
-GTs = [10]
+# GTs = [10]
 # GTs = [i for i in range(2,19)] # 19.
+GTs = [i for i in range(2,11)] # 19.
 
 # Physical constants
 rKM = 500               # radio in km of the coverage of each gateway
@@ -146,7 +147,7 @@ unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a 
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
 # MIN_EPSILON = 0.50      # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
-decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower
+decayRate   = 6         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is faster. If lower, the decay is slower
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
 hardUpdate  = 1         # if up, the Q-network weights are copied inside the target network every updateF iterations. if down, this is done gradually
 updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
@@ -167,7 +168,7 @@ TrainThis   = Train     # Local for a single scenario with a certain number of G
 
 # nnpath = f'./Results/latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath = f'./latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
-nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
+# nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
 outputPath      = './Results/latency Test/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
 populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
 
@@ -3427,8 +3428,9 @@ class DDQNAgent:
         5000  -> 0.091
         10000 -> 0.01667
         '''
-        epsilon     = self.minEps + (self.maxEps - self.minEps) * math.exp(-LAMBDA * step/decayRate)
-        self.epsilon.append(epsilon)
+        global      GTnumber
+        epsilon     = self.minEps + (self.maxEps - self.minEps) * math.exp(-LAMBDA * step/(decayRate*GTnumber))
+        self        .epsilon.append(epsilon)
         return epsilon
 
     def alignQTarget(self, hardUpdate = False): # Soft one is done every step
@@ -4867,7 +4869,7 @@ def plotRatesFigures():
 # @profile
 def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
     start_time = datetime.now()
-    # this is requiresd for the bar plot at the end of the simulation
+    # this is required for the bar plot at the end of the simulation
     percentages = {'Queue time': [],
                 'Propagation time': [],
                 'Transmission time': [],
@@ -4887,8 +4889,14 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
 
     simulationTimelimit = testLength if testType != "Rates" else movementTime * testLength + 10
 
-
+    firstGT = True
     for GTnumber in GTs:
+        if firstGT:
+            nnpath  = f'./pre_trained_NNs/qNetwork_1GTs.h5'
+            firstGT = False
+        else:
+            nnpath  = f'{outputPath}/NNs/qNetwork_{GTnumber-1}GTs.h5'
+
         env = simpy.Environment()
 
         global Train
@@ -4907,7 +4915,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         print(f'Reward for deliver: {ArriveReward}')
         print(f'Stop Loss: {stopLoss}, number of samples considered: {nLosses}, threshold: {lThreshold}')
         print('----------------------------------')
-        earth1, graph1, bottleneck1, bottleneck2 = initialize(env, populationData, inputPath + 'Gateways.csv', radioKM, inputParams, movementTime, locations)
+        earth1, _, _, _ = initialize(env, populationData, inputPath + 'Gateways.csv', radioKM, inputParams, movementTime, locations)
         earth1.outputPath = outputPath
 
         progress = env.process(simProgress(simulationTimelimit, env))
@@ -4922,7 +4930,6 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             results = getBlockTransmissionStats(timeToSim, inputParams['Locations'], inputParams['Constellation'][0])
             print(f'DataBlocks lost: {earth1.lostBlocks}')
             
-            # xs = [[],[]]
             # pre-process the received data blocks. create the rows that will be saved in csv
             pathBlocks  = [[],[]]
             first       = earth1.gateways[0]
@@ -4976,18 +4983,18 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         except pickle.PicklingError:
             print('Error with pickle and profiling')
 
-        
-        receivedDataBlocks.clear()
-        createdBlocks.clear()
-
         # save learnt values
         if pathing == 'Q-Learning':
             saveQTables(outputPath, earth1)
         elif pathing == 'Deep Q-Learning':
             saveDeepNetworks(outputPath + '/NNs/', earth1)
 
-    del earth1
-    gc.collect()
+        receivedDataBlocks.clear()
+        createdBlocks.clear()
+        del earth1
+        del env
+        gc.collect()
+
     plotLatenciesBars(percentages, outputPath)
 
     print('----------------------------------')
