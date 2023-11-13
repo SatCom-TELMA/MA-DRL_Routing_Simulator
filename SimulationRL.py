@@ -14,9 +14,6 @@ from scipy.optimize import linear_sum_assignment
 import pickle
 import random
 import os
-import threading
-import signal
-import random
 import folium
 from IPython.display import display
 from typing import List, Tuple
@@ -4905,6 +4902,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
 
         env = simpy.Environment()
 
+        random.shuffle(locations)
         inputParams['Locations'] = locations[:GTnumber]
         print('----------------------------------')
         print('Time:')
