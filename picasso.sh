@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{1024}_{2-10}GTs_recycling
+#SBATCH -J DQL_{1024}_{2-9}GTs_recycling
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
