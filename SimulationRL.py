@@ -83,7 +83,7 @@ explore     = True      # If True, makes random actions eventually, if false onl
 # number of gateways to be tested
 # GTs = [2]
 # GTs = [i for i in range(2,19)] # 19.
-GTs = [i for i in range(2,11)] # 19.
+GTs = [i for i in range(2,10)] # 19.
 
 CurrentGTnumber        = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
 
@@ -141,7 +141,7 @@ unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a 
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
 # MIN_EPSILON = 0.50      # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
-decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is faster. If lower, the decay is slower
+decayRate   = 3         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is faster. If lower, the decay is slower
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
 hardUpdate  = 1         # if up, the Q-network weights are copied inside the target network every updateF iterations. if down, this is done gradually
 updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
@@ -4823,13 +4823,13 @@ def create_latency_plots(df, window_size=20, marker_size=50, GTnumber=-1):
     
     for i, metric in enumerate(metrics):
         # Line Plots on the left (column index 0)
-        sns.lineplot(x=metric, y='Latency_Rolling_Avg', hue='Path', ax=axes[i, 0], data=df, legend=False)
+        sns.lineplot(x=metric, y='Latency_Rolling_Avg', hue='Path', ax=axes[i, 0], data=df)
         axes[i, 0].set_title(f'Latency Trends Over {metric} (Window Size = {window_size})')
         axes[i, 0].set_xlabel(metric)
         axes[i, 0].set_ylabel('Latency (Rolling Average)')
         
         # Scatter Plots on the right (column index 1)
-        sns.scatterplot(x=metric, y='Latency', hue='Path', ax=axes[i, 1], data=df, marker='o', s=marker_size, legend=False)
+        sns.scatterplot(x=metric, y='Latency', hue='Path', ax=axes[i, 1], data=df, marker='o', s=marker_size)
         axes[i, 1].set_title(f'Individual Latency Points Over {metric}')
         axes[i, 1].set_xlabel(metric)
         axes[i, 1].set_ylabel('Latency')
