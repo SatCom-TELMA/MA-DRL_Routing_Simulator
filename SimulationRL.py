@@ -75,7 +75,7 @@ if len(physical_devices) > 0:
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
-drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.1       # Minimum value that the exploration parameter can have 
 importQVals = True     # imports either QTables or NN from a certain path
@@ -83,9 +83,9 @@ explore     = True      # If True, makes random actions eventually, if false onl
 mixLocs     = True      # If true, every time we make a new simulation the locations are going to change their order of selection
 
 # number of gateways to be tested
-# GTs = [2]
+GTs = [2]
 # GTs = [i for i in range(2,19)] # 19.
-GTs = [i for i in range(2,10)] # 19.
+# GTs = [i for i in range(2,10)] # 19.
 
 CurrentGTnumber        = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
 
@@ -192,16 +192,17 @@ def getBlockTransmissionStats(timeToSim, GTs, constellationType, earth):
     queueLat = []
     txLat = []
     propLat = []
-    latencies = [queueLat, txLat, propLat]
+    # latencies = [queueLat, txLat, propLat]
     blocks = []
     allLatencies= []
     pathBlocks  = [[],[]]
     first       = earth.gateways[0]
     second      = earth.gateways[1]
 
-
+    earth.pathParam
 
     for block in receivedDataBlocks:
+        blocks.append(BlocksForPickle(block))
         time = block.getTotalTransmissionTime()
         hops = len(block.checkPoints)
 
@@ -223,6 +224,15 @@ def getBlockTransmissionStats(timeToSim, GTs, constellationType, earth):
         if block.source == first and block.destination == second:
             pathBlocks[0].append([block.totLatency, block.creationTime+block.totLatency])
             pathBlocks[1].append(block)
+        
+    # save congestion test data
+    blockPath = f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
+    os.makedirs(blockPath, exist_ok=True)
+    try:
+        global CurrentGTnumber
+        np.save("{}blocks_{}".format(blockPath, CurrentGTnumber), np.asarray(blocks),allow_pickle=True)
+    except pickle.PicklingError:
+        print('Error with pickle and profiling')
 
     avgTime = np.mean(allTransmissionTimes)
     totalTime = sum(allTransmissionTimes)
@@ -3021,6 +3031,7 @@ class Earth:
         # plt.rcParams['figure.figsize'] = 36, 12  # adjust if figure is too big or small for screen
         # plt.colorbar(fraction=0.1)  # adjust fraction to change size of color bar
         # plt.show()
+        plt.close()
 
     def initializeQTables(self, NGT, hyperparams, g):
         '''
@@ -3742,6 +3753,7 @@ def findBottleneck(path, earth, plot = False, minimum = None):
     if plot:
         earth.plotMap(True,True,path, bottleneck)
         plt.show()
+        plt.close()
 
     minimum = np.amin(bottleneck[1])
     return bottleneck, minimum
@@ -4927,18 +4939,24 @@ def plotRatesFigures():
     plt.title('CDF - Inter plane ISL data rates')
     plt.ylabel('Empirical CDF')
     plt.xlabel('Data rate [Gbps]')
+    plt.show()
+    plt.close()
 
     plt.figure()
     plt.hist(np.asarray(upGSLRates)/1e9, cumulative=1, histtype='step', density=True)
     plt.title('CDF - Uplink data rates')
     plt.ylabel('Empirical CDF')
     plt.xlabel('Data rate [Gbps]')
+    plt.show()
+    plt.close()
 
     plt.figure()
     plt.hist(np.asarray(downGSLRates)/1e9, cumulative=1, histtype='step', density=True)
     plt.title('CDF - Downlink data rates')
     plt.ylabel('Empirical CDF')
     plt.xlabel('Data rate [Gbps]')
+    plt.show()
+    plt.close()
 
 # @profile
 def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
@@ -4981,7 +4999,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
 
         env = simpy.Environment()
 
-        if mixLocs:
+        if mixLocs: # changes the selected GTs every iteration
             random.shuffle(locations)
         inputParams['Locations'] = locations[:GTnumber]
         print('----------------------------------')
@@ -5036,6 +5054,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         # percentages['Transmission time'].append(results.meanTransLatency)
         # percentages['GTnumber']         .append(GTnumber)
         '''
+        '''
         # save congestion test data
         blocks = []
         for block in receivedDataBlocks:
@@ -5046,6 +5065,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
         except pickle.PicklingError:
             print('Error with pickle and profiling')
+            '''
 
         # save learnt values
         if pathing == 'Q-Learning':
@@ -5054,14 +5074,18 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             saveDeepNetworks(outputPath + '/NNs/', earth1)
 
         # percentages.clear()
-        receivedDataBlocks.clear()
-        createdBlocks.clear()
-        pathBlocks.clear()
-        allLatencies.clear()
-        results.clear()
-        blocks.clear()
+        receivedDataBlocks  .clear()
+        createdBlocks       .clear()
+        pathBlocks          .clear()
+        allLatencies        .clear()
+        upGSLRates          .clear()
+        downGSLRates        .clear()
+        interRates          .clear()
+        intraRate           .clear()
+        del results
         del earth1
         del env
+        del _
         gc.collect()
 
     # plotLatenciesBars(percentages, outputPath)
