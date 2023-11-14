@@ -80,7 +80,7 @@ Train       = True      # Global for all scenarios with different number of GTs.
 MIN_EPSILON = 0.1       # Minimum value that the exploration parameter can have 
 importQVals = True     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-mixLocs     = True      # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
 
 # number of gateways to be tested
 GTs = [2]
