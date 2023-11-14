@@ -77,7 +77,7 @@ pathing     = pathings[5]# dataRateOG is the original datarate. If we want to ma
 
 drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-MIN_EPSILON = 0.1       # Minimum value that the exploration parameter can have 
+MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
@@ -2940,6 +2940,9 @@ class Earth:
 
     def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None):
         plt.figure()
+        legend_properties = {'size': 10, 'weight': 'bold'}
+        markerscale = 1.5
+
         if plotGT:
             for GT in self.gateways:
                 scat1 = plt.scatter(GT.gridLocationX, GT.gridLocationY, marker='x', c='r', s=28, linewidth=1.5, label = GT.name)
@@ -3007,11 +3010,11 @@ class Earth:
             # plt.legend([scat1, scat2, scat3], ['Ground Terminals', 'Satellites', 'Path'], loc=3, prop={'size': 7})
 
         if plotSat and plotGT:
-            plt.legend([scat1, scat2], ['Gateways', 'Satellites'], loc=3, prop={'size': 7})
+            plt.legend([scat1, scat2], ['Gateways', 'Satellites'], loc=3, prop=legend_properties, markerscale=markerscale)
         elif plotSat:
-            plt.legend([scat2], ['Satellites'], loc=3, prop={'size': 7})
+            plt.legend([scat2], ['Satellites'], loc=3, prop=legend_properties, markerscale=markerscale)
         elif plotGT:
-            plt.legend([scat1], ['Concentrators'], loc=3, prop={'size': 7})
+            plt.legend([scat1], ['Concentrators'], loc=3, prop=legend_properties, markerscale=markerscale)
 
         plt.xticks([])
         plt.yticks([])
@@ -3332,12 +3335,12 @@ class DDQNAgent:
                 print(f"Neural Network path wrong")
                 print('----------------------------------')
         
-    def getNextHop(self, newState, linkedSats):
+    def getNextHop(self, newState, linkedSats, sat):
         '''
         Given a new observed state and the linkied satellites, it will return the next hop
         '''
         # randomly (Exploration)
-        if random.uniform(0, 1)<self.alignEpsilon(self.step) and explore:
+        if random.uniform(0, 1)<self.alignEpsilon(self.step, sat) and explore:
             actIndex = random.randrange(self.actionSize)
             action   = self.actions[actIndex]
             while(linkedSats[action] == None):   # if that direction has no linked satellite
@@ -3412,7 +3415,7 @@ class DDQNAgent:
             return 0
 
         # 3. Choose an action (the direction of the next hop)
-        nextHop, actIndex = self.getNextHop(newState, linkedSats)
+        nextHop, actIndex = self.getNextHop(newState, linkedSats, sat)
         
         # 4. Computes reward/penalty for the previous action
         if prevSat is not None:
@@ -3444,7 +3447,7 @@ class DDQNAgent:
         
         return nextHop
 
-    def alignEpsilon(self, step): # REVIEW Should we do it?
+    def alignEpsilon(self, step, sat): # the epsilon is reduced with time
         '''
         Updates epsilon value at each step
         0.01+0.99*e^(-0.0005*10000):
@@ -3454,8 +3457,8 @@ class DDQNAgent:
         10000 -> 0.01667
         '''
         global      CurrentGTnumber
-        epsilon     = self.minEps + (self.maxEps - self.minEps) * math.exp(-LAMBDA * step/(decayRate*CurrentGTnumber))
-        self        .epsilon.append(epsilon)
+        epsilon     = self.minEps + (self.maxEps - self.minEps) * math.exp(-LAMBDA * step/(decayRate*(CurrentGTnumber**2)))
+        self        .epsilon.append(epsilon, sat.env.now)
         return epsilon
 
     def alignQTarget(self, hardUpdate = False): # Soft one is done every step
@@ -4734,19 +4737,27 @@ def extract_block_index(block_id):
 
 
 def save_epsilons(outputPath, earth1, GTnumber):
-    os.makedirs(outputPath + '/epsilons/', exist_ok=True) # create output path
-    plt.plot(earth1.DDQNA.epsilon)
-    plt.xlabel("Steps")
+    epsilons = [x[0] for x in earth1.epsilon]
+    times    = [x[1] for x in earth1.epsilon]
+    plt.plot(times, epsilons)
+    plt.title("Epsilon over Time")
+    plt.xlabel("Time (s)")
     plt.ylabel("Epsilon")
+    os.makedirs(outputPath + '/epsilons/', exist_ok=True) # create output path
     plt.savefig(outputPath + '/epsilons/' + "epsilon_{}_gateways.png".format(GTnumber))
     plt.close()
+
+    data = {'epsilon': [e for e in epsilons], 'time': [t for t in times]}
+    df = pd.DataFrame(data)
+    os.makedirs(outputPath + '/csv/' , exist_ok=True) # create output path
+    df.to_csv(outputPath + '/csv/' + "epsilons_{}_gateways.csv".format(GTnumber), index=False)
     
 
 def save_losses(outputPath, earth1, GTnumber):
     losses = [x[0] for x in earth1.loss]
     times  = [x[1] for x in earth1.loss]
     plt.plot(times, losses)
-    plt.xlabel("Time")
+    plt.xlabel("Time (s)")
     plt.ylabel("Loss")
     plt.title("Loss over Time")
     os.makedirs(outputPath + '/loss/', exist_ok=True) # create output path
@@ -4899,7 +4910,7 @@ def create_latency_plots(df, window_size=20, marker_size=50, GTnumber=-1):
     
     # Metrics for x-axis
     # metrics = ['Arrival Time', 'Block Index', 'Creation Time']
-    metrics = ['Arrival Time', 'Creation Time']
+    metrics = ['Arrival Time (s)', 'Creation Time (s)']
 
     # Create subplots
     fig, axes = plt.subplots(len(metrics), 2, figsize=(18, 18))
