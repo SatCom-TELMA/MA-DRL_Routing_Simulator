@@ -3031,7 +3031,6 @@ class Earth:
         # plt.rcParams['figure.figsize'] = 36, 12  # adjust if figure is too big or small for screen
         # plt.colorbar(fraction=0.1)  # adjust fraction to change size of color bar
         # plt.show()
-        plt.close()
 
     def initializeQTables(self, NGT, hyperparams, g):
         '''
