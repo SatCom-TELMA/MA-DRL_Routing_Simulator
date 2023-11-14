@@ -78,7 +78,7 @@ pathing     = pathings[5]# dataRateOG is the original datarate. If we want to ma
 drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.1       # Minimum value that the exploration parameter can have 
-importQVals = True     # imports either QTables or NN from a certain path
+importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
 

@@ -1,0 +1,74 @@
+Nº of Gateways: 18
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+12:46:50
+Locations:
+0    Inuvik
+1    Malaga
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.1
+Reward for deliver: 10
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 2Finding cells within coverage area of GT 2 of 2
+Time taken to find cells that are within range of all GTs: 0.805077314376831 seconds
+Time taken to add cell information to all GTs: 0.07197737693786621 seconds
+
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+Action Space:
+ ('U', 'D', 'R', 'L')
+----------------------------------
+Neural Network Created!!!
+----------------------------------
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense (Dense)               (None, 32)                928       
+                                                                 
+ dense_1 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_2 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2,116
+Trainable params: 2,116
+Non-trainable params: 0
+_________________________________________________________________
+Saving hyperparams at: ./Results/latency Test/Deep Q-Learning_1.0s_[10]_Del_[20]_w1_[20]_w2_[2]_GTs/
+Simulation progress: 1% Estimated time remaining: 0 seconds Current simulation time: 0.01Simulation progress: 2% Estimated time remaining: 147 seconds Current simulation time: 0.02Simulation progress: 3% Estimated time remaining: 231 seconds Current simulation time: 0.03Simulation progress: 4% Estimated time remaining: 296 seconds Current simulation time: 0.04Simulation progress: 5% Estimated time remaining: 359 seconds Current simulation time: 0.05Simulation progress: 6% Estimated time remaining: 421 seconds Current simulation time: 0.060000000000000005Simulation progress: 7% Estimated time remaining: 492 seconds Current simulation time: 0.07Simulation progress: 8% Estimated time remaining: 601 seconds Current simulation time: 0.08Simulation progress: 9% Estimated time remaining: 665 seconds Current simulation time: 0.09Simulation progress: 10% Estimated time remaining: 772 seconds Current simulation time: 0.09999999999999999Simulation progress: 11% Estimated time remaining: 845 seconds Current simulation time: 0.10999999999999999Simulation progress: 12% Estimated time remaining: 921 seconds Current simulation time: 0.11999999999999998Simulation progress: 13% Estimated time remaining: 1015 seconds Current simulation time: 0.12999999999999998Simulation progress: 14% Estimated time remaining: 1098 seconds Current simulation time: 0.13999999999999999Simulation progress: 15% Estimated time remaining: 1182 seconds Current simulation time: 0.15Simulation progress: 16% Estimated time remaining: 1282 seconds Current simulation time: 0.16Simulation progress: 17% Estimated time remaining: 1364 seconds Current simulation time: 0.17Simulation progress: 18% Estimated time remaining: 1426 seconds Current simulation time: 0.18000000000000002Simulation progress: 19% Estimated time remaining: 1528 seconds Current simulation time: 0.19000000000000003Simulation progress: 20% Estimated time remaining: 1628 seconds Current simulation time: 0.20000000000000004Simulation progress: 21% Estimated time remaining: 1736 seconds Current simulation time: 0.21000000000000005Simulation progress: 22% Estimated time remaining: 1804 seconds Current simulation time: 0.22000000000000006Simulation progress: 23% Estimated time remaining: 1894 seconds Current simulation time: 0.23000000000000007Simulation progress: 24% Estimated time remaining: 1973 seconds Current simulation time: 0.24000000000000007Simulation progress: 25% Estimated time remaining: 2051 seconds Current simulation time: 0.25000000000000006Simulation progress: 26% Estimated time remaining: 2123 seconds Current simulation time: 0.26000000000000006Simulation progress: 27% Estimated time remaining: 2182 seconds Current simulation time: 0.2700000000000001Simulation progress: 28% Estimated time remaining: 2265 seconds Current simulation time: 0.2800000000000001Simulation progress: 29% Estimated time remaining: 2326 seconds Current simulation time: 0.2900000000000001Simulation progress: 30% Estimated time remaining: 2380 seconds Current simulation time: 0.3000000000000001Simulation progress: 31% Estimated time remaining: 2409 seconds Current simulation time: 0.3100000000000001Simulation progress: 32% Estimated time remaining: 2466 seconds Current simulation time: 0.3200000000000001Simulation progress: 33% Estimated time remaining: 2493 seconds Current simulation time: 0.3300000000000001Simulation progress: 34% Estimated time remaining: 2512 seconds Current simulation time: 0.34000000000000014Simulation progress: 35% Estimated time remaining: 2519 seconds Current simulation time: 0.35000000000000014Simulation progress: 36% Estimated time remaining: 2538 seconds Current simulation time: 0.36000000000000015Simulation progress: 37% Estimated time remaining: 2555 seconds Current simulation time: 0.37000000000000016Simulation progress: 38% Estimated time remaining: 2562 seconds Current simulation time: 0.38000000000000017Simulation progress: 39% Estimated time remaining: 2564 seconds Current simulation time: 0.3900000000000002Simulation progress: 40% Estimated time remaining: 2558 seconds Current simulation time: 0.4000000000000002Simulation progress: 41% Estimated time remaining: 2546 seconds Current simulation time: 0.4100000000000002Simulation progress: 42% Estimated time remaining: 2542 seconds Current simulation time: 0.4200000000000002Simulation progress: 43% Estimated time remaining: 2549 seconds Current simulation time: 0.4300000000000002Simulation progress: 44% Estimated time remaining: 2538 seconds Current simulation time: 0.4400000000000002Simulation progress: 45% Estimated time remaining: 2519 seconds Current simulation time: 0.45000000000000023Simulation progress: 46% Estimated time remaining: 2501 seconds Current simulation time: 0.46000000000000024Simulation progress: 47% Estimated time remaining: 2475 seconds Current simulation time: 0.47000000000000025Simulation progress: 48% Estimated time remaining: 2435 seconds Current simulation time: 0.48000000000000026Simulation progress: 49% Estimated time remaining: 2416 seconds Current simulation time: 0.49000000000000027Simulation progress: 50% Estimated time remaining: 2384 seconds Current simulation time: 0.5000000000000002Simulation progress: 51% Estimated time remaining: 2353 seconds Current simulation time: 0.5100000000000002Simulation progress: 52% Estimated time remaining: 2311 seconds Current simulation time: 0.5200000000000002Simulation progress: 53% Estimated time remaining: 2277 seconds Current simulation time: 0.5300000000000002Simulation progress: 54% Estimated time remaining: 2239 seconds Current simulation time: 0.5400000000000003Simulation progress: 55% Estimated time remaining: 2192 seconds Current simulation time: 0.5500000000000003Simulation progress: 56% Estimated time remaining: 2153 seconds Current simulation time: 0.5600000000000003Simulation progress: 57% Estimated time remaining: 2113 seconds Current simulation time: 0.5700000000000003Simulation progress: 58% Estimated time remaining: 2073 seconds Current simulation time: 0.5800000000000003Simulation progress: 59% Estimated time remaining: 2026 seconds Current simulation time: 0.5900000000000003Simulation progress: 60% Estimated time remaining: 1984 seconds Current simulation time: 0.6000000000000003Simulation progress: 61% Estimated time remaining: 1938 seconds Current simulation time: 0.6100000000000003Simulation progress: 62% Estimated time remaining: 1892 seconds Current simulation time: 0.6200000000000003Simulation progress: 63% Estimated time remaining: 1843 seconds Current simulation time: 0.6300000000000003Simulation progress: 64% Estimated time remaining: 1792 seconds Current simulation time: 0.6400000000000003Simulation progress: 65% Estimated time remaining: 1752 seconds Current simulation time: 0.6500000000000004Simulation progress: 66% Estimated time remaining: 1706 seconds Current simulation time: 0.6600000000000004Simulation progress: 67% Estimated time remaining: 1662 seconds Current simulation time: 0.6700000000000004Simulation progress: 68% Estimated time remaining: 1618 seconds Current simulation time: 0.6800000000000004Simulation progress: 69% Estimated time remaining: 1576 seconds Current simulation time: 0.6900000000000004Simulation progress: 70% Estimated time remaining: 1533 seconds Current simulation time: 0.7000000000000004Simulation progress: 71% Estimated time remaining: 1486 seconds Current simulation time: 0.7100000000000004Simulation progress: 72% Estimated time remaining: 1437 seconds Current simulation time: 0.7200000000000004Simulation progress: 73% Estimated time remaining: 1390 seconds Current simulation time: 0.7300000000000004Simulation progress: 74% Estimated time remaining: 1339 seconds Current simulation time: 0.7400000000000004Simulation progress: 75% Estimated time remaining: 1286 seconds Current simulation time: 0.7500000000000004Simulation progress: 76% Estimated time remaining: 1237 seconds Current simulation time: 0.7600000000000005Simulation progress: 77% Estimated time remaining: 1187 seconds Current simulation time: 0.7700000000000005Simulation progress: 78% Estimated time remaining: 1136 seconds Current simulation time: 0.7800000000000005Simulation progress: 79% Estimated time remaining: 1085 seconds Current simulation time: 0.7900000000000005Simulation progress: 80% Estimated time remaining: 1036 seconds Current simulation time: 0.8000000000000005Simulation progress: 81% Estimated time remaining: 985 seconds Current simulation time: 0.8100000000000005Simulation progress: 82% Estimated time remaining: 935 seconds Current simulation time: 0.8200000000000005Simulation progress: 83% Estimated time remaining: 884 seconds Current simulation time: 0.8300000000000005Simulation progress: 84% Estimated time remaining: 831 seconds Current simulation time: 0.8400000000000005Simulation progress: 85% Estimated time remaining: 779 seconds Current simulation time: 0.8500000000000005Simulation progress: 86% Estimated time remaining: 726 seconds Current simulation time: 0.8600000000000005Simulation progress: 87% Estimated time remaining: 675 seconds Current simulation time: 0.8700000000000006Simulation progress: 88% Estimated time remaining: 624 seconds Current simulation time: 0.8800000000000006Simulation progress: 89% Estimated time remaining: 572 seconds Current simulation time: 0.8900000000000006Simulation progress: 90% Estimated time remaining: 519 seconds Current simulation time: 0.9000000000000006Simulation progress: 91% Estimated time remaining: 467 seconds Current simulation time: 0.9100000000000006Simulation progress: 92% Estimated time remaining: 415 seconds Current simulation time: 0.9200000000000006Simulation progress: 93% Estimated time remaining: 363 seconds Current simulation time: 0.9300000000000006Simulation progress: 94% Estimated time remaining: 311 seconds Current simulation time: 0.9400000000000006Simulation progress: 95% Estimated time remaining: 259 seconds Current simulation time: 0.9500000000000006Simulation progress: 96% Estimated time remaining: 207 seconds Current simulation time: 0.9600000000000006Simulation progress: 97% Estimated time remaining: 155 seconds Current simulation time: 0.9700000000000006Simulation progress: 98% Estimated time remaining: 103 seconds Current simulation time: 0.9800000000000006Simulation progress: 99% Estimated time remaining: 51 seconds Current simulation time: 0.9900000000000007
+########## Results #########
+
+The simulation took 5162.348603248596 seconds to run
+A total of 3218 data blocks were created
+A total of 2837 data blocks were transmitted
+A total of 381 data blocks were stuck
+Average transmission time for all blocks were 0.12948936890732568
+Total latecies:
+Queue time: 0.4794%
+Transmission time: 1.0165%
+Propagation time: 98.5041%
+DataBlocks lost: 0
+number of gateways: 2
+Path:
+[['Malaga, Spain', -4.41, 36.72], ['0_3', -6.200510898102968, 35.533328282969194], ['0_2', -11.630082619735823, 53.122531915015564], ['0_1', -24.71294955280695, 70.11264068926525], ['0_0', -90.0, 81.39999999999999], ['0_19', -155.28705044719305, 70.11264068926525], ['1_19', -129.57276473290736, 70.11264068926525], ['Inuvik, Northwest Territories, Canada', -133.72, 68.36]]
+Bottleneck:
+([['Malaga,0_3', '0_3,0_2', '0_2,0_1', '0_1,0_0', '0_0,0_19', '0_19,1_19', '1_19,Inuvik'], [2950427500.0, 889995500.0, 889995500.0, 889995500.0, 889995500.0, 1755096000.0, 2950427500.0], [36.72, 0.6201735727298358, 0.9271630889127901, 1.2236964272954252, 1.420698011123384, 1.2236964272954252, 68.36], []], 889995500.0)
+Saving Deep Neural networks at: ./Results/latency Test/Deep Q-Learning_1.0s_[10]_Del_[20]_w1_[20]_w2_[2]_GTs//NNs/
+----------------------------------
+Time:
+14:13:09
+----------------------------------
+Elapsed time: 1:26:19.430221
+----------------------------------
