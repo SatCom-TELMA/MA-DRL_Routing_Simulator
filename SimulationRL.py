@@ -3458,7 +3458,7 @@ class DDQNAgent:
         '''
         global      CurrentGTnumber
         epsilon     = self.minEps + (self.maxEps - self.minEps) * math.exp(-LAMBDA * step/(decayRate*(CurrentGTnumber**2)))
-        self        .epsilon.append(epsilon, sat.env.now)
+        self        .epsilon.append([epsilon, sat.env.now])
         return epsilon
 
     def alignQTarget(self, hardUpdate = False): # Soft one is done every step
