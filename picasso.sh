@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{124}_{2}_Malaga_Inuvik
+#SBATCH -J DQL_{64}_{2}_Malaga_LA_EPS
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
 
 # Amount of RAM needed for this job:
-#SBATCH --mem=124gb
+#SBATCH --mem=64gb
 
 # The time the job will be running:
 #SBATCH --time=100:00:00

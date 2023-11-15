@@ -4737,8 +4737,8 @@ def extract_block_index(block_id):
 
 
 def save_epsilons(outputPath, earth1, GTnumber):
-    epsilons = [x[0] for x in earth1.epsilon]
-    times    = [x[1] for x in earth1.epsilon]
+    epsilons = [x[0] for x in earth1.DDQNA.epsilon]
+    times    = [x[1] for x in earth1.DDQNA.epsilon]
     plt.plot(times, epsilons)
     plt.title("Epsilon over Time")
     plt.xlabel("Time (s)")
