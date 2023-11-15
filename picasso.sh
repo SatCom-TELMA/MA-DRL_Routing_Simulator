@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{64}_{2}_Malaga_LA_EPS
+#SBATCH -J DQL_{64}_{2}_Malaga_IN_EPS
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
