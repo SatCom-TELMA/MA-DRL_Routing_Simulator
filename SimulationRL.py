@@ -4910,7 +4910,7 @@ def create_latency_plots(df, window_size=20, marker_size=50, GTnumber=-1):
     
     # Metrics for x-axis
     # metrics = ['Arrival Time', 'Block Index', 'Creation Time']
-    metrics = ['Arrival Time (s)', 'Creation Time (s)']
+    metrics = ['Arrival Time', 'Creation Time']
 
     # Create subplots
     fig, axes = plt.subplots(len(metrics), 2, figsize=(18, 18))
@@ -4919,8 +4919,8 @@ def create_latency_plots(df, window_size=20, marker_size=50, GTnumber=-1):
         # Line Plots on the left (column index 0)
         lineplot = sns.lineplot(x=metric, y='Latency_Rolling_Avg', hue='Path', ax=axes[i, 0], data=df)
         axes[i, 0].set_title(f'Latency Trends Over {metric} (Window Size = {window_size})')
-        axes[i, 0].set_xlabel(metric)
-        axes[i, 0].set_ylabel('Latency (Rolling Average)')
+        axes[i, 0].set_xlabel(metric + ' (s)')
+        axes[i, 0].set_ylabel('Average Latency (s)')
         
         # Scatter Plots on the right (column index 1)
         scatterplot = sns.scatterplot(x=metric, y='Latency', hue='Path', ax=axes[i, 1], data=df, marker='o', s=marker_size)
