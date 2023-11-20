@@ -75,10 +75,10 @@ if len(physical_devices) > 0:
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
-drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have 
-importQVals = True     # imports either QTables or NN from a certain path
+importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
  
@@ -1026,7 +1026,7 @@ class Gateway:
                             self.sendBuffer[1].append(unavailableDestinationBuffer[0])
                             unavailableDestinationBuffer.pop(0)
 
-                    block.path = self.paths[destination.name] # ANCHOR qlearning aqui se añade el path.
+                    block.path = self.paths[destination.name]
 
                     if self.earth.pathParam == 'Q-Learning' or self.earth.pathParam == 'Deep Q-Learning':
                         block.QPath = [block.path[0], block.path[1], block.path[len(block.path)-1]]
@@ -4856,21 +4856,20 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None):
         axes[i, 1].set_xlabel(metric)
         axes[i, 1].set_ylabel('Latency')
 
-        # Create a twin y-axis for epsilon data
-        ax2 = axes[i, 0].twinx()
-        line3 = sns.lineplot(x='time', y='epsilon', data=epsDF, color='purple', label='Epsilon', ax=ax2)
+        # Create a twin y-axis for epsilon data if epsDF is not None
+        if epsDF is not None:
+            ax2 = axes[i, 0].twinx()
+            line3 = sns.lineplot(x='time', y='epsilon', data=epsDF, color='purple', label='Epsilon', ax=ax2)
 
-        # Hide legend if there are too many items and merge if not
-        num_legend_items = len(lineplot.legend_.texts)
-        if num_legend_items > 10:
-            lineplot.legend_.remove()
-            scatterplot.legend_.remove()
-        else:
             # Merge legends
             handles1, labels1 = axes[i, 0].get_legend_handles_labels()
             handles2, labels2 = ax2.get_legend_handles_labels()
             axes[i, 0].legend(handles1 + handles2, labels1 + labels2, loc='upper right')
             ax2.get_legend().remove()
+        else:
+            # Handle legend for the case when epsDF is None
+            handles, labels = axes[i, 0].get_legend_handles_labels()
+            axes[i, 0].legend(handles, labels, loc='upper right')
         
     # Adjust the layout
     plt.tight_layout()
@@ -4878,6 +4877,7 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None):
     plt.savefig(outputPath + '/pngAllLatencies/' + '{}_gateways_All_Latencies_subplots.png'.format(GTnumber), dpi = 300)
     plt.close()
     sns.set()
+
 
 def plotRatesFigures():
     values = [upGSLRates, downGSLRates, interRates, intraRate]
@@ -4988,7 +4988,8 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
 
                 # save & plot all paths latencies
                 plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF)
-
+            else:
+                plotSaveAllLatencies(outputPath, GTnumber, allLatencies)
 
         plotShortestPath(earth1, pathBlocks[1][-1].path, outputPath)
         plotQueues(earth1.queues, outputPath, GTnumber)
