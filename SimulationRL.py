@@ -80,12 +80,12 @@ Train       = True      # Global for all scenarios with different number of GTs.
 MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have 
 importQVals = True     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-mixLocs     = True      # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
  
 # number of gateways to be tested
-# GTs = [10]
+GTs = [2]
 # GTs = [i for i in range(2,19)] # 19.
-GTs = [i for i in range(2,11)] # 19.
+# GTs = [i for i in range(2,11)] # 19.
 
 CurrentGTnumber        = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
 
@@ -127,6 +127,7 @@ tau         = 0.1       # rate of copying the weights from the Q-Network to the 
 # drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
 winSize     = 200       # window size for the representation in the plots
+markerSize  = 50        # Size of the markers in the plots
 
 # Queues
 infQueue    = 5000      # Upper boundary from where a queue is considered as infinite when obserbing the state
@@ -4751,6 +4752,8 @@ def save_epsilons(outputPath, earth1, GTnumber):
     df = pd.DataFrame(data)
     os.makedirs(outputPath + '/csv/' , exist_ok=True) # create output path
     df.to_csv(outputPath + '/csv/' + "epsilons_{}_gateways.csv".format(GTnumber), index=False)
+
+    return df
     
 
 def save_losses(outputPath, earth1, GTnumber):
@@ -4818,91 +4821,16 @@ def plotSavePathLatencies(outputPath, GTnumber, pathBlocks):
     os.makedirs(outputPath + '/loss/', exist_ok=True) # create output path
 
 
-def plotSaveAllLatencies(outputPath, GTnumber, allLatencies):
-    # # figure of latencies between all gateways
-    # creationAll= [l[0] for l in allLatencies]
-    # latencyAll = [l[1] for l in allLatencies]
-    # arrivalAll = [l[2] for l in allLatencies]
-    # sourceAll  = [l[3] for l in allLatencies]
-    # desAll     = [l[4] for l in allLatencies]
-    # IDsAll     = [l[5] for l in allLatencies]
-    # QueueTime  = [l[6] for l in allLatencies]
-    # TxTime     = [l[7] for l in allLatencies]
-    # PropTime   = [l[8] for l in allLatencies]
-
-    # plt.scatter(arrivalAll, latencyAll, c='b')
-    # plt.xlabel("Time")
-    # plt.ylabel("Latency")
-    # os.makedirs(outputPath + '/pngAllLatencies/', exist_ok=True) # create output path
-    # plt.savefig(outputPath + '/pngAllLatencies/' + '{}_gateways_All_Latencies.png'.format(GTnumber))
-    # plt.close()
-
-    # # Save the latencies
-    # data = {'Creation Time': [c for c in creationAll], 
-    #         'Latency': [l for l in latencyAll], 
-    #         'Arrival Time': [t for t in arrivalAll], 
-    #         'Source': [s for s in sourceAll], 
-    #         'Destination': [d for d in desAll], 
-    #         'Block ID': [id for id in IDsAll],
-    #         'QueueTime': [q for q in QueueTime],
-    #         'TxTime': [tx for tx in TxTime],
-    #         'PropTime': [p for p in PropTime]}
-    
-    df = pd.DataFrame(allLatencies, columns=['Creation Time', 'Latency', 'Arrival Time', 'Source', 
+def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None):  
+    # preprocess and setup
+    sns.set(font_scale=1.5)
+    window_size = winSize
+    marker_size = markerSize
+    df          = pd.DataFrame(allLatencies, columns=['Creation Time', 'Latency', 'Arrival Time', 'Source', 
                                          'Destination', 'Block ID', 'QueueTime', 'TxTime', 'PropTime'])
-    df['Block Index'] = df['Block ID'].apply(extract_block_index)   # Sort the DataFrame by paths (Source and Destination)
-    df = df.sort_values(by=['Source', 'Destination', 'Block Index'])
-    df.to_csv(outputPath + '/csv/' + "allLatencies_{}_gateways.csv".format(GTnumber))
-    create_latency_plots(df, window_size=winSize, GTnumber=GTnumber)
-
-'''
-def create_latency_plots(df, window_size=20, marker_size=50, GTnumber=-1):
-    sns.set(font_scale=1.5)
-
-    # Calculate the rolling average for each unique path (combination of Source and Destination)
-    df['Path'] = df['Source'].astype(str) + ' -> ' + df['Destination'].astype(str)
-    df['Latency_Rolling_Avg'] = df.groupby('Path')['Latency'].transform(lambda x: x.rolling(window=window_size).mean())
-    
-    # Metrics for x-axis
-    metrics = ['Arrival Time', 'Creation Time']
-
-    # Create subplots with an additional row for the legend
-    fig, axes = plt.subplots(len(metrics), 2, figsize=(18, 20), gridspec_kw={'height_ratios': [1, 1, 0.05]})
-    
-    # Hide the axes on the last row (reserved for the legend)
-    for ax in axes[-1, :]:
-        ax.axis('off')
-
-    for i, metric in enumerate(metrics):
-        # Line Plots on the left (column index 0)
-        lineplot = sns.lineplot(x=metric, y='Latency_Rolling_Avg', hue='Path', ax=axes[i, 0], data=df)
-        axes[i, 0].set_title(f'Latency Trends Over {metric} (Window Size = {window_size})')
-        axes[i, 0].set_xlabel(metric)
-        axes[i, 0].set_ylabel('Latency (Rolling Average)')
-        
-        # Scatter Plots on the right (column index 1)
-        scatterplot = sns.scatterplot(x=metric, y='Latency', hue='Path', ax=axes[i, 1], data=df, marker='o', s=marker_size)
-        axes[i, 1].set_title(f'Individual Latency Points Over {metric}')
-        axes[i, 1].set_xlabel(metric)
-        axes[i, 1].set_ylabel('Latency')
-
-    # Create an axis on the last row for the legend
-    handles, labels = axes[0, 0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='lower center', ncol=3, bbox_to_anchor=(0.5, 0))
-
-    # Adjust the layout
-    plt.tight_layout()
-    plt.subplots_adjust(bottom=0.1)  # Adjust the bottom to make room for the legend
-
-    # Save the figure
-    os.makedirs(outputPath + '/pngAllLatencies/', exist_ok=True) # create output path
-    plt.savefig(outputPath + '/pngAllLatencies/' + '{}_gateways_All_Latencies_subplots.png'.format(GTnumber), dpi=300)
-    plt.close()
-    sns.set(font_scale=1.0)
-'''
-
-def create_latency_plots(df, window_size=20, marker_size=50, GTnumber=-1):
-    sns.set(font_scale=1.5)
+    df          ['Block Index'] = df['Block ID'].apply(extract_block_index)   # Sort the DataFrame by paths (Source and Destination)
+    df          = df.sort_values(by=['Source', 'Destination', 'Block Index'])
+    df          .to_csv(outputPath + '/csv/' + "allLatencies_{}_gateways.csv".format(GTnumber))
 
     # Calculate the rolling average for each unique path (combination of Source and Destination)
     df['Path'] = df['Source'].astype(str) + ' -> ' + df['Destination'].astype(str)
@@ -4921,18 +4849,28 @@ def create_latency_plots(df, window_size=20, marker_size=50, GTnumber=-1):
         axes[i, 0].set_title(f'Latency Trends Over {metric} (Window Size = {window_size})')
         axes[i, 0].set_xlabel(metric + ' (s)')
         axes[i, 0].set_ylabel('Average Latency (s)')
-        
+
         # Scatter Plots on the right (column index 1)
         scatterplot = sns.scatterplot(x=metric, y='Latency', hue='Path', ax=axes[i, 1], data=df, marker='o', s=marker_size)
         axes[i, 1].set_title(f'Individual Latency Points Over {metric}')
         axes[i, 1].set_xlabel(metric)
         axes[i, 1].set_ylabel('Latency')
 
-        # Hide legend if there are too many items
+        # Create a twin y-axis for epsilon data
+        ax2 = axes[i, 0].twinx()
+        line3 = sns.lineplot(x='time', y='epsilon', data=epsDF, color='purple', label='Epsilon', ax=ax2)
+
+        # Hide legend if there are too many items and merge if not
         num_legend_items = len(lineplot.legend_.texts)
         if num_legend_items > 10:
             lineplot.legend_.remove()
             scatterplot.legend_.remove()
+        else:
+            # Merge legends
+            handles1, labels1 = axes[i, 0].get_legend_handles_labels()
+            handles2, labels2 = ax2.get_legend_handles_labels()
+            axes[i, 0].legend(handles1 + handles2, labels1 + labels2, loc='upper right')
+            ax2.get_legend().remove()
         
     # Adjust the layout
     plt.tight_layout()
@@ -5038,16 +4976,19 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             results, allLatencies, pathBlocks = getBlockTransmissionStats(timeToSim, inputParams['Locations'], inputParams['Constellation'][0], earth1)
             print(f'DataBlocks lost: {earth1.lostBlocks}')
             
-            # save & plot latencies
+            # save & plot ftirst 2 GTs path latencies
             plotSavePathLatencies(outputPath, GTnumber, pathBlocks)
-            plotSaveAllLatencies(outputPath, GTnumber, allLatencies)
             
             if pathing == "Deep Q-Learning":
                 # save epsilons
-                save_epsilons(outputPath, earth1, GTnumber)
+                epsDF = save_epsilons(outputPath, earth1, GTnumber)
 
                 # save losses
                 save_losses(outputPath, earth1, GTnumber)
+
+                # save & plot all paths latencies
+                plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF)
+
 
         plotShortestPath(earth1, pathBlocks[1][-1].path, outputPath)
         plotQueues(earth1.queues, outputPath, GTnumber)
