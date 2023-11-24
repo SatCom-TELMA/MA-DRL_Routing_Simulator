@@ -59,7 +59,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import Model, Sequential, losses
 from tensorflow.keras.layers import Dense, Embedding, Reshape, Input, Conv2D, Flatten
-from tensorflow.keras.optimizers import Adam
+# from tensorflow.keras.optimizers import Adam
 # from tensorflow.keras.optimizers.legacy import Adam  # Optimized for mac M1-M2
 from collections import deque
 
@@ -86,7 +86,8 @@ MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
- 
+balancedFlow= True     # if set to true all the generated traffic at each GT is equal
+
 # number of gateways to be tested
 GTs = [2]
 # GTs = [i for i in range(2,19)] # 19.
@@ -114,6 +115,10 @@ pL      = 0.3   # Pointing loss in dB
 Nf      = 1.5   # Noise figure in dB
 Tn      = 50    # Noise temperature in K
 min_rate= 10e3  # Minimum rate in kbps
+
+# Uplink Parameters
+# balancedFlow= True        # if set to true all the generated traffic at each GT is equal
+totalFlow   = 2*1000000000   # Total average flow per GT when the balanced traffc option is enabled. Malaga has 3*, LA has 3*, Nuuk/500
 
 # Block
 blockSize   = 64800
@@ -172,9 +177,10 @@ TrainThis   = Train     # Local for a single scenario with a certain number of G
 # nnpath = f'./Results/latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath = f'./latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
-nnpath          = ''
-outputPath      = './Results/latency Test/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
-populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
+if __name__ == '__main__':
+    nnpath          = ''
+    outputPath      = './Results/latency Test/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
+    populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
 
 ###############################################################################
 #################################    Simpy    #################################
@@ -1384,7 +1390,7 @@ class Gateway:
             y = self.gridLocationY + 1
             isWithinRangeY = True
             if x == -1:  # "roll over" to opposite side of grid.
-                x = earth.total_x - 1
+                x = earth
             cell = earth.cells[x][y]
             distance = self.cellDistance(cell)
             if distance > maxDistance:
@@ -1438,38 +1444,40 @@ class Gateway:
             If this logic should be changed, it is important that it is done so in accordance with the
             "findCellsWithinRange" method.
         """
-
-        totalAvgFlow = 0
-        avgFlowPerUser = 8593 * 8 # average traffic usage per second in bits
-
-        if distanceFunc == "Step":
-            for cell in self.cellsInRange:
-                totalAvgFlow += cell[1] * avgFlowPerUser
-
-        elif distanceFunc == "Slope":
-            gradient = (0-avgFlowPerUser)/(maxDistance-0)
-            for cell in self.cellsInRange:
-                totalAvgFlow += (gradient * cell[2] + avgFlowPerUser) * cell[1]
-
+        if balancedFlow:
+            self.totalAvgFlow = totalFlow
         else:
-            print("Error, distance function not recognized. Provided function = {}. Allowed functions: {} or {}".format(
-                distanceFunc,
-                "Step",
-                "slope"))
-            exit()
+            totalAvgFlow = 0
+            avgFlowPerUser = 8593 * 8 # average traffic usage per second in bits
 
-        if self.linkedSat[0] is None:
-            self.dataRate = self.gs2ngeo.min_rate
+            if distanceFunc == "Step":
+                for cell in self.cellsInRange:
+                    totalAvgFlow += cell[1] * avgFlowPerUser
 
-        if not capacity:
-            capacity = self.dataRate
+            elif distanceFunc == "Slope":
+                gradient = (0-avgFlowPerUser)/(maxDistance-0)
+                for cell in self.cellsInRange:
+                    totalAvgFlow += (gradient * cell[2] + avgFlowPerUser) * cell[1]
 
-        if totalAvgFlow < capacity * fraction:
-            self.totalAvgFlow = totalAvgFlow
-        else:
-            self.totalAvgFlow = capacity * fraction
-            
-        print(self.name + ': ' + str(totalAvgFlow/1000000000))
+            else:
+                print("Error, distance function not recognized. Provided function = {}. Allowed functions: {} or {}".format(
+                    distanceFunc,
+                    "Step",
+                    "slope"))
+                exit()
+
+            if self.linkedSat[0] is None:
+                self.dataRate = self.gs2ngeo.min_rate
+
+            if not capacity:
+                capacity = self.dataRate
+
+            if totalAvgFlow < capacity * fraction:
+                self.totalAvgFlow = totalAvgFlow
+            else:
+                self.totalAvgFlow = capacity * fraction
+                
+        print(self.name + ': ' + str(self.totalAvgFlow/1000000000))
 
     def __eq__(self, other):
         if self.latitude == other.latitude and self.longitude == other.longitude:
@@ -1551,10 +1559,10 @@ class Cell:
 # Earth consisting of cells
 # @profile
 class Earth:
-    def __init__(self, env, img_path, gt_path, constellation, inputParams, deltaT, totalLocations, getRates = False, window=None):
+    def __init__(self, env, img_path, gt_path, constellation, inputParams, deltaT, totalLocations, getRates = False, window=None, outputPath='/'):
         # Input the population count data
         # img_path = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
-        self.outputPath = None
+        self.outputPath = outputPath
         self.printPaths = printPath
         self.lostBlocks = 0
         self.queues = []
@@ -3307,7 +3315,7 @@ class DDQNAgent:
 
         self.replayBuffer  = []
         self.experienceReplay = ExperienceReplay(self.bufferS)
-        self.optimizer        = Adam(learning_rate=self.alpha, clipnorm=Clipnorm)
+        # self.optimizer        = Adam(learning_rate=self.alpha, clipnorm=Clipnorm)
         self.loss_function    = losses.Huber()
 
         if not self.importQ:
@@ -3598,7 +3606,7 @@ class ExperienceReplay:
 
 
 # @profile
-def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementTime, totalLocations):
+def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementTime, totalLocations, outputPath):
     """
     Initializes an instance of the earth with cells from a population map and gateways from a csv file.
     During initialisation, several steps are performed to prepare for simulation:
@@ -3622,7 +3630,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
         getRates = False
 
     # Load earth and gateways
-    earth = Earth(env, popMapLocation, GTLocation, constellationType, inputParams, movementTime, totalLocations, getRates)
+    earth = Earth(env, popMapLocation, GTLocation, constellationType, inputParams, movementTime, totalLocations, getRates, outputPath=outputPath)
 
     print(earth)
     print()
@@ -3717,7 +3725,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
 
     # save hyperparams
     if pathing == 'Q-Learning' or pathing == "Deep Q-Learning":
-        saveHyperparams(outputPath, inputParams, hyperparams)
+        saveHyperparams(earth.outputPath, inputParams, hyperparams)
 
     if pathing == 'Q-Learning':
         '''
@@ -4654,7 +4662,7 @@ def getDistanceReward(satA, satB, destination, w2):
 
 
 def saveHyperparams(outputPath, inputParams, hyperparams):
-    print('Saving hyperparams at: ' + outputPath)
+    print('Saving hyperparams at: ' + str(outputPath))
     hyperparams = ['Constellation: ' + str(inputParams['Constellation'][0]),
                 'Import QTables: ' + str(hyperparams.importQ),
                 'printPath: ' + str(hyperparams.printPath),
@@ -4975,7 +4983,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         print(f'Reward for deliver: {ArriveReward}')
         print(f'Stop Loss: {stopLoss}, number of samples considered: {nLosses}, threshold: {lThreshold}')
         print('----------------------------------')
-        earth1, _, _, _ = initialize(env, populationData, inputPath + 'Gateways.csv', radioKM, inputParams, movementTime, locations)
+        earth1, _, _, _ = initialize(env, populationData, inputPath + 'Gateways.csv', radioKM, inputParams, movementTime, locations, outputPath)
         earth1.outputPath = outputPath
 
         progress = env.process(simProgress(simulationTimelimit, env))
