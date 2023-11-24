@@ -89,7 +89,7 @@ mixLocs     = True      # If true, every time we make a new simulation the locat
 balancedFlow= True     # if set to true all the generated traffic at each GT is equal
 
 # number of gateways to be tested
-GTs = [3]
+GTs = [4]
 # GTs = [i for i in range(2,19)] # 19.
 # GTs = [i for i in range(2,11)] # 19.
 
