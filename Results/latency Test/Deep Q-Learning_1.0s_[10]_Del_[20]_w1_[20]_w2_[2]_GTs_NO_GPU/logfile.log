@@ -1,0 +1,123 @@
+Nº of Gateways: 18
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+09:04:22
+Locations:
+0    Los Angeles
+1         Malaga
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.01
+Reward for deliver: 10
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 2Finding cells within coverage area of GT 2 of 2
+Time taken to find cells that are within range of all GTs: 0.2853078842163086 seconds
+Time taken to add cell information to all GTs: 0.08330392837524414 seconds
+
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+Action Space:
+ ('U', 'D', 'R', 'L')
+----------------------------------
+Neural Network Created!!!
+----------------------------------
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense (Dense)               (None, 32)                928       
+                                                                 
+ dense_1 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_2 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2116 (8.27 KB)
+Trainable params: 2116 (8.27 KB)
+Non-trainable params: 0 (0.00 Byte)
+_________________________________________________________________
+Saving hyperparams at: ./Results/latency Test/Deep Q-Learning_1.0s_[10]_Del_[20]_w1_[20]_w2_[2]_GTs/
+Simulation progress: 1% Estimated time remaining: 0 seconds Current simulation time: 0.01Simulation progress: 2% Estimated time remaining: 40 seconds Current simulation time: 0.02Simulation progress: 3% Estimated time remaining: 103 seconds Current simulation time: 0.03Nº of Gateways: 18
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+09:04:34
+Locations:
+0    Los Angeles
+1         Malaga
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.01
+Reward for deliver: 10
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 2Finding cells within coverage area of GT 2 of 2
+Time taken to find cells that are within range of all GTs: 0.28368687629699707 seconds
+Time taken to add cell information to all GTs: 0.10605692863464355 seconds
+
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+Action Space:
+ ('U', 'D', 'R', 'L')
+----------------------------------
+Neural Network Created!!!
+----------------------------------
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense (Dense)               (None, 32)                928       
+                                                                 
+ dense_1 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_2 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2116 (8.27 KB)
+Trainable params: 2116 (8.27 KB)
+Non-trainable params: 0 (0.00 Byte)
+_________________________________________________________________
+Saving hyperparams at: ./Results/latency Test/Deep Q-Learning_1.0s_[10]_Del_[20]_w1_[20]_w2_[2]_GTs/
+Simulation progress: 1% Estimated time remaining: 0 seconds Current simulation time: 0.01Simulation progress: 2% Estimated time remaining: 43 seconds Current simulation time: 0.02Simulation progress: 3% Estimated time remaining: 107 seconds Current simulation time: 0.03Simulation progress: 4% Estimated time remaining: 160 seconds Current simulation time: 0.04Simulation progress: 5% Estimated time remaining: 223 seconds Current simulation time: 0.05Simulation progress: 6% Estimated time remaining: 285 seconds Current simulation time: 0.060000000000000005Simulation progress: 7% Estimated time remaining: 347 seconds Current simulation time: 0.07Simulation progress: 8% Estimated time remaining: 414 seconds Current simulation time: 0.08Simulation progress: 9% Estimated time remaining: 466 seconds Current simulation time: 0.09Simulation progress: 10% Estimated time remaining: 540 seconds Current simulation time: 0.09999999999999999Simulation progress: 11% Estimated time remaining: 609 seconds Current simulation time: 0.10999999999999999Simulation progress: 12% Estimated time remaining: 671 seconds Current simulation time: 0.11999999999999998Simulation progress: 13% Estimated time remaining: 741 seconds Current simulation time: 0.12999999999999998Simulation progress: 14% Estimated time remaining: 806 seconds Current simulation time: 0.13999999999999999Simulation progress: 15% Estimated time remaining: 861 seconds Current simulation time: 0.15Simulation progress: 16% Estimated time remaining: 923 seconds Current simulation time: 0.16Simulation progress: 17% Estimated time remaining: 984 seconds Current simulation time: 0.17Simulation progress: 18% Estimated time remaining: 1042 seconds Current simulation time: 0.18000000000000002Simulation progress: 19% Estimated time remaining: 1104 seconds Current simulation time: 0.19000000000000003Simulation progress: 20% Estimated time remaining: 1166 seconds Current simulation time: 0.20000000000000004Simulation progress: 21% Estimated time remaining: 1231 seconds Current simulation time: 0.21000000000000005Simulation progress: 22% Estimated time remaining: 1288 seconds Current simulation time: 0.22000000000000006Simulation progress: 23% Estimated time remaining: 1344 seconds Current simulation time: 0.23000000000000007Simulation progress: 24% Estimated time remaining: 1406 seconds Current simulation time: 0.24000000000000007Simulation progress: 25% Estimated time remaining: 1457 seconds Current simulation time: 0.25000000000000006Simulation progress: 26% Estimated time remaining: 1504 seconds Current simulation time: 0.26000000000000006Simulation progress: 27% Estimated time remaining: 1551 seconds Current simulation time: 0.2700000000000001Simulation progress: 28% Estimated time remaining: 1598 seconds Current simulation time: 0.2800000000000001Simulation progress: 29% Estimated time remaining: 1625 seconds Current simulation time: 0.2900000000000001Simulation progress: 30% Estimated time remaining: 1657 seconds Current simulation time: 0.3000000000000001Simulation progress: 31% Estimated time remaining: 1679 seconds Current simulation time: 0.3100000000000001Simulation progress: 32% Estimated time remaining: 1693 seconds Current simulation time: 0.3200000000000001Simulation progress: 33% Estimated time remaining: 1695 seconds Current simulation time: 0.3300000000000001Simulation progress: 34% Estimated time remaining: 1691 seconds Current simulation time: 0.34000000000000014Simulation progress: 35% Estimated time remaining: 1682 seconds Current simulation time: 0.35000000000000014Simulation progress: 36% Estimated time remaining: 1665 seconds Current simulation time: 0.36000000000000015Simulation progress: 37% Estimated time remaining: 1642 seconds Current simulation time: 0.37000000000000016Simulation progress: 38% Estimated time remaining: 1615 seconds Current simulation time: 0.38000000000000017Simulation progress: 39% Estimated time remaining: 1587 seconds Current simulation time: 0.3900000000000002Simulation progress: 40% Estimated time remaining: 1560 seconds Current simulation time: 0.4000000000000002Simulation progress: 41% Estimated time remaining: 1529 seconds Current simulation time: 0.4100000000000002Simulation progress: 42% Estimated time remaining: 1499 seconds Current simulation time: 0.4200000000000002Simulation progress: 43% Estimated time remaining: 1469 seconds Current simulation time: 0.4300000000000002Simulation progress: 44% Estimated time remaining: 1441 seconds Current simulation time: 0.4400000000000002Simulation progress: 45% Estimated time remaining: 1412 seconds Current simulation time: 0.45000000000000023Simulation progress: 46% Estimated time remaining: 1381 seconds Current simulation time: 0.46000000000000024Simulation progress: 47% Estimated time remaining: 1351 seconds Current simulation time: 0.47000000000000025Simulation progress: 48% Estimated time remaining: 1417 seconds Current simulation time: 0.48000000000000026Simulation progress: 49% Estimated time remaining: 1386 seconds Current simulation time: 0.49000000000000027Simulation progress: 50% Estimated time remaining: 1352 seconds Current simulation time: 0.5000000000000002Simulation progress: 51% Estimated time remaining: 1318 seconds Current simulation time: 0.5100000000000002Simulation progress: 52% Estimated time remaining: 1285 seconds Current simulation time: 0.5200000000000002Simulation progress: 53% Estimated time remaining: 1252 seconds Current simulation time: 0.5300000000000002Simulation progress: 54% Estimated time remaining: 1218 seconds Current simulation time: 0.5400000000000003Simulation progress: 55% Estimated time remaining: 1185 seconds Current simulation time: 0.5500000000000003Simulation progress: 56% Estimated time remaining: 1153 seconds Current simulation time: 0.5600000000000003Simulation progress: 57% Estimated time remaining: 1120 seconds Current simulation time: 0.5700000000000003Simulation progress: 58% Estimated time remaining: 1089 seconds Current simulation time: 0.5800000000000003Simulation progress: 59% Estimated time remaining: 1057 seconds Current simulation time: 0.5900000000000003Simulation progress: 60% Estimated time remaining: 1025 seconds Current simulation time: 0.6000000000000003Simulation progress: 61% Estimated time remaining: 995 seconds Current simulation time: 0.6100000000000003Simulation progress: 62% Estimated time remaining: 964 seconds Current simulation time: 0.6200000000000003Simulation progress: 63% Estimated time remaining: 934 seconds Current simulation time: 0.6300000000000003Simulation progress: 64% Estimated time remaining: 905 seconds Current simulation time: 0.6400000000000003Simulation progress: 65% Estimated time remaining: 876 seconds Current simulation time: 0.6500000000000004Simulation progress: 66% Estimated time remaining: 847 seconds Current simulation time: 0.6600000000000004Simulation progress: 67% Estimated time remaining: 819 seconds Current simulation time: 0.6700000000000004Simulation progress: 68% Estimated time remaining: 792 seconds Current simulation time: 0.6800000000000004Simulation progress: 69% Estimated time remaining: 764 seconds Current simulation time: 0.6900000000000004Simulation progress: 70% Estimated time remaining: 737 seconds Current simulation time: 0.7000000000000004Simulation progress: 71% Estimated time remaining: 710 seconds Current simulation time: 0.7100000000000004Simulation progress: 72% Estimated time remaining: 685 seconds Current simulation time: 0.7200000000000004Simulation progress: 73% Estimated time remaining: 658 seconds Current simulation time: 0.7300000000000004Simulation progress: 74% Estimated time remaining: 632 seconds Current simulation time: 0.7400000000000004Simulation progress: 75% Estimated time remaining: 606 seconds Current simulation time: 0.7500000000000004Simulation progress: 76% Estimated time remaining: 580 seconds Current simulation time: 0.7600000000000005Simulation progress: 77% Estimated time remaining: 554 seconds Current simulation time: 0.7700000000000005Simulation progress: 78% Estimated time remaining: 528 seconds Current simulation time: 0.7800000000000005Simulation progress: 79% Estimated time remaining: 503 seconds Current simulation time: 0.7900000000000005Simulation progress: 80% Estimated time remaining: 477 seconds Current simulation time: 0.8000000000000005Simulation progress: 81% Estimated time remaining: 453 seconds Current simulation time: 0.8100000000000005Simulation progress: 82% Estimated time remaining: 428 seconds Current simulation time: 0.8200000000000005Simulation progress: 83% Estimated time remaining: 403 seconds Current simulation time: 0.8300000000000005Simulation progress: 84% Estimated time remaining: 379 seconds Current simulation time: 0.8400000000000005Simulation progress: 85% Estimated time remaining: 354 seconds Current simulation time: 0.8500000000000005Simulation progress: 86% Estimated time remaining: 330 seconds Current simulation time: 0.8600000000000005Simulation progress: 87% Estimated time remaining: 306 seconds Current simulation time: 0.8700000000000006Simulation progress: 88% Estimated time remaining: 282 seconds Current simulation time: 0.8800000000000006Simulation progress: 89% Estimated time remaining: 258 seconds Current simulation time: 0.8900000000000006Simulation progress: 90% Estimated time remaining: 234 seconds Current simulation time: 0.9000000000000006Simulation progress: 91% Estimated time remaining: 210 seconds Current simulation time: 0.9100000000000006Simulation progress: 92% Estimated time remaining: 186 seconds Current simulation time: 0.9200000000000006Simulation progress: 93% Estimated time remaining: 162 seconds Current simulation time: 0.9300000000000006Simulation progress: 94% Estimated time remaining: 138 seconds Current simulation time: 0.9400000000000006Simulation progress: 95% Estimated time remaining: 115 seconds Current simulation time: 0.9500000000000006Simulation progress: 96% Estimated time remaining: 92 seconds Current simulation time: 0.9600000000000006Simulation progress: 97% Estimated time remaining: 69 seconds Current simulation time: 0.9700000000000006Simulation progress: 98% Estimated time remaining: 45 seconds Current simulation time: 0.9800000000000006Simulation progress: 99% Estimated time remaining: 22 seconds Current simulation time: 0.9900000000000007
+########## Results #########
+
+The simulation took 2289.187397956848 seconds to run
+A total of 5327 data blocks were created
+A total of 4987 data blocks were transmitted
+A total of 340 data blocks were stuck
+Average transmission time for all blocks were 0.10462076403146982
+Total latecies:
+Queue time: 0.3927%
+Transmission time: 1.0086%
+Propagation time: 98.5986%
+DataBlocks lost: 0
+number of gateways: 2
+Path:
+[['Malaga, Spain', -4.41, 36.72], ['0_3', -6.2005108981029675, 35.533328282969194], ['6_17', -19.513774816182757, 35.53332828296918], ['5_17', -45.228060530468476, 35.53332828296918], ['5_16', -48.64693012098496, 17.79080648133993], ['4_16', -74.36121583527067, 17.79080648133993], ['3_16', -100.07550154955638, 17.79080648133993], ['3_17', -96.6566319590399, 35.53332828296918], ['2_17', -122.3709176733256, 35.53332828296918], ['Los Angeles, California, US', -118.24, 34.05]]
+Bottleneck:
+([['Malaga,0_3', '0_3,6_17', '6_17,5_17', '5_17,5_16', '5_16,4_16', '4_16,3_16', '3_16,3_17', '3_17,2_17', '2_17,Los Angeles'], [2950427500.0, 1428115500.0, 743736500.0, 889995500.0, 594152000.0, 594152000.0, 889995500.0, 743736500.0, 2884493500.0], [36.72, 0.6201735727298358, 0.6201735727298355, 0.6201735727298355, 0.3105081496845289, 0.3105081496845289, 0.3105081496845289, 0.6201735727298355, 34.05], []], 594152000.0)
+Saving Deep Neural networks at: ./Results/latency Test/Deep Q-Learning_1.0s_[10]_Del_[20]_w1_[20]_w2_[2]_GTs//NNs/
+----------------------------------
+Time:
+09:43:26
+----------------------------------
+Elapsed time: 0:38:51.508397
+----------------------------------

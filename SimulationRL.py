@@ -60,12 +60,17 @@ from tensorflow import keras
 from tensorflow.keras import Model, Sequential, losses
 from tensorflow.keras.layers import Dense, Embedding, Reshape, Input, Conv2D, Flatten
 from tensorflow.keras.optimizers import Adam
+# from tensorflow.keras.optimizers.legacy import Adam  # Optimized for mac M1-M2
 from collections import deque
 
 # Forcing TensorFlow to use GPU
 physical_devices = tf.config.list_physical_devices('GPU')
 if len(physical_devices) > 0:
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    # tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    print('GPU(s) available:')
+    print(physical_devices)
+else:
+    print('No GPU available')
 
 ###############################################################################
 ###############################    Constants    ###############################
@@ -80,10 +85,10 @@ Train       = True      # Global for all scenarios with different number of GTs.
 MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-mixLocs     = True      # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
  
 # number of gateways to be tested
-GTs = [4]
+GTs = [2]
 # GTs = [i for i in range(2,19)] # 19.
 # GTs = [i for i in range(2,11)] # 19.
 
@@ -124,6 +129,7 @@ alpha       = 0.25      # learning rate
 gamma       = 0.6       # greedy factor
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
+learningRate= 0.001     # Default learning rate for Adam optimizer
 # drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
 winSize     = 200       # window size for the representation in the plots
@@ -1462,6 +1468,8 @@ class Gateway:
             self.totalAvgFlow = totalAvgFlow
         else:
             self.totalAvgFlow = capacity * fraction
+            
+        print(self.name + ': ' + str(totalAvgFlow/1000000000))
 
     def __eq__(self, other):
         if self.latitude == other.latitude and self.longitude == other.longitude:
@@ -3496,6 +3504,8 @@ class DDQNAgent:
         model.add(Dense(32, activation='relu', kernel_initializer='random_uniform'))
         model.add(Dense(self.actionSize, activation='linear'))
         model.compile(loss='mse', optimizer='adam')
+        # optimizer = Adam(learning_rate=learningRate)  # You can adjust the learning rate as needed
+        # model.compile(loss='mse', optimizer=optimizer)
         return model
 
     def train(self, sat):
@@ -3684,9 +3694,12 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
     bottleneck2, minimum2 = findBottleneck(paths[1], earth, False)
     bottleneck1, minimum1 = findBottleneck(paths[0], earth, False, minimum2)
 
+    print('Traffic generated per GT (totalAvgFlow per Milliard):')
+    print('----------------------------------')
     for GT in earth.gateways:
         mins = []
         if GT.linkedSat[0] is not None:
+
             for pathKey in GT.paths:
                 _, minimum = findBottleneck(GT.paths[pathKey], earth)
                 mins.append(minimum)
@@ -3694,6 +3707,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
                 GT.getTotalFlow(1, "Step", 1, GT.dataRate, fraction)  # using data rate of the GSL uplink
             else:
                 GT.getTotalFlow(1, "Step", 1, GT.linkedSat[1].downRate, fraction)  # using data rate of the GSL downlink
+    print('----------------------------------')
 
     # In case we want to train the constellation we initialize the Q-Tables
     if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
