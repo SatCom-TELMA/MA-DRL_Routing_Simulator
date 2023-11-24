@@ -80,16 +80,16 @@ else:
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
-drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = True      # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True     # if set to true all the generated traffic at each GT is equal
 
 # number of gateways to be tested
-GTs = [2]
+GTs = [3]
 # GTs = [i for i in range(2,19)] # 19.
 # GTs = [i for i in range(2,11)] # 19.
 
@@ -118,7 +118,7 @@ min_rate= 10e3  # Minimum rate in kbps
 
 # Uplink Parameters
 # balancedFlow= True        # if set to true all the generated traffic at each GT is equal
-totalFlow   = 3*1000000000   # Total average flow per GT when the balanced traffc option is enabled. Malaga has 3*, LA has 3*, Nuuk/500
+totalFlow   = 2*1000000000   # Total average flow per GT when the balanced traffc option is enabled. Malaga has 3*, LA has 3*, Nuuk/500
 
 # Block
 blockSize   = 64800
