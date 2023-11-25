@@ -4657,9 +4657,9 @@ def getDistanceReward(satA, satB, destination, w2):
     '''
     balance   = -1      # centralizes the result in 0
 
-    TSL  = getSlantRange(satA, destination)
+    TSLa = getSlantRange(satA, destination)
     TSLb = getSlantRange(satB, destination)
-    return w2*((2*TSL-TSLb)/TSL + balance)
+    return w2*((2*TSLa-TSLb)/TSLa + balance)
 
 
 def saveHyperparams(outputPath, inputParams, hyperparams):
