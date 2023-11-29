@@ -78,15 +78,15 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
-drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
-balancedFlow= True     # if set to true all the generated traffic at each GT is equal
+balancedFlow= False     # if set to true all the generated traffic at each GT is equal
 
 # number of gateways to be tested
 GTs = [2]
@@ -140,6 +140,7 @@ learningRate= 0.001     # Default learning rate for Adam optimizer
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
 winSize     = 200       # window size for the representation in the plots
 markerSize  = 50        # Size of the markers in the plots
+nTrain      = 2         # The DNN will train every nTrain steps
 
 # Queues
 infQueue    = 5000      # Upper boundary from where a queue is considered as infinite when obserbing the state
@@ -156,7 +157,7 @@ unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a 
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
 # MIN_EPSILON = 0.50      # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
-decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is faster. If lower, the decay is slower
+decayRate   = 1         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
 hardUpdate  = 1         # if up, the Q-network weights are copied inside the target network every updateF iterations. if down, this is done gradually
 updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
@@ -1570,6 +1571,8 @@ class Earth:
         self.loss   = []
         self.lossAv = []
         self.DDQNA  = None
+        self.step   = 0
+        self.epsilon=[]
 
         pop_count_data = Image.open(img_path)
 
@@ -2973,7 +2976,7 @@ class Earth:
                     # print(GT)
 
         if plotSat:
-        colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(self.LEO)))
+            colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(self.LEO)))
 
             for plane, c in zip(self.LEO, colors):
                 # print('------------------------------------------------------------')
@@ -3178,7 +3181,10 @@ class QLearning:
 
         self.alpha  = hyperparams.alpha
         self.gamma  = hyperparams.gamma
-        self.epsilon= hyperparams.epsilon
+        # self.epsilon= hyperparams.epsilon
+        self.epsilon= []
+        self.maxEps = hyperparams.MAX_EPSILON
+        self.minEps = hyperparams.MIN_EPSILON
         self.w1     = hyperparams.w1
         self.w2     = hyperparams.w2
 
@@ -3221,7 +3227,8 @@ class QLearning:
        
         # 3. Choose an action (the direction of the next hop)
         # randomly
-        if random.uniform(0, 1)<self.epsilon:
+        # if random.uniform(0, 1)<self.epsilon:
+        if random.uniform(0, 1)<self.alignEpsilon(earth, sat) and explore:
             action = self.actions[random.randrange(len(self.actions))]
             while(self.linkedSats[action] == None): 
                 action = self.actions[random.randrange(len(self.actions))]  # if that direction has no linked satellite
@@ -3265,7 +3272,15 @@ class QLearning:
         block.oldState  = newState
         block.oldAction = self.actions.index(action)
 
+        earth.step += 1
+
         return nextHop
+
+    def alignEpsilon(self, earth, sat):
+        global      CurrentGTnumber
+        epsilon     = self.minEps + (self.maxEps - self.minEps) * math.exp(-LAMBDA * earth.step/(decayRate*(CurrentGTnumber**2)))
+        earth        .epsilon.append([epsilon, sat.env.now])
+        return epsilon
 
     def __repr__(self):
             return '\n Nº of destinations = {}\n Action Space = {}\n Nº of states = {}\n qTable: {}'.format(
@@ -3452,7 +3467,7 @@ class DDQNAgent:
             self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, False) # action index
 
         # 6. Learning, train the Q-Network at every time we store experience # REVIEW
-            if TrainThis and self.step % 2 == 0:
+            if TrainThis and self.step % nTrain == 0:
                 self.train(sat)
 
         else:
@@ -4760,9 +4775,9 @@ def extract_block_index(block_id):
     return int(block_id.split('_')[-1])
 
 
-def save_epsilons(outputPath, earth1, GTnumber):
-    epsilons = [x[0] for x in earth1.DDQNA.epsilon]
-    times    = [x[1] for x in earth1.DDQNA.epsilon]
+def save_epsilons(outputPath, eps, GTnumber):
+    epsilons = [x[0] for x in eps]
+    times    = [x[1] for x in eps]
     plt.plot(times, epsilons)
     plt.title("Epsilon over Time")
     plt.xlabel("Time (s)")
@@ -5002,15 +5017,18 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             # save & plot ftirst 2 GTs path latencies
             plotSavePathLatencies(outputPath, GTnumber, pathBlocks)
             
-            if pathing == "Deep Q-Learning":
+            if pathing == "Deep Q-Learning" or pathing == 'Q-Learning':
+                eps = earth1.DDQNA.epsilon if pathing == "Deep Q-Learning" else earth1.epsilon
                 # save epsilons
-                epsDF = save_epsilons(outputPath, earth1, GTnumber)
-
-                # save losses
-                save_losses(outputPath, earth1, GTnumber)
+                epsDF = save_epsilons(outputPath, eps, GTnumber)
 
                 # save & plot all paths latencies
                 plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF)
+            
+            elif pathing == "Deep Q-Learning":
+                # save losses
+                save_losses(outputPath, earth1, GTnumber)
+                
             else:
                 plotSaveAllLatencies(outputPath, GTnumber, allLatencies)
 
