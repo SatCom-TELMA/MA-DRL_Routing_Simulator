@@ -80,12 +80,12 @@ else:
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
-drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-mixLocs     = True      # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True     # if set to true all the generated traffic at each GT is equal
 
 # number of gateways to be tested
@@ -118,7 +118,8 @@ min_rate= 10e3  # Minimum rate in kbps
 
 # Uplink Parameters
 # balancedFlow= True        # if set to true all the generated traffic at each GT is equal
-totalFlow   = 2*1000000000   # Total average flow per GT when the balanced traffc option is enabled. Malaga has 3*, LA has 3*, Nuuk/500
+totalFlow   = 2*1000000000  # Total average flow per GT when the balanced traffc option is enabled. Malaga has 3*, LA has 3*, Nuuk/500
+avUserLoad  = 8593 * 8      # average traffic usage per second in bits
 
 # Block
 blockSize   = 64800
@@ -1448,7 +1449,7 @@ class Gateway:
             self.totalAvgFlow = totalFlow
         else:
             totalAvgFlow = 0
-            avgFlowPerUser = 8593 * 8 # average traffic usage per second in bits
+            avgFlowPerUser =  avUserLoad
 
             if distanceFunc == "Step":
                 for cell in self.cellsInRange:
@@ -4656,9 +4657,9 @@ def getDistanceReward(satA, satB, destination, w2):
     '''
     balance   = -1      # centralizes the result in 0
 
-    TSL  = getSlantRange(satA, destination)
+    TSLa = getSlantRange(satA, destination)
     TSLb = getSlantRange(satB, destination)
-    return w2*((2*TSL-TSLb)/TSL + balance)
+    return w2*((2*TSLa-TSLb)/TSLa + balance)
 
 
 def saveHyperparams(outputPath, inputParams, hyperparams):
