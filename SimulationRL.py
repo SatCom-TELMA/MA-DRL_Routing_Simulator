@@ -2971,9 +2971,9 @@ class Earth:
                     # print(GT.linkedSat[1])
                     # print(GT)
 
-            colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(self.LEO)))
-
         if plotSat:
+        colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(self.LEO)))
+
             for plane, c in zip(self.LEO, colors):
                 # print('------------------------------------------------------------')
                 # print('Plane: ' + str(plane.ID))
@@ -3031,7 +3031,7 @@ class Earth:
         elif plotSat:
             plt.legend([scat2], ['Satellites'], loc=3, prop=legend_properties, markerscale=markerscale)
         elif plotGT:
-            plt.legend([scat1], ['Concentrators'], loc=3, prop=legend_properties, markerscale=markerscale)
+            plt.legend([scat1], ['Gateways'], loc=3, prop=legend_properties, markerscale=markerscale)
 
         plt.xticks([])
         plt.yticks([])
