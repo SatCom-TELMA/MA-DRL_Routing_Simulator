@@ -87,6 +87,7 @@ importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
+decayRate   = 2         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 
 # number of gateways to be tested
 GTs = [2]
@@ -157,7 +158,7 @@ unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a 
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
 # MIN_EPSILON = 0.50      # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
-decayRate   = 1         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
+# decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
 hardUpdate  = 1         # if up, the Q-network weights are copied inside the target network every updateF iterations. if down, this is done gradually
 updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
