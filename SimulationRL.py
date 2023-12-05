@@ -148,7 +148,7 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 
 # rewards
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-w1          = 21        # rewards the getting to empty queues
+w1          = 22        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically
 againPenalty= -0.5      # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
@@ -3459,9 +3459,9 @@ class DDQNAgent:
             else:
                 again = 0
 
-            distanceReward  = getDistanceReward(prevSat, sat, block.destination, self.w2)
-            # prevLinkedSats  = getlinkedSats(prevSat, g, earth)
-            # distanceReward  = getDistanceRewardV2(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
+            # distanceReward  = getDistanceReward(prevSat, sat, block.destination, self.w2)
+            prevLinkedSats  = getlinkedSats(prevSat, g, earth)
+            distanceReward  = getDistanceRewardV2(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
             queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
             reward          = distanceReward + again + queueReward
 
