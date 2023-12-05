@@ -148,7 +148,7 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 
 # rewards
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-w1          = 22        # rewards the getting to empty queues
+w1          = 23        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically
 againPenalty= -0.5      # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
@@ -3461,7 +3461,8 @@ class DDQNAgent:
 
             # distanceReward  = getDistanceReward(prevSat, sat, block.destination, self.w2)
             prevLinkedSats  = getlinkedSats(prevSat, g, earth)
-            distanceReward  = getDistanceRewardV2(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
+            # distanceReward  = getDistanceRewardV2(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
+            distanceReward  = getDistanceRewardV3(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
             queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
             reward          = distanceReward + again + queueReward
 
@@ -4686,11 +4687,6 @@ def getDistanceRewardV2(sat, nextSat, satU, satD, satR, satL, destination, w2):
     If any of the linked satellites is not available, it is handled
     SLr/SLav + balance
     '''
-    # SLU = getSlantRange(satU, sat)
-    # SLD = getSlantRange(satD, sat)
-    # SLR = getSlantRange(satR, sat)
-    # SLL = getSlantRange(satL, sat)
-    # SLav= (SLU+SLD+SLR+SLL)/4
 
     SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
     SLU = SLD = SLR = SLL = 0
@@ -4715,7 +4711,26 @@ def getDistanceRewardV2(sat, nextSat, satU, satD, satR, satL, destination, w2):
     return w2 * (SLr / SLav) if SLav != 0 else 0
 
 
-    # return w2*(SLr/SLav)
+def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
+    '''
+    Returns the distance reward computed by comparing how closer you get to the destination in terms of KM (SLr, Slant Range Reduction) with
+    how close you could get as maximum taking the other options going to any of the other neighbours (max(SLrs), max(Slant range reductions from all the neighbours))
+    reward = SLr/mad(SLs)
+    '''
+    SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
+    SLrs= []
+
+    if satU is not None:
+        SLrs.append(getSlantRange(sat, destination) - getSlantRange(satU, destination))
+    if satD is not None:
+        SLrs.append(getSlantRange(sat, destination) - getSlantRange(satD, destination))
+    if satR is not None:
+        SLrs.append(getSlantRange(sat, destination) - getSlantRange(satR, destination))
+    if satL is not None:
+        SLrs.append(getSlantRange(sat, destination) - getSlantRange(satL, destination))
+
+    return SLr/max(SLrs)*w2
+    
 
 def saveHyperparams(outputPath, inputParams, hyperparams):
     print('Saving hyperparams at: ' + str(outputPath))
