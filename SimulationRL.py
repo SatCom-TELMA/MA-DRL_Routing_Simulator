@@ -80,22 +80,26 @@ else:
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+distanceRew = 4          # 1: Distance reward normalized to total distance.
+                         # 2: Distance reward normalized to average moving possibilities
+                         # 3: Distance reward normalized to maximum close up
+                         # 4: Distance reward normalized by 2.000 km
 
-drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
-decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
+gamma       = 0.6       # greedy factor
 
 # number of gateways to be tested
 GTs = [2]
 # GTs = [i for i in range(2,19)] # 19.
 # GTs = [i for i in range(2,11)] # 19.
 
-CurrentGTnumber        = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
+CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
 
 # Physical constants
 rKM = 500               # radio in km of the coverage of each gateway
@@ -134,7 +138,7 @@ ndeltas     = 25        # This number will multiply deltaT. If bigger, will make
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
-gamma       = 0.99       # greedy factor
+# gamma       = 0.6       # greedy factor
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
@@ -150,14 +154,14 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 
 # rewards
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-w1          = 23        # rewards the getting to empty queues
-w2          = 20        # rewards getting closes phisically
+w1          = 24        # rewards the getting to empty queues
+w2          = 1        # rewards getting closes phisically
 againPenalty= -0.5      # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
 
 # Deep Learning
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
-# MIN_EPSILON = 0.50      # Minimum value that the exploration parameter can have
+# MIN_EPSILON = 0.91      # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
@@ -3440,8 +3444,16 @@ class DDQNAgent:
 
         # 2. Check if the destination is the linked gateway. The reward is 10 here and goes to the previous satellite. # ANCHOR plot delivered deep NN
         if sat.linkedGT and (block.destination.ID == sat.linkedGT.ID):    # Compare IDs
-            self.experienceReplay.store(block.oldState, block.oldAction, ArriveReward, newState, True)
-            if TrainThis: self.train(sat)
+            if distanceRew == 4:
+                distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2)
+                queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
+                reward          = distanceReward + queueReward + ArriveReward
+                self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, True)
+                # self.experienceReplay.store(block.oldState, block.oldAction, ArriveReward, newState, True)
+            else:
+                self.experienceReplay.store(block.oldState, block.oldAction, ArriveReward, newState, True)
+
+            if TrainThis: self.train(sat) # FIXME why here a train?? should not be here. Make a test without this when the model is stable
             if drawDeliver:
                 if int(block.ID[len(block.ID)-1]) == 0: # Draws 1/10 arrivals
                     os.makedirs(earth.outputPath + '/pictures/', exist_ok=True) # drawing delivered
@@ -3461,10 +3473,17 @@ class DDQNAgent:
             else:
                 again = 0
 
-            # distanceReward  = getDistanceReward(prevSat, sat, block.destination, self.w2)
-            prevLinkedSats  = getlinkedSats(prevSat, g, earth)
-            # distanceReward  = getDistanceRewardV2(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
-            distanceReward  = getDistanceRewardV3(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
+            if distanceRew == 1:
+                distanceReward  = getDistanceReward(prevSat, sat, block.destination, self.w2)
+            elif distanceRew == 2:
+                prevLinkedSats  = getlinkedSats(prevSat, g, earth)
+                distanceReward  = getDistanceRewardV2(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
+            elif distanceRew == 3:
+                prevLinkedSats  = getlinkedSats(prevSat, g, earth)
+                distanceReward  = getDistanceRewardV3(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
+            elif distanceRew == 4:
+                distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2)
+            
             queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
             reward          = distanceReward + again + queueReward
 
@@ -4682,6 +4701,7 @@ def getDistanceReward(satA, satB, destination, w2):
     TSLb = getSlantRange(satB, destination)
     return w2*((2*TSLa-TSLb)/TSLa + balance)
 
+
 def getDistanceRewardV2(sat, nextSat, satU, satD, satR, satL, destination, w2):
     '''
     Computes the reward by comparing how closer you get to the destination in terms of KM (SLr, Slant Range Reduction) with the
@@ -4733,6 +4753,11 @@ def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
 
     return SLr/max(SLrs)*w2
     
+
+def getDistanceRewardV4(sat, nextSat, destination, w2):
+    SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
+    return w2*SLr/1000000
+
 
 def saveHyperparams(outputPath, inputParams, hyperparams):
     print('Saving hyperparams at: ' + str(outputPath))
