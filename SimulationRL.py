@@ -78,7 +78,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
 drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
@@ -87,7 +87,7 @@ importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
-decayRate   = 2         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
+decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 
 # number of gateways to be tested
 GTs = [2]
@@ -132,8 +132,8 @@ ndeltas     = 25        # This number will multiply deltaT. If bigger, will make
 # Deep & Q Learning
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
-alpha       = 0.25      # learning rate
-gamma       = 0.6       # greedy factor
+alpha       = 0.25      # learning rate for Q-Tables
+gamma       = 0.99       # greedy factor
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
