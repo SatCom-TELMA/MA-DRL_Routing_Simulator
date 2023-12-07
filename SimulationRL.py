@@ -79,8 +79,9 @@ else:
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
-drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
@@ -149,7 +150,7 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 
 # rewards
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-w1          = 20        # rewards the getting to empty queues
+w1          = 23        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically
 againPenalty= -0.5      # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
@@ -158,7 +159,7 @@ unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a 
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
 # MIN_EPSILON = 0.50      # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
-# decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
+decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
 hardUpdate  = 1         # if up, the Q-network weights are copied inside the target network every updateF iterations. if down, this is done gradually
 updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
@@ -3389,7 +3390,7 @@ class DDQNAgent:
             action   = self.actions[actIndex]
             while(linkedSats[action] == None):              # the chosen action has no linked satellite. NEGATIVE REWARD and store it, motherfucker.
                 self.experienceReplay.store(newState, actIndex, unavPenalty, newState, False) # from state to the same state, reward -1, not terminated
-                qValues[0][actIndex] = -np.inf                 # it will not be chosen again (as the model has still not trained with that)
+                qValues[0][actIndex] = -np.inf              # it will not be chosen again (as the model has still not trained with that)
                 actIndex = np.argmax(qValues)               # find again for the highest value
                 action   = self.actions[actIndex]  
 
@@ -3460,14 +3461,17 @@ class DDQNAgent:
             else:
                 again = 0
 
-            distanceReward  = getDistanceReward(prevSat, sat, block.destination, self.w2)
+            # distanceReward  = getDistanceReward(prevSat, sat, block.destination, self.w2)
+            prevLinkedSats  = getlinkedSats(prevSat, g, earth)
+            # distanceReward  = getDistanceRewardV2(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
+            distanceReward  = getDistanceRewardV3(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
             queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
             reward          = distanceReward + again + queueReward
 
         # 5. Store the experience of previous Node (Agent, satellite) if it was not a gateway  
             self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, False) # action index
 
-        # 6. Learning, train the Q-Network at every time we store experience # REVIEW
+        # 6. Learning, train the Q-Network at every time we store experience
             if TrainThis and self.step % nTrain == 0:
                 self.train(sat)
 
@@ -4341,6 +4345,7 @@ def getSatScore(satA, satB, g):
 
 # @profile
 def getDeepSatScore(queueLength):
+    # return 1 if queueLength > infQueue else (int(np.floor(queueVals*np.log10(queueLength + 1)/np.log10(infQueue))))/queueVals
     return queueVals if queueLength > infQueue else int(np.floor(queueVals*np.log10(queueLength + 1)/np.log10(infQueue)))
 
 
@@ -4480,7 +4485,7 @@ def getState(Block, satA, g, earth):
 
 def getBiasedlatitude(sat):
     try:
-        return int(math.degrees(sat.latitude))+90
+        return (int(math.degrees(sat.latitude))+90)#/180
     except AttributeError as e:
         # print(f"getBiasedlatitude Caught an exception: {e}")
         return -1
@@ -4488,7 +4493,7 @@ def getBiasedlatitude(sat):
 
 def getBiasedLongitude(sat):
     try:
-        return int(math.degrees(sat.longitude))+180
+        return (int(math.degrees(sat.longitude))+180)#/360
     except AttributeError as e:
         # print(f"getBiasedLongitude Caught an exception: {e}")
         return -1
@@ -4677,6 +4682,57 @@ def getDistanceReward(satA, satB, destination, w2):
     TSLb = getSlantRange(satB, destination)
     return w2*((2*TSLa-TSLb)/TSLa + balance)
 
+def getDistanceRewardV2(sat, nextSat, satU, satD, satR, satL, destination, w2):
+    '''
+    Computes the reward by comparing how closer you get to the destination in terms of KM (SLr, Slant Range Reduction) with the
+    average distance with all your neighbours (SLav, Slant Range average)
+    If any of the linked satellites is not available, it is handled
+    SLr/SLav + balance
+    '''
+
+    SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
+    SLU = SLD = SLR = SLL = 0
+    count = 0
+
+    # Calculate slant range for each satellite, if it is not None
+    if satU is not None:
+        SLU = getSlantRange(satU, sat)
+        count += 1
+    if satD is not None:
+        SLD = getSlantRange(satD, sat)
+        count += 1
+    if satR is not None:
+        SLR = getSlantRange(satR, sat)
+        count += 1
+    if satL is not None:
+        SLL = getSlantRange(satL, sat)
+        count += 1
+
+    SLav = (SLU + SLD + SLR + SLL) / count if count > 0 else 0
+
+    return w2 * (SLr / SLav) if SLav != 0 else 0
+
+
+def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
+    '''
+    Returns the distance reward computed by comparing how closer you get to the destination in terms of KM (SLr, Slant Range Reduction) with
+    how close you could get as maximum taking the other options going to any of the other neighbours (max(SLrs), max(Slant range reductions from all the neighbours))
+    reward = SLr/mad(SLs)
+    '''
+    SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
+    SLrs= []
+
+    if satU is not None:
+        SLrs.append(getSlantRange(sat, destination) - getSlantRange(satU, destination))
+    if satD is not None:
+        SLrs.append(getSlantRange(sat, destination) - getSlantRange(satD, destination))
+    if satR is not None:
+        SLrs.append(getSlantRange(sat, destination) - getSlantRange(satR, destination))
+    if satL is not None:
+        SLrs.append(getSlantRange(sat, destination) - getSlantRange(satL, destination))
+
+    return SLr/max(SLrs)*w2
+    
 
 def saveHyperparams(outputPath, inputParams, hyperparams):
     print('Saving hyperparams at: ' + str(outputPath))
