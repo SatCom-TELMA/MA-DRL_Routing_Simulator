@@ -79,20 +79,22 @@ else:
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
-pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
-distanceRew = 4          # 1: Distance reward normalized to total distance.
+distanceRew = 1          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
                          # 4: Distance reward normalized by 2.000 km
 
-drawDeliver = False      # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-MIN_EPSILON = 0.01       # Minimum value that the exploration parameter can have 
+MIN_EPSILON = 0.01      # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
 gamma       = 0.6       # greedy factor
+
+w1          = 1         # rewards the getting to empty queues
+w2          = 20        # rewards getting closes phisically    
 
 # number of gateways to be tested
 GTs = [2]
@@ -153,8 +155,8 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 
 # rewards
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-w1          = 24        # rewards the getting to empty queues
-w2          = 10        # rewards getting closes phisically     
+# w1          = 1         # rewards the getting to empty queues
+# w2          = 20        # rewards getting closes phisically     
 againPenalty= -0.5      # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
 
@@ -2964,7 +2966,7 @@ class Earth:
 
         print("number of GT paths that cannot meet flow restraints: {}".format(totalFailed))
 
-    def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None):
+    def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None):
         plt.figure()
         legend_properties = {'size': 10, 'weight': 'bold'}
         markerscale = 1.5
@@ -3051,8 +3053,8 @@ class Earth:
         # plt.imshow(np.log10(np.array(self.getCellUsers()).transpose() + 1), )
         
         # Add title
-        if ID is not None:
-            plt.title(f"Block ID: {ID}")
+        if time is not None and ID is not None:
+            plt.title(f"Creation time: {time*1000}ms, block ID: {ID}")
 
         if save:
             plt.savefig("mapa.png", dpi=1000)
@@ -3457,7 +3459,7 @@ class DDQNAgent:
                 if int(block.ID[len(block.ID)-1]) == 0: # Draws 1/10 arrivals
                     os.makedirs(earth.outputPath + '/pictures/', exist_ok=True) # drawing delivered
                     outputPath = earth.outputPath + '/pictures/' + block.ID + '_' + str(len(block.QPath)) + '_'
-                    plotShortestPath(earth, block.QPath, outputPath, ID=block.ID)
+                    plotShortestPath(earth, block.QPath, outputPath, ID=block.ID, time = block.creationTime)
             return 0
 
         # 3. Choose an action (the direction of the next hop)
@@ -4188,8 +4190,8 @@ def getShortestPath(source, destination, weight, g):
     return path
 
 
-def plotShortestPath(earth, path, outputPath, ID=None):
-    earth.plotMap(True, True, path=path, ID=ID)
+def plotShortestPath(earth, path, outputPath, ID=None, time=None):
+    earth.plotMap(True, True, path=path, ID=ID,time=time)
     plt.savefig(outputPath + 'popMap_' + path[0][0] + '_to_' + path[len(path)-1][0] + '.png', dpi = 500)
     # plt.show()
     plt.close()
@@ -4736,7 +4738,7 @@ def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
     '''
     Returns the distance reward computed by comparing how closer you get to the destination in terms of KM (SLr, Slant Range Reduction) with
     how close you could get as maximum taking the other options going to any of the other neighbours (max(SLrs), max(Slant range reductions from all the neighbours))
-    reward = SLr/mad(SLs)
+    reward = SLr/max(SLs)
     '''
     SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
     SLrs= []
@@ -4750,7 +4752,7 @@ def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
     if satL is not None:
         SLrs.append(getSlantRange(sat, destination) - getSlantRange(satL, destination))
 
-    return SLr/max(SLrs)*w2
+    return w2*SLr/max(SLrs)
     
 
 def getDistanceRewardV4(sat, nextSat, destination, w2):
