@@ -97,7 +97,6 @@ gamma       = 0.6       # greedy factor
 # number of gateways to be tested
 GTs = [2]
 # GTs = [i for i in range(2,19)] # 19.
-# GTs = [i for i in range(2,11)] # 19.
 
 CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
 
@@ -144,7 +143,7 @@ tau         = 0.1       # rate of copying the weights from the Q-Network to the 
 learningRate= 0.001     # Default learning rate for Adam optimizer
 # drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
-winSize     = 200       # window size for the representation in the plots
+winSize     = 20       # window size for the representation in the plots
 markerSize  = 50        # Size of the markers in the plots
 nTrain      = 2         # The DNN will train every nTrain steps
 
@@ -155,7 +154,7 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 # rewards
 ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 w1          = 24        # rewards the getting to empty queues
-w2          = 1        # rewards getting closes phisically
+w2          = 10        # rewards getting closes phisically     
 againPenalty= -0.5      # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
 
@@ -4941,23 +4940,29 @@ def plotSavePathLatencies(outputPath, GTnumber, pathBlocks):
     os.makedirs(outputPath + '/loss/', exist_ok=True) # create output path
 
 
-def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None):  
+def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotate_min_latency=True):  
     # preprocess and setup
     sns.set(font_scale=1.5)
     window_size = winSize
     marker_size = markerSize
-    df          = pd.DataFrame(allLatencies, columns=['Creation Time', 'Latency', 'Arrival Time', 'Source', 
-                                         'Destination', 'Block ID', 'QueueTime', 'TxTime', 'PropTime'])
-    df          ['Block Index'] = df['Block ID'].apply(extract_block_index)   # Sort the DataFrame by paths (Source and Destination)
-    df          = df.sort_values(by=['Source', 'Destination', 'Block Index'])
-    df          .to_csv(outputPath + '/csv/' + "allLatencies_{}_gateways.csv".format(GTnumber))
+    df = pd.DataFrame(allLatencies, columns=['Creation Time', 'Latency', 'Arrival Time', 'Source', 
+                                             'Destination', 'Block ID', 'QueueTime', 'TxTime', 'PropTime'])
+    df['Block Index'] = df['Block ID'].apply(extract_block_index)
+    df = df.sort_values(by=['Source', 'Destination', 'Block Index'])
+    df.to_csv(outputPath + '/csv/' + "allLatencies_{}_gateways.csv".format(GTnumber))
 
-    # Calculate the rolling average for each unique path (combination of Source and Destination)
+    # Convert time values to milliseconds
+    df['Creation Time'] *= 1000
+    df['Arrival Time']  *= 1000
+    df['Latency']       *= 1000
+    if epsDF is not None:
+        epsDF['time']   *= 1000
+
+    # Calculate the rolling average for each unique path
     df['Path'] = df['Source'].astype(str) + ' -> ' + df['Destination'].astype(str)
     df['Latency_Rolling_Avg'] = df.groupby('Path')['Latency'].transform(lambda x: x.rolling(window=window_size).mean())
     
     # Metrics for x-axis
-    # metrics = ['Arrival Time', 'Block Index', 'Creation Time']
     metrics = ['Arrival Time', 'Creation Time']
 
     # Create subplots
@@ -4967,8 +4972,19 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None):
         # Line Plots on the left (column index 0)
         lineplot = sns.lineplot(x=metric, y='Latency_Rolling_Avg', hue='Path', ax=axes[i, 0], data=df)
         axes[i, 0].set_title(f'Latency Trends Over {metric} (Window Size = {window_size})')
-        axes[i, 0].set_xlabel(metric + ' (s)')
-        axes[i, 0].set_ylabel('Average Latency (s)')
+        axes[i, 0].set_xlabel(metric + ' (ms)')
+        axes[i, 0].set_ylabel('Average Latency (ms)')
+
+        # Annotate minimum latency for Creation Time only
+        if annotate_min_latency and metric == 'Creation Time':
+            unique_paths = df['Path'].unique()
+            for path in unique_paths:
+                df_path = df[df['Path'] == path]
+                min_latency = df_path['Latency_Rolling_Avg'].min()
+                min_pos = df_path[metric][df_path['Latency_Rolling_Avg'].idxmin()]
+                axes[i, 0].annotate(f'{min_latency:.0f} ms', xy=(min_pos, min_latency), 
+                                    xytext=(-50, 30), textcoords='offset points', 
+                                    arrowprops=dict(arrowstyle='->', color='black'))
 
         # Scatter Plots on the right (column index 1)
         scatterplot = sns.scatterplot(x=metric, y='Latency', hue='Path', ax=axes[i, 1], data=df, marker='o', s=marker_size)
