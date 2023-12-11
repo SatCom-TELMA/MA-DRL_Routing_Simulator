@@ -93,7 +93,7 @@ mixLocs     = False     # If true, every time we make a new simulation the locat
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.6       # greedy factor
 
-w1          = 4         # rewards the getting to empty queues
+w1          = 1         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 
 # number of gateways to be tested
