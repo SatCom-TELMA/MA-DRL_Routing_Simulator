@@ -91,7 +91,7 @@ importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
-gamma       = 0.6       # greedy factor
+gamma       = 0.95       # greedy factor
 
 w1          = 4         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
@@ -3054,7 +3054,7 @@ class Earth:
         
         # Add title
         if time is not None and ID is not None:
-            plt.title(f"Creation time: {time*1000:.2f}ms, block ID: {ID}")
+            plt.title(f"Creation time: {time*1000:.0f}ms, block ID: {ID}")
 
         if save:
             plt.savefig("mapa.png", dpi=1000)
@@ -3448,7 +3448,7 @@ class DDQNAgent:
             if distanceRew == 4:
                 distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2)
                 queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
-                reward          = distanceReward + queueReward + ArriveReward
+                reward          = distanceReward + queueReward# + ArriveReward
                 self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, True)
                 # self.experienceReplay.store(block.oldState, block.oldAction, ArriveReward, newState, True)
             else:
