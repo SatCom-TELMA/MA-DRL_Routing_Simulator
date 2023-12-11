@@ -79,7 +79,7 @@ else:
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
-distanceRew = 4          # 1: Distance reward normalized to total distance.
+distanceRew = 1          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
                          # 4: Distance reward normalized by 2.000 km
@@ -89,9 +89,9 @@ Train       = True      # Global for all scenarios with different number of GTs.
 MIN_EPSILON = 0.01      # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-mixLocs     = False      # If true, every time we make a new simulation the locations are going to change their order of selection
-balancedFlow= False     # if set to true all the generated traffic at each GT is equal
-gamma       = 0.95       # greedy factor
+mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
+balancedFlow= True      # if set to true all the generated traffic at each GT is equal
+gamma       = 0.6       # greedy factor
 
 w1          = 4         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
@@ -3448,7 +3448,7 @@ class DDQNAgent:
             if distanceRew == 4:
                 distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2)
                 queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
-                reward          = distanceReward + queueReward# + ArriveReward
+                reward          = distanceReward + queueReward + ArriveReward
                 self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, True)
                 # self.experienceReplay.store(block.oldState, block.oldAction, ArriveReward, newState, True)
             else:
