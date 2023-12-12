@@ -79,7 +79,7 @@ else:
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
-distanceRew = 1          # 1: Distance reward normalized to total distance.
+distanceRew = 2          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
                          # 4: Distance reward normalized by 2.000 km
@@ -93,7 +93,7 @@ mixLocs     = False     # If true, every time we make a new simulation the locat
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.6       # greedy factor
 
-w1          = 1         # rewards the getting to empty queues
+w1          = 2         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 
 # number of gateways to be tested
