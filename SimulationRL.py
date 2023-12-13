@@ -93,8 +93,9 @@ mixLocs     = False     # If true, every time we make a new simulation the locat
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor
 
-w1          = 7         # rewards the getting to empty queues
-w2          = 10        # rewards getting closes phisically    
+w1          = 9         # rewards the getting to empty queues
+w2          = 20        # rewards getting closes phisically    
+ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
 # number of gateways to be tested
 GTs = [2]
@@ -154,7 +155,7 @@ infQueue    = 5000      # Upper boundary from where a queue is considered as inf
 queueVals   = 10        # Values that the observed Queue can have, being 0 the best (Queue of 0) and max the worst (Huge queue or inexistent link).
 
 # rewards
-ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
+# ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 # w1          = 1         # rewards the getting to empty queues
 # w2          = 20        # rewards getting closes phisically     
 againPenalty= -0.5      # Penalty if the satellite sends the block to a hop where it has already been
