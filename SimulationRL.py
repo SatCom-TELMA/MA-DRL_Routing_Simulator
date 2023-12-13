@@ -94,7 +94,7 @@ balancedFlow= True      # if set to true all the generated traffic at each GT is
 gamma       = 0.9       # greedy factor
 
 w1          = 7         # rewards the getting to empty queues
-w2          = 20        # rewards getting closes phisically    
+w2          = 10        # rewards getting closes phisically    
 
 # number of gateways to be tested
 GTs = [2]
