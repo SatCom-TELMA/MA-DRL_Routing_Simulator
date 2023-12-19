@@ -93,7 +93,7 @@ mixLocs     = False     # If true, every time we make a new simulation the locat
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor
 
-w1          = 9         # rewards the getting to empty queues
+w1          = 12         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
