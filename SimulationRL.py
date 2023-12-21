@@ -3149,6 +3149,7 @@ class hyperparam:
         self.MIN_EPSILON= MIN_EPSILON
         self.LAMBDA     = LAMBDA
         self.printPath  = printPath
+        self.coordGran  = coordGran
  
     def __repr__(self):
         return 'Hyperparameters:\nalpha: {}\ngamma: {}\nepsilon: {}\nw1: {}\nw2: {}\n'.format(
@@ -4775,6 +4776,7 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
                 'Arrive Reward: ' + str(hyperparams.ArriveR), 
                 'w1: ' + str(hyperparams.w1), 
                 'w2: ' + str(hyperparams.w2),
+                'Coords granularity: ' + str(hyperparams.coordGran),
                 'Update freq: ' + str(hyperparams.updateF),
                 'Batch Size: ' + str(hyperparams.batchSize),
                 'Buffer Size: ' + str(hyperparams.bufferSize),
