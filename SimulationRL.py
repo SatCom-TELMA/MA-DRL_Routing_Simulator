@@ -89,13 +89,13 @@ Train       = True      # Global for all scenarios with different number of GTs.
 MIN_EPSILON = 0.01      # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-mixLocs     = True     # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor
 
 coordGran   = 1        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
-w1          = 20         # rewards the getting to empty queues
+w1          = 1         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
