@@ -6,4 +6,3 @@ output
 SatNEx
 .venv
 **/.DS_Store
-/Results/latency Test/Deep Q-Learning_1.0s_[10]_Del_[4]_w1_[1]_w2_[2]_GTs/
