@@ -1,0 +1,57 @@
+Nº of Gateways: 18
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+15:54:43
+Locations:
+0      Mauritius
+1          Vardø
+2         Awarua
+3    Los Angeles
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.01
+Reward for deliver: 50
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 4Finding cells within coverage area of GT 2 of 4Finding cells within coverage area of GT 3 of 4Finding cells within coverage area of GT 4 of 4
+Time taken to find cells that are within range of all GTs: 1.3446712493896484 seconds
+Time taken to add cell information to all GTs: 0.08030271530151367 seconds
+
+Traffic generated per GT (totalAvgFlow per Milliard):
+----------------------------------
+Los Angeles, California, US: 2.0
+Mauritius: 2.0
+Awarua, New Zealand: 2.0
+Vardø, Norway: 2.0
+----------------------------------
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+Action Space:
+ ('U', 'D', 'R', 'L')
+----------------------------------
+Neural Network Created!!!
+----------------------------------
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense (Dense)               (None, 32)                928       
+                                                                 
+ dense_1 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_2 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2,116
+Trainable params: 2,116
+Non-trainable params: 0
+_________________________________________________________________

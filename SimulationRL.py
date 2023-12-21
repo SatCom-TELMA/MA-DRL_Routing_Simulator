@@ -84,21 +84,23 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 3: Distance reward normalized to maximum close up
                          # 4: Distance reward normalized by 2.000 km
 
-drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 MIN_EPSILON = 0.01      # Minimum value that the exploration parameter can have 
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = True     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor
 
-w1          = 12         # rewards the getting to empty queues
+coordGran   = 1        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+
+w1          = 20         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
 # number of gateways to be tested
-GTs = [2]
+GTs = [5]
 # GTs = [i for i in range(2,19)] # 19.
 
 CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
@@ -4506,7 +4508,7 @@ def getState(Block, satA, g, earth):
 
 def getBiasedlatitude(sat):
     try:
-        return (int(math.degrees(sat.latitude))+90)#/180
+        return (int(math.degrees(sat.latitude))+90)/coordGran
     except AttributeError as e:
         # print(f"getBiasedlatitude Caught an exception: {e}")
         return -1
@@ -4514,10 +4516,10 @@ def getBiasedlatitude(sat):
 
 def getBiasedLongitude(sat):
     try:
-        return (int(math.degrees(sat.longitude))+180)#/360
+        return (int(math.degrees(sat.longitude))+180)/coordGran
     except AttributeError as e:
         # print(f"getBiasedLongitude Caught an exception: {e}")
-        return -1
+        return -1 
     
 
 def getDeepState(block, sat, linkedSats):
