@@ -91,14 +91,15 @@ explore     = True      # If True, makes random actions eventually, if false onl
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor
+ddqn        = False     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 
-coordGran   = 1        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+coordGran   = 1         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
-w1          = 7         # rewards the getting to empty queues
+w1          = 8         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-GTs = [3]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
@@ -153,8 +154,8 @@ nTrain      = 2         # The DNN will train every nTrain steps
 # Queues & State
 infQueue    = 5000      # Upper boundary from where a queue is considered as infinite when obserbing the state
 queueVals   = 10        # Values that the observed Queue can have, being 0 the best (Queue of 0) and max the worst (Huge queue or inexistent link).
-latBias     = 90         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
-lonBias     = 180         # Same but with longitude
+latBias     = 90        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
+lonBias     = 180       # Same but with longitude
 
 # rewards
 # ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
@@ -3153,6 +3154,9 @@ class hyperparam:
         self.LAMBDA     = LAMBDA
         self.printPath  = printPath
         self.coordGran  = coordGran
+        self.ddqn       = ddqn
+        self.latBias    = latBias
+        self.lonBias    = lonBias
  
     def __repr__(self):
         return 'Hyperparameters:\nalpha: {}\ngamma: {}\nepsilon: {}\nw1: {}\nw2: {}\n'.format(
@@ -3357,9 +3361,16 @@ class DDQNAgent:
             # The first model makes the predictions for Q-values which are used to make a action
             self.qNetwork = self.createModel()
             print('----------------------------------')
-            print(f"Neural Network Created!!!")
+            print(f"Q-NETWORK created:")
             print('----------------------------------')
             self.qNetwork.summary()
+            if ddqn:
+                print('----------------------------------')
+                print("DDQN enabled, TARGET NETWORK created:")
+                print('----------------------------------')
+                self.qTarget  = self.createModel()
+                self.qTarget.summary()
+            
             # tf.keras.utils.plot_model(self.qNetwork, to_file='qNetwork.png', show_shapes=True)
             # self.qNetwork.compile(loss='mse', optimizer=Adam(learning_rate=self.alpha))
 
@@ -3372,9 +3383,15 @@ class DDQNAgent:
                 global nnpath
                 self.qNetwork = keras.models.load_model(nnpath)
                 print('----------------------------------')
-                print(f"Neural Network imported from:\n {nnpath}!!!")
+                print(f"Q-NETWORK imported from:\n {nnpath}!!!")
                 print('----------------------------------')
                 self.qNetwork.summary()
+                if ddqn:
+                    print('----------------------------------')
+                    print("DDQN enabled, TARGET NETWORK copied from Q-NETWORK:")
+                    print('----------------------------------')
+                    self.qTarget = self.qNetwork
+
             except FileNotFoundError:
                 print('----------------------------------')
                 print(f"Neural Network path wrong")
@@ -3504,6 +3521,10 @@ class DDQNAgent:
             # prev node was a gateway, no need to compute the reward
             reward = 0
 
+        # 7. Align the Q-Target
+        if ddqn:
+            self.alignQTarget(self.step, hardUpdate)
+
         # this will be saved always, except when the next hop is the destination, where the process will have already returned
         block.oldState  = newState
         block.oldAction = actIndex
@@ -3524,7 +3545,7 @@ class DDQNAgent:
         self        .epsilon.append([epsilon, sat.env.now])
         return epsilon
 
-    def alignQTarget(self, hardUpdate = False): # Soft one is done every step
+    def alignQTarget(self, step, hardUpdate = True): # Soft one is done every step
         '''
         This function is not used now since the q target only exists in double deep q learning and it is not implemented.
         Updates the qTarget NN with the weights of the qNetwork.
@@ -3573,7 +3594,10 @@ class DDQNAgent:
         nextStates  = nextStates.reshape((self.batchS,self.stateSize))
          
         # 2. Compute expected reward
-        futureRewards = self.qNetwork.predict(nextStates, verbose = 0)          # NOTE NN.predict. Gets future rewards
+        if ddqn:
+            futureRewards = self.qTarget.predict(nextStates, verbose = 0)          # NOTE NN.predict. Gets future rewards
+        else:
+            futureRewards = self.qNetwork.predict(nextStates, verbose = 0)          # NOTE NN.predict. Gets future rewards
         expectedRewards = rewards + self.gamma*np.max(futureRewards, axis=1)
 
         # 3. Mask for the actions
@@ -4827,7 +4851,10 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
                 'Batch Size: ' + str(hyperparams.batchSize),
                 'Buffer Size: ' + str(hyperparams.bufferSize),
                 'Hard Update: ' + str(hyperparams.hardUpdate),
-                'Exploration: ' + str(explore)]
+                'Exploration: ' + str(explore),
+                'DDQN: ' + str(ddqn),
+                'Latitude bias: ' + str(latBias),
+                'Longitude bias: ' + str(lonBias)]
 
     # save hyperparams
     with open(outputPath + 'hyperparams.txt', 'w') as f:
@@ -4852,6 +4879,9 @@ def saveQTables(outputPath, earth):
 def saveDeepNetworks(outputPath, earth):
     print('Saving Deep Neural networks at: ' + outputPath)
     earth.DDQNA.qNetwork.save(outputPath + 'qNetwork_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
+    if ddqn:
+        earth.DDQNA.qTarget.save(outputPath + 'qTarget_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
+    
 
 
 ###############################################################################
