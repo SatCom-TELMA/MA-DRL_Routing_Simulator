@@ -94,7 +94,7 @@ gamma       = 0.9       # greedy factor
 
 coordGran   = 1        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
-w1          = 3         # rewards the getting to empty queues
+w1          = 6         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
@@ -153,8 +153,8 @@ nTrain      = 2         # The DNN will train every nTrain steps
 # Queues & State
 infQueue    = 5000      # Upper boundary from where a queue is considered as infinite when obserbing the state
 queueVals   = 10        # Values that the observed Queue can have, being 0 the best (Queue of 0) and max the worst (Huge queue or inexistent link).
-latBias     = 0         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
-lonBias     = 0         # Same but with longitude
+latBias     = 90         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
+lonBias     = 180         # Same but with longitude
 
 # rewards
 # ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
