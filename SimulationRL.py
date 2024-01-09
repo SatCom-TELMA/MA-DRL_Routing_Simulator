@@ -95,7 +95,7 @@ ddqn        = False     # Activates DDQN, where now there are two DNNs, a target
 
 coordGran   = 1         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
-w1          = 9         # rewards the getting to empty queues
+w1          = 1         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
@@ -3545,7 +3545,7 @@ class DDQNAgent:
         self        .epsilon.append([epsilon, sat.env.now])
         return epsilon
 
-    def alignQTarget(self, step, hardUpdate = True): # Soft one is done every step
+    def alignQTarget(self, step, hardUpdate = False): # Soft one is done every step
         '''
         This function is not used now since the q target only exists in double deep q learning and it is not implemented.
         Updates the qTarget NN with the weights of the qNetwork.
@@ -3595,7 +3595,7 @@ class DDQNAgent:
          
         # 2. Compute expected reward
         if ddqn:
-            futureRewards = self.qTarget.predict(nextStates, verbose = 0)          # NOTE NN.predict. Gets future rewards
+            futureRewards = self.qTarget.predict(nextStates, verbose = 0)           # NOTE NN.predict. Gets future rewards
         else:
             futureRewards = self.qNetwork.predict(nextStates, verbose = 0)          # NOTE NN.predict. Gets future rewards
         expectedRewards = rewards + self.gamma*np.max(futureRewards, axis=1)
@@ -3869,8 +3869,8 @@ def create_Constellation(specific_constellation, env, earth):
 
     elif specific_constellation =="Kepler":
         print("Using Kepler constellation design")
-        P = 7#7
-        N_p = 20#20
+        P = 7
+        N_p = 20
         N = N_p*P
         height = 600e3
         inclination_angle = 98.6
@@ -4588,7 +4588,7 @@ def getDeepStateV2(block, sat, linkedSats):
                     currentLat,                                                 # Actual Latitude
                     currentLon,                                                 # Actual Longitude
                     getBiasedlatitude(satDest.latitude) - currentLat,                        # Destination Latitude
-                    getBiasedlatitude(satDest.longitude) - currentLon]).reshape(1,-1)        # Destination Longitude
+                    getBiasedLongitude(satDest.longitude) - currentLon]).reshape(1,-1)       # Destination Longitude
 
 
 def getDeepState(block, sat, linkedSats):
@@ -4626,10 +4626,15 @@ def getDeepState(block, sat, linkedSats):
                     getBiasedlatitude(linkedSats['L']),                         # Left link Positions
                     getBiasedLongitude(linkedSats['L']),
 
+                    # int(math.degrees(sat.latitude))+latBias,                    # Actual Latitude
+                    # int(math.degrees(sat.longitude))+lonBias,                   # Actual Longitude
+                    # int(math.degrees(satDest.latitude))+latBias,                # Destination Latitude
+                    # int(math.degrees(satDest.longitude))+lonBias]).reshape(1,-1)# Destination Longitude
+
                     getBiasedlatitude(sat.latitude),                            # Actual Latitude
-                    getBiasedlatitude(sat.longitude),                           # Actual Longitude
+                    getBiasedLongitude(sat.longitude),                          # Actual Longitude
                     getBiasedlatitude(satDest.latitude),                        # Destination Latitude
-                    getBiasedlatitude(satDest.longitude)]).reshape(1,-1)        # Destination Longitude
+                    getBiasedLongitude(satDest.longitude)]).reshape(1,-1)       # Destination Longitude
     
 
 def getDeepStateGrid(block, sat, g):
