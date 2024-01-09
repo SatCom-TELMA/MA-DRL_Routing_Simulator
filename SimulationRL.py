@@ -91,13 +91,16 @@ explore     = True      # If True, makes random actions eventually, if false onl
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor
-ddqn        = False     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
+ddqn        = True     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 
 coordGran   = 1         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
-w1          = 1         # rewards the getting to empty queues
+w1          = 10         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
+
+latBias     = 90        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
+lonBias     = 180       # Same but with longitude
 
 GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
@@ -154,8 +157,8 @@ nTrain      = 2         # The DNN will train every nTrain steps
 # Queues & State
 infQueue    = 5000      # Upper boundary from where a queue is considered as infinite when obserbing the state
 queueVals   = 10        # Values that the observed Queue can have, being 0 the best (Queue of 0) and max the worst (Huge queue or inexistent link).
-latBias     = 90        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
-lonBias     = 180       # Same but with longitude
+# latBias     = 90        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
+# lonBias     = 180       # Same but with longitude
 
 # rewards
 # ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
@@ -3523,7 +3526,7 @@ class DDQNAgent:
 
         # 7. Align the Q-Target
         if ddqn:
-            self.alignQTarget(self.step, hardUpdate)
+            self.alignQTarget(hardUpdate)
 
         # this will be saved always, except when the next hop is the destination, where the process will have already returned
         block.oldState  = newState
@@ -3545,7 +3548,7 @@ class DDQNAgent:
         self        .epsilon.append([epsilon, sat.env.now])
         return epsilon
 
-    def alignQTarget(self, step, hardUpdate = False): # Soft one is done every step
+    def alignQTarget(self, hardUpdate = False): # Soft one is done every step
         '''
         This function is not used now since the q target only exists in double deep q learning and it is not implemented.
         Updates the qTarget NN with the weights of the qNetwork.
@@ -4532,11 +4535,11 @@ def getState(Block, satA, g, earth):
     return state
 
 
-def getBiasedlatitude(sat):
+def getBiasedLatitude(sat):
     try:
         return (int(math.degrees(sat.latitude))+latBias)/coordGran
     except AttributeError as e:
-        # print(f"getBiasedlatitude Caught an exception: {e}")
+        # print(f"getBiasedLatitude Caught an exception: {e}")
         return -1
 
 
@@ -4558,36 +4561,36 @@ def getDeepStateV2(block, sat, linkedSats):
     queuesD = getQueues(linkedSats['D'], DDQN = True)
     queuesR = getQueues(linkedSats['R'], DDQN = True)
     queuesL = getQueues(linkedSats['L'], DDQN = True)
-    currentLat = getBiasedlatitude(sat.latitude)
-    currentLon = getBiasedlatitude(sat.longitude)
+    currentLat = getBiasedLatitude(sat.latitude)
+    currentLon = getBiasedLatitude(sat.longitude)
     return np.array([getDeepSatScore(queuesU['U']),                             # Up link scores
                     getDeepSatScore(queuesU['D']),
                     getDeepSatScore(queuesU['R']),
                     getDeepSatScore(queuesU['L']),
-                    getBiasedlatitude(linkedSats['U']) - currentLat,            # Up link Positions
+                    getBiasedLatitude(linkedSats['U']) - currentLat,            # Up link Positions
                     getBiasedLongitude(linkedSats['U']) - currentLon,
                     getDeepSatScore(queuesD['U']),                              # Down link scores
                     getDeepSatScore(queuesD['D']),
                     getDeepSatScore(queuesD['R']),
                     getDeepSatScore(queuesD['L']),
-                    getBiasedlatitude(linkedSats['D']) - currentLat,            # Down link Positions
+                    getBiasedLatitude(linkedSats['D']) - currentLat,            # Down link Positions
                     getBiasedLongitude(linkedSats['D']) - currentLon,
                     getDeepSatScore(queuesR['U']),                              # Right link scores
                     getDeepSatScore(queuesR['D']),
                     getDeepSatScore(queuesR['R']),
                     getDeepSatScore(queuesR['L']),
-                    getBiasedlatitude(linkedSats['R']) - currentLat,            # Right link Positions
+                    getBiasedLatitude(linkedSats['R']) - currentLat,            # Right link Positions
                     getBiasedLongitude(linkedSats['R']) - currentLon,
                     getDeepSatScore(queuesL['U']),                              # Left link scores
                     getDeepSatScore(queuesL['D']),
                     getDeepSatScore(queuesL['R']),
                     getDeepSatScore(queuesL['L']),
-                    getBiasedlatitude(linkedSats['L']) - currentLat,            # Left link Positions
+                    getBiasedLatitude(linkedSats['L']) - currentLat,            # Left link Positions
                     getBiasedLongitude(linkedSats['L']) - currentLon,
 
                     currentLat,                                                 # Actual Latitude
                     currentLon,                                                 # Actual Longitude
-                    getBiasedlatitude(satDest.latitude) - currentLat,                        # Destination Latitude
+                    getBiasedLatitude(satDest.latitude) - currentLat,                        # Destination Latitude
                     getBiasedLongitude(satDest.longitude) - currentLon]).reshape(1,-1)       # Destination Longitude
 
 
@@ -4605,25 +4608,25 @@ def getDeepState(block, sat, linkedSats):
                     getDeepSatScore(queuesU['D']),
                     getDeepSatScore(queuesU['R']),
                     getDeepSatScore(queuesU['L']),
-                    getBiasedlatitude(linkedSats['U']),                         # Up link Positions
+                    getBiasedLatitude(linkedSats['U']),                         # Up link Positions
                     getBiasedLongitude(linkedSats['U']),
                     getDeepSatScore(queuesD['U']),                              # Down link scores
                     getDeepSatScore(queuesD['D']),
                     getDeepSatScore(queuesD['R']),
                     getDeepSatScore(queuesD['L']),
-                    getBiasedlatitude(linkedSats['D']),                         # Down link Positions
+                    getBiasedLatitude(linkedSats['D']),                         # Down link Positions
                     getBiasedLongitude(linkedSats['D']),
                     getDeepSatScore(queuesR['U']),                              # Right link scores
                     getDeepSatScore(queuesR['D']),
                     getDeepSatScore(queuesR['R']),
                     getDeepSatScore(queuesR['L']),
-                    getBiasedlatitude(linkedSats['R']),                         # Right link Positions
+                    getBiasedLatitude(linkedSats['R']),                         # Right link Positions
                     getBiasedLongitude(linkedSats['R']),
                     getDeepSatScore(queuesL['U']),                              # Left link scores
                     getDeepSatScore(queuesL['D']),
                     getDeepSatScore(queuesL['R']),
                     getDeepSatScore(queuesL['L']),
-                    getBiasedlatitude(linkedSats['L']),                         # Left link Positions
+                    getBiasedLatitude(linkedSats['L']),                         # Left link Positions
                     getBiasedLongitude(linkedSats['L']),
 
                     # int(math.degrees(sat.latitude))+latBias,                    # Actual Latitude
@@ -4631,9 +4634,9 @@ def getDeepState(block, sat, linkedSats):
                     # int(math.degrees(satDest.latitude))+latBias,                # Destination Latitude
                     # int(math.degrees(satDest.longitude))+lonBias]).reshape(1,-1)# Destination Longitude
 
-                    getBiasedlatitude(sat.latitude),                            # Actual Latitude
+                    getBiasedLatitude(sat.latitude),                            # Actual Latitude
                     getBiasedLongitude(sat.longitude),                          # Actual Longitude
-                    getBiasedlatitude(satDest.latitude),                        # Destination Latitude
+                    getBiasedLatitude(satDest.latitude),                        # Destination Latitude
                     getBiasedLongitude(satDest.longitude)]).reshape(1,-1)       # Destination Longitude
     
 
