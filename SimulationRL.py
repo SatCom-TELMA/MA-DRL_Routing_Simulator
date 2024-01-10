@@ -95,7 +95,7 @@ ddqn        = False     # Activates DDQN, where now there are two DNNs, a target
 
 coordGran   = 1         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
-w1          = 12         # rewards the getting to empty queues
+w1          = 11         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
