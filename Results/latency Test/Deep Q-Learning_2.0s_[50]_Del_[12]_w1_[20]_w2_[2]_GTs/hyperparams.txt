@@ -17,5 +17,5 @@ Buffer Size: 50
 Hard Update: True
 Exploration: True
 DDQN: False
-Latitude bias: 90
-Longitude bias: 180
+Latitude bias: 0
+Longitude bias: 0

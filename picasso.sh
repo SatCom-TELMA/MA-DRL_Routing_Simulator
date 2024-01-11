@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{128}_{2}_12
+#SBATCH -J DQL_{128}_{2}_15
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1

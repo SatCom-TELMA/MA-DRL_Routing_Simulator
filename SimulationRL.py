@@ -91,11 +91,11 @@ explore     = True      # If True, makes random actions eventually, if false onl
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor
-ddqn        = False     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
+ddqn        = True     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 
 coordGran   = 1         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
-w1          = 11         # rewards the getting to empty queues
+w1          = 15         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
@@ -4562,8 +4562,8 @@ def getDeepStateV2(block, sat, linkedSats):
     queuesD = getQueues(linkedSats['D'], DDQN = True)
     queuesR = getQueues(linkedSats['R'], DDQN = True)
     queuesL = getQueues(linkedSats['L'], DDQN = True)
-    currentLat = getBiasedLatitude(sat.latitude)
-    currentLon = getBiasedLatitude(sat.longitude)
+    currentLat = getBiasedLatitude(sat)
+    currentLon = getBiasedLatitude(sat)
     return np.array([getDeepSatScore(queuesU['U']),                             # Up link scores
                     getDeepSatScore(queuesU['D']),
                     getDeepSatScore(queuesU['R']),
@@ -4591,8 +4591,8 @@ def getDeepStateV2(block, sat, linkedSats):
 
                     currentLat,                                                 # Actual Latitude
                     currentLon,                                                 # Actual Longitude
-                    getBiasedLatitude(satDest.latitude) - currentLat,                        # Destination Latitude
-                    getBiasedLongitude(satDest.longitude) - currentLon]).reshape(1,-1)       # Destination Longitude
+                    getBiasedLatitude(satDest) - currentLat,                        # Destination Latitude
+                    getBiasedLongitude(satDest) - currentLon]).reshape(1,-1)       # Destination Longitude
 
 
 def getDeepState(block, sat, linkedSats):
