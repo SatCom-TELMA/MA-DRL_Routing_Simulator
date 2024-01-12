@@ -95,14 +95,14 @@ ddqn        = True     # Activates DDQN, where now there are two DNNs, a target-
 diff        = True     # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 coordGran   = 10         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
-w1          = 17         # rewards the getting to empty queues
+w1          = 1         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
-ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
+ArriveReward= 0        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
 latBias     = 0        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 0       # Same but with longitude
 
-GTs = [2]               # number of gateways to be tested
+GTs = [3]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
