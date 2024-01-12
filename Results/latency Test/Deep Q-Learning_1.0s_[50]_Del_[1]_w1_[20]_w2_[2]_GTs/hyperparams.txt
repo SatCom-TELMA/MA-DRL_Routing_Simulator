@@ -1,7 +1,7 @@
 Constellation: Kepler
 Import QTables: False
 printPath: False
-Test length: 1.0
+Test length: 2.0
 Alpha: 0.25
 Gamma: 0.9
 Epsilon: 0.1
@@ -19,3 +19,4 @@ Exploration: True
 DDQN: False
 Latitude bias: 90
 Longitude bias: 180
+Diff: False

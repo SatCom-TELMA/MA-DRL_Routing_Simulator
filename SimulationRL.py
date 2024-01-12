@@ -91,16 +91,16 @@ explore     = True      # If True, makes random actions eventually, if false onl
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor
-ddqn        = False     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
+ddqn        = True     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
+diff        = True     # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+coordGran   = 10         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
-coordGran   = 1         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
-
-w1          = 11         # rewards the getting to empty queues
+w1          = 17         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-latBias     = 90        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
-lonBias     = 180       # Same but with longitude
+latBias     = 0        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
+lonBias     = 0       # Same but with longitude
 
 GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
@@ -3161,6 +3161,8 @@ class hyperparam:
         self.ddqn       = ddqn
         self.latBias    = latBias
         self.lonBias    = lonBias
+        self.diff       = diff
+        self.explore    = explore
  
     def __repr__(self):
         return 'Hyperparameters:\nalpha: {}\ngamma: {}\nepsilon: {}\nw1: {}\nw2: {}\n'.format(
@@ -3462,7 +3464,10 @@ class DDQNAgent:
         '''
         # 1. Observe the state and search for the satellites linked to the one making the action
         linkedSats  = getlinkedSats(sat, g, earth)
-        newState    = getDeepState(block, sat, linkedSats)
+        if diff:
+            newState    = getDeepStateV2(block, sat, linkedSats)
+        else:
+            newState    = getDeepState(block, sat, linkedSats)
 
         if newState is None: 
             earth.lostBlocks+=1
@@ -4562,8 +4567,8 @@ def getDeepStateV2(block, sat, linkedSats):
     queuesD = getQueues(linkedSats['D'], DDQN = True)
     queuesR = getQueues(linkedSats['R'], DDQN = True)
     queuesL = getQueues(linkedSats['L'], DDQN = True)
-    currentLat = getBiasedLatitude(sat.latitude)
-    currentLon = getBiasedLatitude(sat.longitude)
+    currentLat = getBiasedLatitude(sat)
+    currentLon = getBiasedLatitude(sat)
     return np.array([getDeepSatScore(queuesU['U']),                             # Up link scores
                     getDeepSatScore(queuesU['D']),
                     getDeepSatScore(queuesU['R']),
@@ -4591,8 +4596,8 @@ def getDeepStateV2(block, sat, linkedSats):
 
                     currentLat,                                                 # Actual Latitude
                     currentLon,                                                 # Actual Longitude
-                    getBiasedLatitude(satDest.latitude) - currentLat,                        # Destination Latitude
-                    getBiasedLongitude(satDest.longitude) - currentLon]).reshape(1,-1)       # Destination Longitude
+                    getBiasedLatitude(satDest) - currentLat,                        # Destination Latitude
+                    getBiasedLongitude(satDest) - currentLon]).reshape(1,-1)       # Destination Longitude
 
 
 def getDeepState(block, sat, linkedSats):
@@ -4860,10 +4865,11 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
                 'Batch Size: ' + str(hyperparams.batchSize),
                 'Buffer Size: ' + str(hyperparams.bufferSize),
                 'Hard Update: ' + str(hyperparams.hardUpdate),
-                'Exploration: ' + str(explore),
-                'DDQN: ' + str(ddqn),
-                'Latitude bias: ' + str(latBias),
-                'Longitude bias: ' + str(lonBias)]
+                'Exploration: ' + str(hyperparams.explore),
+                'DDQN: ' + str(hyperparams.ddqn),
+                'Latitude bias: ' + str(hyperparams.latBias),
+                'Longitude bias: ' + str(hyperparams.lonBias),
+                'Diff: ' + str(hyperparams.diff)]
 
     # save hyperparams
     with open(outputPath + 'hyperparams.txt', 'w') as f:
