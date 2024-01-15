@@ -83,17 +83,18 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
                          # 4: Distance reward normalized by 1.000 km
+                         # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
-drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
-gamma       = 0.9       # greedy factor
-ddqn        = True     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
-diff        = True     # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
-coordGran   = 10         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+gamma       = 1         # greedy factor. Smaller -> Greedy
+ddqn        = False     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
+diff        = False     # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+coordGran   = 1         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
 w1          = 1         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
@@ -102,7 +103,7 @@ ArriveReward= 0        # Reward given to the system in case it sends the data bl
 latBias     = 0        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 0       # Same but with longitude
 
-GTs = [3]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
@@ -145,7 +146,7 @@ ndeltas     = 25        # This number will multiply deltaT. If bigger, will make
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
-# gamma       = 0.6       # greedy factor
+# gamma       = 0.6       # greedy factor. Smaller -> Greedy
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
@@ -3482,6 +3483,10 @@ class DDQNAgent:
                 reward          = distanceReward + queueReward + ArriveReward
                 self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, True)
                 # self.experienceReplay.store(block.oldState, block.oldAction, ArriveReward, newState, True)
+            elif distanceRew == 5:
+                distanceReward  = getDistanceRewardV5(prevSat, sat, self.w2)
+                reward          = distanceReward + ArriveReward
+                self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, True)
             else:
                 self.experienceReplay.store(block.oldState, block.oldAction, ArriveReward, newState, True)
 
@@ -3515,7 +3520,9 @@ class DDQNAgent:
                 distanceReward  = getDistanceRewardV3(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
             elif distanceRew == 4:
                 distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2)
-            
+            elif distanceRew == 5:
+                distanceReward  = getDistanceRewardV5(prevSat, sat, self.w2)
+
             queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
             reward          = distanceReward + again + queueReward
 
@@ -4845,6 +4852,10 @@ def getDistanceRewardV4(sat, nextSat, destination, w2):
     SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
     return w2*SLr/1000000
 
+
+def getDistanceRewardV5(sat, nextSat, w2):
+    SLr = getSlantRange(sat, nextSat)
+    return w2*SLr/1000000
 
 def saveHyperparams(outputPath, inputParams, hyperparams):
     print('Saving hyperparams at: ' + str(outputPath))
