@@ -91,14 +91,15 @@ importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
-gamma       = 1         # greedy factor. Smaller -> Greedy
+gamma       = 0.9         # greedy factor. Smaller -> Greedy
 ddqn        = False     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 diff        = False     # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 coordGran   = 1         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+reducedState= True
 
 w1          = 1         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisically    
-ArriveReward= 0        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
+ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
 latBias     = 0        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 0       # Same but with longitude
@@ -3164,6 +3165,7 @@ class hyperparam:
         self.lonBias    = lonBias
         self.diff       = diff
         self.explore    = explore
+        self.reducedState= reducedState
  
     def __repr__(self):
         return 'Hyperparameters:\nalpha: {}\ngamma: {}\nepsilon: {}\nw1: {}\nw2: {}\n'.format(
@@ -3317,7 +3319,8 @@ class QLearning:
 class DDQNAgent:
     def __init__(self, NGT, hyperparams):   
         self.actions        = ('U', 'D', 'R', 'L')
-        self.states         = ('UpLinked Up', 'UpLinked Down','UpLinked Right','UpLinked Left',                        # Up Link
+        if not reducedState:
+            self.states         = ('UpLinked Up', 'UpLinked Down','UpLinked Right','UpLinked Left',                        # Up Link
                             'Up Latitude', 'Up Longitude',                                                             # Up positions
                             'DownLinked Up', 'DownLinked Down','DownLinked Right','DownLinked Left',                   # Down Link
                             'Down Latitude', 'Down Longitude',                                                         # Down positions
@@ -3328,12 +3331,20 @@ class DDQNAgent:
 
                             'Actual latitude', 'Actual longitude',                                                     # Actual Position
                             'Destination latitude', 'Destination longitude')                                           # Destination Position
+        elif reducedState:
+            self.states         = ('Up Latitude', 'Up Longitude',                   # Up Link
+                            'Down Latitude', 'Down Longitude',                  # Down Link
+                            'Right Latitude', 'Right Longitude',                # Right Link
+                            'Left Latitude', 'Left Longitude',                  # Left Link
+                            'Actual latitude', 'Actual longitude',              # Current pos
+                            'Destination latitude', 'Destination longitude')    # Destination pos
 
-        print(f'State Space:\n {self.states}')
-        print(f'Action Space:\n {self.actions}')
         self.actionSize     = len(self.actions)
         self.stateSize      = len(self.states)
         self.destinations   = NGT
+        print(f'State Space:\n {self.states}\nState size: {self.stateSize} states')
+        print(f'Action Space:\n {self.actions}')
+
 
         self.alpha  = hyperparams.alpha
         self.gamma  = hyperparams.gamma
@@ -3465,7 +3476,9 @@ class DDQNAgent:
         '''
         # 1. Observe the state and search for the satellites linked to the one making the action
         linkedSats  = getlinkedSats(sat, g, earth)
-        if diff:
+        if reducedState:
+            newState    = getDeepStateV3(block, sat, linkedSats)
+        elif diff:
             newState    = getDeepStateV2(block, sat, linkedSats)
         else:
             newState    = getDeepState(block, sat, linkedSats)
@@ -4562,7 +4575,26 @@ def getBiasedLongitude(sat):
     except AttributeError as e:
         # print(f"getBiasedLongitude Caught an exception: {e}")
         return -1 
-    
+
+
+def getDeepStateV3(block, sat, linkedSats):
+    satDest = block.destination.linkedSat[1]
+    if satDest is None:
+        print(f'{block.destination} has no linked satellite :(')
+        return None
+    return np.array([getBiasedLatitude(linkedSats['U']),                        # Up link Positions
+                    getBiasedLongitude(linkedSats['U']),
+                    getBiasedLatitude(linkedSats['D']),                         # Down link Positions
+                    getBiasedLongitude(linkedSats['D']),
+                    getBiasedLatitude(linkedSats['R']),                         # Right link Positions
+                    getBiasedLongitude(linkedSats['R']),
+                    getBiasedLatitude(linkedSats['L']),                         # Left link Positions
+                    getBiasedLongitude(linkedSats['L']),
+                    getBiasedLatitude(sat),                                     # Actual Latitude
+                    getBiasedLongitude(sat),                                    # Actual Longitude
+                    getBiasedLatitude(satDest),                                 # Destination Latitude
+                    getBiasedLongitude(satDest)]).reshape(1,-1)                 # Destination Longitude
+  
 
 def getDeepStateV2(block, sat, linkedSats):
     satDest = block.destination.linkedSat[1]
@@ -4880,7 +4912,8 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
                 'DDQN: ' + str(hyperparams.ddqn),
                 'Latitude bias: ' + str(hyperparams.latBias),
                 'Longitude bias: ' + str(hyperparams.lonBias),
-                'Diff: ' + str(hyperparams.diff)]
+                'Diff: ' + str(hyperparams.diff),
+                'Reduced State: ' + str(hyperparams.reducedState)]
 
     # save hyperparams
     with open(outputPath + 'hyperparams.txt', 'w') as f:
