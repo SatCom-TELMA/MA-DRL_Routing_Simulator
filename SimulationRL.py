@@ -98,7 +98,7 @@ diff        = True      # If up, the state space gives no coordinates about the 
 coordGran   = 10        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 1         # rewards the getting to empty queues
+w1          = 3         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
