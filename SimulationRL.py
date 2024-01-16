@@ -87,26 +87,29 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
 
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-importQVals = True     # imports either QTables or NN from a certain path
+importQVals = False     # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
-gamma       = 0.9         # greedy factor. Smaller -> Greedy
-ddqn        = False     # Activates DDQN, where now there are two DNNs, a target-network and a q-network
-diff        = False     # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
-coordGran   = 1         # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+gamma       = 0.9       # greedy factor. Smaller -> Greedy
+ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
+updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
+diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+coordGran   = 10        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 7         # rewards the getting to empty queues
+w1          = 1         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-latBias     = 90        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
-lonBias     = 180       # Same but with longitude
+latBias     = 0         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
+lonBias     = 0         # Same but with longitude
 
 GTs = [3]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
+
+# Other
 CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
 wasRandom       = -1    # This prints all the path in a different colour if the last action was random # TODO
 
@@ -177,7 +180,7 @@ LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep le
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
 hardUpdate  = 1         # if up, the Q-network weights are copied inside the target network every updateF iterations. if down, this is done gradually
-updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
+# updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
 batchSize   = 16        # batchSize samples are taken from bufferSize samples to train the network
 bufferSize  = 50        # bufferSize samples are used to train the network
 
