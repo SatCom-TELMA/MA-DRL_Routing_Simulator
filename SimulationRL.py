@@ -175,7 +175,7 @@ unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a 
 
 # Deep Learning
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
-MIN_EPSILON = 0.01      # Minimum value that the exploration parameter can have
+MIN_EPSILON = 0.001     # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
