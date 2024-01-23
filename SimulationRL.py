@@ -85,10 +85,10 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by 1.000 km
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
-drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-importQVals = True      # imports either QTables or NN from a certain path
-explore     = False      # If True, makes random actions eventually, if false only exploitation
+importQVals = False      # imports either QTables or NN from a certain path
+explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= True      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor. Smaller -> Greedy
@@ -98,7 +98,7 @@ diff        = True      # If up, the state space gives no coordinates about the 
 coordGran   = 10        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 1         # rewards the getting to empty queues
+w1          = 3         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
