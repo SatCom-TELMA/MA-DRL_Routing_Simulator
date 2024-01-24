@@ -85,7 +85,7 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by 1.000 km
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
-drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 importQVals = False      # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
@@ -98,14 +98,14 @@ diff        = True      # If up, the state space gives no coordinates about the 
 coordGran   = 10        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 3         # rewards the getting to empty queues
+w1          = 20         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
 latBias     = 0         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 0         # Same but with longitude
 
-GTs = [3]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 
@@ -145,6 +145,7 @@ blockSize   = 64800
 # Movement
 movementTime= 10 * 3600 # should be in the order of 10's of hours. If the test is not 'Rates', the movement time is still kept large to avoid the constellation moving
 ndeltas     = 25        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+matching   = 'Greedy'   # ['Markovian', 'Greedy']
 
 # Deep & Q Learning
 # importQVals = False     # imports either QTables or NN from a certain path
@@ -4184,6 +4185,77 @@ def markovianMatchingTwo(earth):
     return _A_Markovian
 
 
+def greedyMatching(earth):
+    '''
+    Returns a list of edge class elements based on a greedy algorithm.
+    Each satellite is connected to its upper and lower satellite in the same orbital plane (intra-plane),
+    and the nearest satellites to the east and west in different planes (inter-plane).
+    The slant range and the data rate between satellites are stored as attributes in the edge class.
+    '''
+
+    _A_Greedy = []  # list to store edges
+    Satellites = []  # list of all satellites
+
+    # Collect all satellites from each plane
+    for plane in earth.LEO:
+        for sat in plane.sats:
+            Satellites.append(sat)
+            sat.findNeighbours(earth)  # find upper and lower neighbors
+
+    N = len(Satellites)
+
+    # Setup for interISL link parameters
+    interISL = RFlink(
+        frequency=26e9,
+        bandwidth=500e6,
+        maxPtx=10,
+        aDiameterTx=0.26,
+        aDiameterRx=0.26,
+        pointingLoss=0.3,
+        noiseFigure=2,
+        noiseTemperature=290,
+        min_rate=10e3
+    )
+
+    # Compute positions and slant ranges
+    Positions, _ = get_pos_vectors_omni(Satellites)
+    slant_range = get_slant_range_optimized(Positions, N)
+    shannonRate = get_data_rate(slant_range, interISL)
+
+    # Create edges for intra-plane links (upper and lower neighbors)
+    for sat in Satellites:
+        upper_neighbor = sat.upper
+        lower_neighbor = sat.lower
+
+        upper_index = Satellites.index(upper_neighbor)
+        lower_index = Satellites.index(lower_neighbor)
+
+        # Add edges for upper and lower neighbors
+        _A_Greedy.append(edge(sat.ID, upper_neighbor.ID, slant_range[sat.i_in_plane, upper_index], None, None, shannonRate[sat.i_in_plane, upper_index]))
+        _A_Greedy.append(edge(sat.ID, lower_neighbor.ID, slant_range[sat.i_in_plane, lower_index], None, None, shannonRate[sat.i_in_plane, lower_index]))
+
+    # Create edges for inter-plane links (closest east and west satellites)
+    for i, sat in enumerate(Satellites):
+        closest_east, closest_west = None, None
+        min_east_distance, min_west_distance = float('inf'), float('inf')
+
+        for j, other_sat in enumerate(Satellites):
+            if sat.in_plane != other_sat.in_plane:
+                if slant_range[i, j] < min_east_distance and Positions[j, 0] > Positions[i, 0]:  # East satellite
+                    closest_east, min_east_distance = other_sat, slant_range[i, j]
+                elif slant_range[i, j] < min_west_distance and Positions[j, 0] < Positions[i, 0]:  # West satellite
+                    closest_west, min_west_distance = other_sat, slant_range[i, j]
+
+        # Add edges for closest east and west satellites
+        if closest_east:
+            _A_Greedy.append(edge(sat.ID, closest_east.ID, min_east_distance, None, None, shannonRate[i, Satellites.index(closest_east)]))
+        if closest_west:
+            _A_Greedy.append(edge(sat.ID, closest_west.ID, min_west_distance, None, None, shannonRate[i, Satellites.index(closest_west)]))
+
+    return _A_Greedy
+
+
+
 def createGraph(earth):
     '''
     Each satellite has two transceiver antennas that are connected to the closest satellite in east and west direction to a satellite
@@ -4213,7 +4285,12 @@ def createGraph(earth):
 
     # add inter-ISL and intra-ISL edges
     ###############################
-    markovEdges = markovianMatchingTwo(earth)
+    if matching=='Markovian':
+        markovEdges = markovianMatchingTwo(earth)
+    elif matching=='Greedy':
+        markovEdges = greedyMatching(earth)
+    print(f'Matching: {matching}')
+
     for markovEdge in markovEdges:
         g.add_edge(markovEdge.i, markovEdge.j,  # source and destination IDs
         slant_range = markovEdge.slant_range,   # slant range
