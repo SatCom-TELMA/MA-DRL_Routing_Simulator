@@ -128,10 +128,10 @@ f       = 20e9  # Carrier frequency GEO to ground (Hz)
 B       = 500e6 # Maximum bandwidth
 maxPtx  = 10    # Maximum transmission power in W
 Adtx    = 0.26  # Transmitter antenna diameter in m
-Adrx    = 0.33  # Receiver antenna diameter in m
+Adrx    = 0.26  #0.33 Receiver antenna diameter in m
 pL      = 0.3   # Pointing loss in dB
-Nf      = 1.5   # Noise figure in dB
-Tn      = 50    # Noise temperature in K
+Nf      = 2     #1.5 Noise figure in dB
+Tn      = 290   #50 Noise temperature in K
 min_rate= 10e3  # Minimum rate in kbps
 
 # Uplink Parameters
@@ -2981,44 +2981,72 @@ class Earth:
 
         print("number of GT paths that cannot meet flow restraints: {}".format(totalFailed))
 
-    def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None):
+    def plotMap(earth, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=True, arrow_gap = 0.05):
         plt.figure()
         legend_properties = {'size': 10, 'weight': 'bold'}
         markerscale = 1.5
 
-        if plotGT:
-            for GT in self.gateways:
-                scat1 = plt.scatter(GT.gridLocationX, GT.gridLocationY, marker='x', c='r', s=28, linewidth=1.5, label = GT.name)
-                # if GT.linkedSat[0] is not None:
-                    # scat1 = plt.scatter(GT.gridLocationX, GT.gridLocationY, marker='x', c='r', s=8, linewidth=0.5)
-                    # gridSatX = int((0.5 + math.degrees(GT.linkedSat[1].longitude) / 360) * GT.totalX)
-                    # gridSatY = int((0.5 - math.degrees(GT.linkedSat[1].latitude) / 180) * GT.totalY)
-                    #scat2 = plt.scatter(gridSatX, gridSatY, marker='o', s=8, linewidth=0.5, color='r')
-                    # print(GT.linkedSat[1])
-                    # print(GT)
+        # Function to adjust arrow start and end points
+        def adjust_arrow_points(start, end, gap_value):
+            dx = end[0] - start[0]
+            dy = end[1] - start[1]
+            dist = math.sqrt(dx**2 + dy**2)
+            if dist == 0:  # To avoid division by zero
+                return start, end
+            gap_scaled = gap_value * 1440  # Adjusting arrow_gap to coordinate system
+            new_start = (start[0] + gap_scaled * dx / dist, start[1] + gap_scaled * dy / dist)
+            new_end = (end[0] - gap_scaled * dx / dist, end[1] - gap_scaled * dy / dist)
+            return new_start, new_end
 
+        # Code for plotting edges with arrow gap
+        if edges:
+            for plane in earth.LEO:
+                for sat in plane.sats:
+                    orig_start_x = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
+                    orig_start_y = int((0.5 - math.degrees(sat.latitude) / 180) * 720)
+
+                    for connected_sat in sat.intraSats + sat.interSats:
+                        orig_end_x = int((0.5 + math.degrees(connected_sat[1].longitude) / 360) * 1440)
+                        orig_end_y = int((0.5 - math.degrees(connected_sat[1].latitude) / 180) * 720)
+
+                        # Adjust arrow start and end points
+                        adj_start, adj_end = adjust_arrow_points((orig_start_x, orig_start_y), (orig_end_x, orig_end_y), arrow_gap)
+
+                        plt.arrow(adj_start[0], adj_start[1], adj_end[0] - adj_start[0], adj_end[1] - adj_start[1], 
+                                shape='full', lw=0.5, length_includes_head=True, head_width=5)
+
+            # Plot edges between gateways and satellites
+            for GT in earth.gateways:
+                    if GT.linkedSat[1]:  # Check if there's a linked satellite
+                        gt_x = GT.gridLocationX  # Use gridLocationX for gateway X coordinate
+                        gt_y = GT.gridLocationY  # Use gridLocationY for gateway Y coordinate
+                        sat_x = int((0.5 + math.degrees(GT.linkedSat[1].longitude) / 360) * 1440)  # Satellite longitude
+                        sat_y = int((0.5 - math.degrees(GT.linkedSat[1].latitude) / 180) * 720)    # Satellite latitude
+
+                        # Adjust only the endpoint for the arrow
+                        _, adj_end = adjust_arrow_points((gt_x, gt_y), (sat_x, sat_y), arrow_gap)
+                        
+                        plt.arrow(gt_x, gt_y, adj_end[0] - gt_x, adj_end[1] - gt_y,
+                                shape='full', lw=0.5, length_includes_head=True, head_width=5)
+                        
         if plotSat:
-            colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(self.LEO)))
+            colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(earth.LEO)))
 
-            for plane, c in zip(self.LEO, colors):
-                # print('------------------------------------------------------------')
-                # print('Plane: ' + str(plane.ID))
+            for plane, c in zip(earth.LEO, colors):
                 for sat in plane.sats:
                     gridSatX = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
                     gridSatY = int((0.5 - math.degrees(sat.latitude) / 180) * 720) #GT.totalY)
-                    # scat2 = plt.scatter(gridSatX, gridSatY, marker='o', s=18, linewidth=0.5, color=c, label = sat.ID)
                     scat2 = plt.scatter(gridSatX, gridSatY, marker='o', s=18, linewidth=0.5, edgecolors='black', color=c, label=sat.ID)
 
-                    # print('Longitude: ' + str(math.degrees(sat.longitude)) +  ', Grid X: ' + str(gridSatX) + '\nLatitude: ' + str(math.degrees(sat.latitude)) + ', Grid Y: ' + str(gridSatY))
-                        # Longitude +-180º, latitude +-90º
+        if plotGT:
+            for GT in earth.gateways:
+                scat1 = plt.scatter(GT.gridLocationX, GT.gridLocationY, marker='x', c='r', s=28, linewidth=1.5, label = GT.name)
 
         # Print path if given
         if path:
-            # print('Plotting path between ' + path[0][0] + ' and ' + path[len(path)-1][0])
             if bottleneck:
                 xValues = [[], [], []]
                 yValues = [[], [], []]
-                # bottleneck[1][-1] = 1 # used to test all links to ensure code is correct in plotting path and weakest link
                 minimum = np.amin(bottleneck[1])
                 length = len(path)
                 index = 0
@@ -3050,8 +3078,6 @@ class Earth:
                     yValues.append(int((0.5 - hop[2] / 180) * 720))      # latitude
                 scat3 = plt.plot(xValues, yValues)  # , marker='.', c='b', linewidth=0.5, label = hop[0])
 
-            # plt.legend([scat1, scat2, scat3], ['Ground Terminals', 'Satellites', 'Path'], loc=3, prop={'size': 7})
-
         if plotSat and plotGT:
             plt.legend([scat1, scat2], ['Gateways', 'Satellites'], loc=3, prop=legend_properties, markerscale=markerscale)
         elif plotSat:
@@ -3062,22 +3088,16 @@ class Earth:
         plt.xticks([])
         plt.yticks([])
 
-        cell_users = np.array(self.getCellUsers()).transpose()
+        cell_users = np.array(earth.getCellUsers()).transpose()
         plt.imshow(cell_users, norm=LogNorm(), cmap='viridis')
 
-        # plt.imshow(np.log10(np.array(self.getCellUsers()).transpose() + 1), )
-        
         # Add title
         if time is not None and ID is not None:
             plt.title(f"Creation time: {time*1000:.0f}ms, block ID: {ID}")
 
         if save:
             plt.savefig("map.png", dpi=1000)
-        # plt.title('LEO constellation and Ground Terminals')
-        # plt.rcParams['figure.figsize'] = 36, 12  # adjust if figure is too big or small for screen
-        # plt.colorbar(fraction=0.1)  # adjust fraction to change size of color bar
-        # plt.show()
-
+  
     def initializeQTables(self, NGT, hyperparams, g):
         '''
         QTables initialization at each satellite
@@ -3709,7 +3729,7 @@ class ExperienceReplay:
 
 
 # @profile
-def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementTime, totalLocations, outputPath):
+def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementTime, totalLocations, outputPath, matching='Greedy'):
     """
     Initializes an instance of the earth with cells from a population map and gateways from a csv file.
     During initialisation, several steps are performed to prepare for simulation:
@@ -3740,7 +3760,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
 
     earth.linkCells2GTs(distance)
     earth.linkSats2GTs("Optimize")
-    graph = createGraph(earth)
+    graph = createGraph(earth, matching=matching)
     
     for gt in earth.gateways:
         gt.graph = graph
@@ -4205,16 +4225,17 @@ def greedyMatching(earth):
     N = len(Satellites)
 
     # Setup for interISL link parameters
+    ##############################################################
     interISL = RFlink(
-        frequency=26e9,
-        bandwidth=500e6,
-        maxPtx=10,
-        aDiameterTx=0.26,
-        aDiameterRx=0.26,
-        pointingLoss=0.3,
-        noiseFigure=2,
-        noiseTemperature=290,
-        min_rate=10e3
+        frequency=f,
+        bandwidth=B,
+        maxPtx=maxPtx,
+        aDiameterTx=Adtx,
+        aDiameterRx=Adrx,
+        pointingLoss=pL,
+        noiseFigure=Nf,
+        noiseTemperature=Tn,
+        min_rate=min_rate
     )
 
     # Compute positions and slant ranges
@@ -4255,8 +4276,7 @@ def greedyMatching(earth):
     return _A_Greedy
 
 
-
-def createGraph(earth):
+def createGraph(earth, matching='Greedy'):
     '''
     Each satellite has two transceiver antennas that are connected to the closest satellite in east and west direction to a satellite
     from another plane (inter-ISL). Each satellite also has anoteher two transceiver antennas connected to the previous and to the
