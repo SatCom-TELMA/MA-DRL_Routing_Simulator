@@ -107,7 +107,7 @@ lonBias     = 0         # Same but with longitude
 
 GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
- 
+
 
 # Other
 CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
