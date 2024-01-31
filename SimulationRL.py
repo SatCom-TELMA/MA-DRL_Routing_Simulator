@@ -4239,6 +4239,7 @@ def greedyMatching(earth):
     )
 
     # Compute positions and slant ranges
+    ##############################################################
     Positions, _ = get_pos_vectors_omni(Satellites)
     slant_range = get_slant_range_optimized(Positions, N)
     shannonRate = get_data_rate(slant_range, interISL)
