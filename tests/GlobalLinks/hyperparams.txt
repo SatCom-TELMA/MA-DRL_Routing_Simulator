@@ -8,7 +8,7 @@ Epsilon: 0.1
 Max epsilon: 0.99
 Min epsilon: 0.001
 Arrive Reward: 50
-w1: 20
+w1: 10
 w2: 20
 Coords granularity: 10
 Update freq: 1000

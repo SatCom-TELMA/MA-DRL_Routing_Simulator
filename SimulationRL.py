@@ -94,11 +94,11 @@ balancedFlow= True      # if set to true all the generated traffic at each GT is
 gamma       = 0.9       # greedy factor. Smaller -> Greedy
 ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
-diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+diff        = False     # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 coordGran   = 10        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 10         # rewards the getting to empty queues
+w1          = 13        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
@@ -822,7 +822,10 @@ class Satellite:
         pTime = distance/Vc
         return pTime
 
-    def findNeighbours(self, earth):
+    def findIntraNeighbours(self, earth):
+        '''
+        Finds intra-plane neighbours
+        '''
         self.linked = None                                                      # Closest sat linked
         self.upper  = earth.LEO[self.in_plane].sats[self.i_in_plane-1]          # Previous sat in the same plane
         if self.i_in_plane < self.n_sat-1:
@@ -867,6 +870,7 @@ class edge:
     def  __init__(self, sati, satj, slant_range, dji, dij, shannonRate):
         '''
         dji && dij are deprecated. We do not use them anymore to decide which neighbour is at the right or left direction. We are using their coordinates.
+        It is used in the markovian matching only
         '''
         self.i = sati   # sati ID
         self.j = satj   # satj ID
@@ -2981,8 +2985,9 @@ class Earth:
 
         print("number of GT paths that cannot meet flow restraints: {}".format(totalFailed))
 
-    def plotMap(earth, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=True, arrow_gap = 0.05):
+    def plotMap(earth, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=False, arrow_gap = 0.008, outputPath = ''):
         plt.figure()
+        fileName = "map.png"
         legend_properties = {'size': 10, 'weight': 'bold'}
         markerscale = 1.5
 
@@ -3000,6 +3005,7 @@ class Earth:
 
         # Code for plotting edges with arrow gap
         if edges:
+            fileName = outputPath + "ISLs_map.png"
             for plane in earth.LEO:
                 for sat in plane.sats:
                     orig_start_x = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
@@ -3096,7 +3102,7 @@ class Earth:
             plt.title(f"Creation time: {time*1000:.0f}ms, block ID: {ID}")
 
         if save:
-            plt.savefig("map.png", dpi=1000)
+            plt.savefig(fileName, dpi=1000)
   
     def initializeQTables(self, NGT, hyperparams, g):
         '''
@@ -3619,7 +3625,7 @@ class DDQNAgent:
             self.i += 1
             if self.i == self.updateF:
                 self.qTarget.set_weights(self.qNetwork.get_weights()) # NOTE qTarget gets qNetrowk values
-                print(f"Q-Target network hard updated!!!")
+                # print(f"Q-Target network hard updated!!!")
                 self.i = 0
 
         else:
@@ -3760,7 +3766,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
 
     earth.linkCells2GTs(distance)
     earth.linkSats2GTs("Optimize")
-    graph = createGraph(earth, matching=matching, matching)
+    graph = createGraph(earth, matching=matching)
     
     for gt in earth.gateways:
         gt.graph = graph
@@ -4178,11 +4184,10 @@ def markovianMatchingTwo(earth):
 
     # add intra-ISL edges
     ###########################################################
-    nPlanes = len(earth.LEO)
     for plane in earth.LEO:
         nPerPlane = len(plane.sats)
         for sat in plane.sats:
-            sat.findNeighbours(earth)
+            sat.findIntraNeighbours(earth)
 
             # upper neighbour
             i = sat.in_plane        *nPerPlane    +sat.i_in_plane
@@ -4220,12 +4225,13 @@ def greedyMatching(earth):
     for plane in earth.LEO:
         for sat in plane.sats:
             Satellites.append(sat)
-            sat.findNeighbours(earth)  # find upper and lower neighbors
+            sat.findIntraNeighbours(earth)  # find upper and lower neighbors
 
     N = len(Satellites)
 
-    # Setup for interISL link parameters
+    # inter-plane ISL 
     ##############################################################
+    # link parameters
     interISL = RFlink(
         frequency=f,
         bandwidth=B,
@@ -4244,18 +4250,6 @@ def greedyMatching(earth):
     slant_range = get_slant_range_optimized(Positions, N)
     shannonRate = get_data_rate(slant_range, interISL)
 
-    # Create edges for intra-plane links (upper and lower neighbors)
-    for sat in Satellites:
-        upper_neighbor = sat.upper
-        lower_neighbor = sat.lower
-
-        upper_index = Satellites.index(upper_neighbor)
-        lower_index = Satellites.index(lower_neighbor)
-
-        # Add edges for upper and lower neighbors
-        _A_Greedy.append(edge(sat.ID, upper_neighbor.ID, slant_range[sat.i_in_plane, upper_index], None, None, shannonRate[sat.i_in_plane, upper_index]))
-        _A_Greedy.append(edge(sat.ID, lower_neighbor.ID, slant_range[sat.i_in_plane, lower_index], None, None, shannonRate[sat.i_in_plane, lower_index]))
-
     # Create edges for inter-plane links (closest east and west satellites)
     for i, sat in enumerate(Satellites):
         closest_east, closest_west = None, None
@@ -4273,6 +4267,20 @@ def greedyMatching(earth):
             _A_Greedy.append(edge(sat.ID, closest_east.ID, min_east_distance, None, None, shannonRate[i, Satellites.index(closest_east)]))
         if closest_west:
             _A_Greedy.append(edge(sat.ID, closest_west.ID, min_west_distance, None, None, shannonRate[i, Satellites.index(closest_west)]))
+        
+    # intra-plane ISL links (upper and lower neighbors)
+    ##############################################################
+    for sat in Satellites:
+        upper_neighbor = sat.upper
+        lower_neighbor = sat.lower
+
+        upper_index = Satellites.index(upper_neighbor)
+        lower_index = Satellites.index(lower_neighbor)
+
+        # Add edges for upper and lower neighbors
+        _A_Greedy.append(edge(sat.ID, upper_neighbor.ID, slant_range[sat.i_in_plane, upper_index], None, None, shannonRate[sat.i_in_plane, upper_index]))
+        _A_Greedy.append(edge(sat.ID, lower_neighbor.ID, slant_range[sat.i_in_plane, lower_index], None, None, shannonRate[sat.i_in_plane, lower_index]))
+
 
     return _A_Greedy
 
@@ -4317,6 +4325,7 @@ def deleteDuplicatedLinks(satA, g, earth):
                 else:
                     linkedSats['L']  = satB
 
+
 def createGraph(earth, matching='Greedy'):
     '''
     Each satellite has two transceiver antennas that are connected to the closest satellite in east and west direction to a satellite
@@ -4351,6 +4360,7 @@ def createGraph(earth, matching='Greedy'):
     elif matching=='Greedy':
         markovEdges = greedyMatching(earth)
     print(f'Matching: {matching}')
+    print('----------------------------------')
 
     for markovEdge in markovEdges:
         g.add_edge(markovEdge.i, markovEdge.j,  # source and destination IDs
@@ -4366,6 +4376,7 @@ def createGraph(earth, matching='Greedy'):
     for plane in earth.LEO:
         for sat in plane.sats:
             deleteDuplicatedLinks(sat, g, earth)
+    print('----------------------------------')
 
     return g
 
@@ -4577,15 +4588,14 @@ def getDeepSatScore(queueLength):
 def getDirection(satA, satB):
     '''
     Returns the direction of going from satA to satB.
+    If the satellites are very far away (More than half of the radious of the Earth, pi) the East-West logic is reversed
+
     If the node is not previous to the linked one we will treat it as a reversed way.
-    If the node was
 
     Dir 1 (Go Upper): lower  -> higher latitude
     Dir 2 (Go Lower): higher -> lower  latitude
     Dir 3 (Go Right): lower  -> higher longitude
     Dir 4 (Go left) : higher -> lower  longitude
-    higher orbital plane, (Not always, this direction is taken from the markovian matching)
-    lower  orbital plane, (Not always, this direction is taken from the markovian matching)
     '''
 
     planei = int(satA.in_plane)
@@ -4596,7 +4606,7 @@ def getDirection(satA, satB):
             return 1
         else:
             return 2
-    if(abs(satA.longitude - satB.longitude) < math.pi): # they are not too far away
+    if(abs(abs(satA.longitude) - abs(satB.longitude)) < math.pi):         # they are not too far away
         if satA.longitude < satB.longitude:
             return 3
         else:
@@ -4749,6 +4759,10 @@ def getDeepStateV3(block, sat, linkedSats):
   
 
 def getDeepStateV2(block, sat, linkedSats):
+    '''
+    The state has a pre-process where, instead of giving directly the coordinates of the neighbors,
+    it gives the difference from the current agent to the neighbors coordinates
+    '''
     satDest = block.destination.linkedSat[1]
     if satDest is None:
         print(f'{block.destination} has no linked satellite :(')
@@ -5390,8 +5404,12 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         print(f'Reward for deliver: {ArriveReward}')
         print(f'Stop Loss: {stopLoss}, number of samples considered: {nLosses}, threshold: {lThreshold}')
         print('----------------------------------')
-        earth1, _, _, _ = initialize(env, populationData, inputPath + 'Gateways.csv', radioKM, inputParams, movementTime, locations, outputPath)
+        earth1, _, _, _ = initialize(env, populationData, inputPath + 'Gateways.csv', radioKM, inputParams, movementTime, locations, outputPath, matching=matching)
         earth1.outputPath = outputPath
+        
+        print('Saving ISLs map...')
+        earth1.plotMap(plotGT = True, plotSat = True, edges=True, save = True, outputPath=outputPath)
+        print('----------------------------')
 
         progress = env.process(simProgress(simulationTimelimit, env))
         startTime = time.time()
