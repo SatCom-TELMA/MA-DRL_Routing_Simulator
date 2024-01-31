@@ -98,7 +98,7 @@ diff        = True      # If up, the state space gives no coordinates about the 
 coordGran   = 10        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 20         # rewards the getting to empty queues
+w1          = 10         # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
@@ -3760,7 +3760,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
 
     earth.linkCells2GTs(distance)
     earth.linkSats2GTs("Optimize")
-    graph = createGraph(earth, matching=matching)
+    graph = createGraph(earth, matching=matching, matching)
     
     for gt in earth.gateways:
         gt.graph = graph
@@ -4277,6 +4277,46 @@ def greedyMatching(earth):
     return _A_Greedy
 
 
+def deleteDuplicatedLinks(satA, g, earth):
+    '''
+    Given a satellite, searches for its east and west neighbour. If the east or west link is duplicated,
+    it will remove the link with a higher latitude difference, keeping the horizontal links
+    '''
+
+    def getMostHorizontal(currentSat, satA, satB):
+        '''
+        Chooses the dat with the closest latitude to currentSat
+        '''
+        return (satA, satB) if abs(satA.latitude-currentSat.latitude)<abs(satB.latitude-currentSat.latitude) else (satB, satA)
+
+    linkedSats = {'U':None, 'D':None, 'R':None, 'L':None}
+    for edge in list(g.edges(satA.ID)):
+        if edge[1][0].isdigit():
+            satB = findByID(earth, edge[1])
+            dir = getDirection(satA, satB)
+
+            if(dir == 3):                                         # Found Satellite at East
+                if linkedSats['R'] is not None:
+                    print(f"{satA.ID} east satellite duplicated: {linkedSats['R'].ID}, {satB.ID}")
+                    most_horizontal, less_horizontal = getMostHorizontal(satA, linkedSats['R'], satB)
+                    print(f'Keeping most horizontal link: {most_horizontal.ID}')
+                    linkedSats['R']  = most_horizontal
+                    # remove pair from G
+                    g.remove_edge(satA.ID, less_horizontal.ID)
+                else:
+                    linkedSats['R']  = satB
+
+            elif(dir == 4):                                         # Found Satellite at West
+                if linkedSats['L'] is not None:
+                    print(f"{satA.ID} West satellite duplicated: {linkedSats['L'].ID}, {satB.ID}")
+                    most_horizontal, less_horizontal = getMostHorizontal(satA, linkedSats['L'], satB)
+                    print(f'Keeping most horizontal link: {most_horizontal.ID}')
+                    linkedSats['L']  = most_horizontal
+                    # remove pair from G
+                    g.remove_edge(satA.ID, less_horizontal.ID)
+                else:
+                    linkedSats['L']  = satB
+
 def createGraph(earth, matching='Greedy'):
     '''
     Each satellite has two transceiver antennas that are connected to the closest satellite in east and west direction to a satellite
@@ -4320,6 +4360,12 @@ def createGraph(earth, matching='Greedy'):
         hop = 1,                                # in case we just want to count hops
         dij = markovEdge.dij,
         dji = markovEdge.dji)
+
+    # remove duplicated links and keep the most horizontal ones
+    print('Removing duplicated links...')
+    for plane in earth.LEO:
+        for sat in plane.sats:
+            deleteDuplicatedLinks(sat, g, earth)
 
     return g
 
@@ -4630,8 +4676,13 @@ def getlinkedSats(satA, g, earth):
                     linkedSats['U'] = satB
 
             elif(dir == 3):                                         # Found Satellite at East
+                if linkedSats['R'] is not None:
+                    print(f"{satA.ID} east satellite duplicated! Replacing {linkedSats['R'].ID} with {satB.ID}")
                 linkedSats['R']  = satB
+
             elif(dir == 4):                                         # Found Satellite at West
+                if linkedSats['L'] is not None:
+                    print(f"{satA.ID} west satellite duplicated! Replacing {linkedSats['L'].ID} with {satB.ID}")
                 linkedSats['L']  = satB
 
         else:
@@ -4989,6 +5040,7 @@ def getDistanceRewardV4(sat, nextSat, destination, w2):
 def getDistanceRewardV5(sat, nextSat, w2):
     SLr = getSlantRange(sat, nextSat)
     return w2*SLr/1000000
+
 
 def saveHyperparams(outputPath, inputParams, hyperparams):
     print('Saving hyperparams at: ' + str(outputPath))
