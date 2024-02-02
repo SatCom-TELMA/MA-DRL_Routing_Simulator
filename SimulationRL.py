@@ -78,7 +78,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[3]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -4191,7 +4191,6 @@ def markovianMatchingTwo(earth):
 
             # upper neighbour
             i = sat.in_plane        *nPerPlane    +sat.i_in_plane
-
             j = sat.upper.in_plane  *nPerPlane    +sat.upper.i_in_plane
 
             _A_Markovian.append(edge(sat.ID, sat.upper.ID,  # satellites IDs
@@ -4225,7 +4224,6 @@ def greedyMatching(earth):
     for plane in earth.LEO:
         for sat in plane.sats:
             Satellites.append(sat)
-            sat.findIntraNeighbours(earth)  # find upper and lower neighbors
 
     N = len(Satellites)
 
@@ -4244,11 +4242,32 @@ def greedyMatching(earth):
         min_rate=min_rate
     )
 
+   # max slant range for each orbit
+    ###########################################################
+    M = len(earth.LEO)              # Number of planes in LEO
+    Max_slnt_rng = np.zeros((M,M))  # All ISL slant ranges must me lowe than 'Max_slnt_rng[i, j]'
+
+    Orb_heights  = []
+    for plane in earth.LEO:
+        Orb_heights.append(plane.h)
+        maxSlantRange = plane.sats[0].maxSlantRange
+
+    for _i in range(M):
+        for _j in range(M):
+            Max_slnt_rng[_i,_j] = (np.sqrt( (Orb_heights[_i] + Re)**2 - Re**2 ) +
+                                np.sqrt( (Orb_heights[_j] + Re)**2 - Re**2 ) )
+            
     # Compute positions and slant ranges
     ##############################################################
-    Positions, _ = get_pos_vectors_omni(Satellites)
-    slant_range = get_slant_range_optimized(Positions, N)
-    shannonRate = get_data_rate(slant_range, interISL)
+    direction       = get_direction(Satellites)             # get both directions of the satellites to use the two transceivers
+    Positions, meta = get_pos_vectors_omni(Satellites)      # position and plane of all the satellites
+    slant_range     = get_slant_range_optimized(Positions, N)                       # matrix with all the distances between satellties
+    slant_range_los = los_slant_range(slant_range, meta, Max_slnt_rng, Positions)   # distance matrix but if d>dMax, d=infinite
+    shannonRate     = get_data_rate(slant_range_los, interISL)                      # max dataRate
+
+    # Positions, _ = get_pos_vectors_omni(Satellites)
+    # slant_range = get_slant_range_optimized(Positions, N)
+    # shannonRate = get_data_rate(slant_range, interISL)
 
     # Create edges for inter-plane links (closest east and west satellites)
     for i, sat in enumerate(Satellites):
@@ -4257,10 +4276,10 @@ def greedyMatching(earth):
 
         for j, other_sat in enumerate(Satellites):
             if sat.in_plane != other_sat.in_plane:
-                if slant_range[i, j] < min_east_distance and Positions[j, 0] > Positions[i, 0]:  # East satellite
-                    closest_east, min_east_distance = other_sat, slant_range[i, j]
-                elif slant_range[i, j] < min_west_distance and Positions[j, 0] < Positions[i, 0]:  # West satellite
-                    closest_west, min_west_distance = other_sat, slant_range[i, j]
+                if slant_range_los[i, j] < min_east_distance and Positions[j, 0] > Positions[i, 0]:  # East satellite
+                    closest_east, min_east_distance = other_sat, slant_range_los[i, j]
+                elif slant_range_los[i, j] < min_west_distance and Positions[j, 0] < Positions[i, 0]:  # West satellite
+                    closest_west, min_west_distance = other_sat, slant_range_los[i, j]
 
         # Add edges for closest east and west satellites
         if closest_east:
@@ -4270,16 +4289,39 @@ def greedyMatching(earth):
         
     # intra-plane ISL links (upper and lower neighbors)
     ##############################################################
-    for sat in Satellites:
-        upper_neighbor = sat.upper
-        lower_neighbor = sat.lower
+    for plane in earth.LEO:
+        nPerPlane = len(plane.sats)
+        for sat in plane.sats:
+            sat.findIntraNeighbours(earth)
 
-        upper_index = Satellites.index(upper_neighbor)
-        lower_index = Satellites.index(lower_neighbor)
+            # upper neighbour
+            i = sat.in_plane        *nPerPlane    +sat.i_in_plane
+            j = sat.upper.in_plane  *nPerPlane    +sat.upper.i_in_plane
 
-        # Add edges for upper and lower neighbors
-        _A_Greedy.append(edge(sat.ID, upper_neighbor.ID, slant_range[sat.i_in_plane, upper_index], None, None, shannonRate[sat.i_in_plane, upper_index]))
-        _A_Greedy.append(edge(sat.ID, lower_neighbor.ID, slant_range[sat.i_in_plane, lower_index], None, None, shannonRate[sat.i_in_plane, lower_index]))
+            _A_Greedy.append(edge(sat.ID, sat.upper.ID,     # satellites IDs
+            slant_range_los[i, j],                          # distance between satellites
+            None, None,                                     # directions
+            shannonRate[i,j]))                              # Max dataRate
+
+            # lower neighbour
+            j = sat.lower.in_plane  *nPerPlane    +sat.lower.i_in_plane
+
+            _A_Greedy.append(edge(sat.ID, sat.lower.ID,     # satellites IDs
+            slant_range_los[i, j],                          # distance between satellites
+            None, None,                                     # directions
+            shannonRate[i,j]))                              # Max dataRate
+
+    # for sat in Satellites:
+    #     sat.findIntraNeighbours(earth)  # find upper and lower neighbors
+    #     upper_neighbor = sat.upper
+    #     lower_neighbor = sat.lower
+
+    #     upper_index = Satellites.index(upper_neighbor)
+    #     lower_index = Satellites.index(lower_neighbor)
+
+    #     # Add edges for upper and lower neighbors
+    #     _A_Greedy.append(edge(sat.ID, upper_neighbor.ID, slant_range_los[sat.i_in_plane, upper_index], None, None, shannonRate[sat.i_in_plane, upper_index]))
+    #     _A_Greedy.append(edge(sat.ID, lower_neighbor.ID, slant_range_los[sat.i_in_plane, lower_index], None, None, shannonRate[sat.i_in_plane, lower_index]))
 
 
     return _A_Greedy
@@ -5409,6 +5451,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         
         print('Saving ISLs map...')
         earth1.plotMap(plotGT = True, plotSat = True, edges=True, save = True, outputPath=outputPath)
+        plt.close()
         print('----------------------------')
 
         progress = env.process(simProgress(simulationTimelimit, env))
