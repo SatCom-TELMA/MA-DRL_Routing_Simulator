@@ -90,7 +90,7 @@ Train       = True      # Global for all scenarios with different number of GTs.
 importQVals = False      # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
-balancedFlow= True      # if set to true all the generated traffic at each GT is equal
+balancedFlow= False      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor. Smaller -> Greedy
 ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
@@ -2985,7 +2985,7 @@ class Earth:
 
         print("number of GT paths that cannot meet flow restraints: {}".format(totalFailed))
 
-    def plotMap(earth, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=False, arrow_gap = 0.008, outputPath = ''):
+    def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=False, arrow_gap = 0.008, outputPath = ''):
         plt.figure()
         fileName = "map.png"
         legend_properties = {'size': 10, 'weight': 'bold'}
@@ -3006,7 +3006,7 @@ class Earth:
         # Code for plotting edges with arrow gap
         if edges:
             fileName = outputPath + "ISLs_map.png"
-            for plane in earth.LEO:
+            for plane in self.LEO:
                 for sat in plane.sats:
                     orig_start_x = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
                     orig_start_y = int((0.5 - math.degrees(sat.latitude) / 180) * 720)
@@ -3022,7 +3022,7 @@ class Earth:
                                 shape='full', lw=0.5, length_includes_head=True, head_width=5)
 
             # Plot edges between gateways and satellites
-            for GT in earth.gateways:
+            for GT in self.gateways:
                     if GT.linkedSat[1]:  # Check if there's a linked satellite
                         gt_x = GT.gridLocationX  # Use gridLocationX for gateway X coordinate
                         gt_y = GT.gridLocationY  # Use gridLocationY for gateway Y coordinate
@@ -3036,16 +3036,16 @@ class Earth:
                                 shape='full', lw=0.5, length_includes_head=True, head_width=5)
                         
         if plotSat:
-            colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(earth.LEO)))
+            colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(self.LEO)))
 
-            for plane, c in zip(earth.LEO, colors):
+            for plane, c in zip(self.LEO, colors):
                 for sat in plane.sats:
                     gridSatX = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
                     gridSatY = int((0.5 - math.degrees(sat.latitude) / 180) * 720) #GT.totalY)
                     scat2 = plt.scatter(gridSatX, gridSatY, marker='o', s=18, linewidth=0.5, edgecolors='black', color=c, label=sat.ID)
 
         if plotGT:
-            for GT in earth.gateways:
+            for GT in self.gateways:
                 scat1 = plt.scatter(GT.gridLocationX, GT.gridLocationY, marker='x', c='r', s=28, linewidth=1.5, label = GT.name)
 
         # Print path if given
@@ -3094,8 +3094,10 @@ class Earth:
         plt.xticks([])
         plt.yticks([])
 
-        cell_users = np.array(earth.getCellUsers()).transpose()
+        cell_users = np.array(self.getCellUsers()).transpose()
         plt.imshow(cell_users, norm=LogNorm(), cmap='viridis')
+
+        # plt.imshow(np.log10(np.array(self.getCellUsers()).transpose() + 1), )
 
         # Add title
         if time is not None and ID is not None:
@@ -3604,7 +3606,7 @@ class DDQNAgent:
         self        .epsilon.append([epsilon, sat.env.now])
         return epsilon
 
-    def alignQTarget(self, hardUpdate = False): # Soft one is done every step
+    def alignQTarget(self, hardUpdate = True): # Soft one is done every step
         '''
         This function is not used now since the q target only exists in double deep q learning and it is not implemented.
         Updates the qTarget NN with the weights of the qNetwork.
