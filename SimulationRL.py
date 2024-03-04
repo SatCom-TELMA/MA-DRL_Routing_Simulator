@@ -142,10 +142,11 @@ avUserLoad  = 8593 * 8      # average traffic usage per second in bits
 # Block
 blockSize   = 64800
 
-# Movement
+# Movement and structure
 movementTime= 10 * 3600 # should be in the order of 10's of hours. If the test is not 'Rates', the movement time is still kept large to avoid the constellation moving
 ndeltas     = 25        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
-matching   = 'Greedy'   # ['Markovian', 'Greedy']
+matching    = 'Greedy'  # ['Markovian', 'Greedy']
+minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
 
 # Deep & Q Learning
 # importQVals = False     # imports either QTables or NN from a certain path
@@ -451,7 +452,7 @@ class Satellite:
         self.quota = quota              # Quota of the satellite
         self.h = h                      # Altitude of deployment
         self.power = power              # Transmission power
-        self.minElevationAngle = 30     # Value is taken from NGSO constellation design chapter
+        self.minElevationAngle = minElAngle# Value is taken from NGSO constellation design chapter
 
         # Spherical Coordinates before inclination (r,theta,phi)
         self.r = Re+self.h
