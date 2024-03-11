@@ -3,9 +3,6 @@ import pandas as pd
 import math
 import numpy as np
 import geopy.distance
-import matplotlib.pyplot as plt
-import pylab
-import matplotlib
 import simpy
 import numba
 import networkx as nx
@@ -21,7 +18,13 @@ from datetime import datetime
 import seaborn as sns
 import gc
 import cProfile
+
+import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from matplotlib.path import Path
+from matplotlib.patches import FancyArrowPatch
+from matplotlib.colors import Normalize
+import matplotlib.cm as cm
 
 
 ###############################################################################
@@ -2987,11 +2990,11 @@ class Earth:
 
         print("number of GT paths that cannot meet flow restraints: {}".format(totalFailed))
 
-    def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=False, arrow_gap=0.008, outputPath='', paths=None):
+    def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=False, arrow_gap=0.008, outputPath='', paths=None, fileName="map.png"):
         plt.figure()
-        fileName = "map.png"
         legend_properties = {'size': 10, 'weight': 'bold'}
         markerscale = 1.5
+        usage_threshold = 100   # This is used in the paths part
 
         # Compute the link usage
         def calculate_link_usage(paths):
@@ -3055,7 +3058,7 @@ class Earth:
                                 shape='full', lw=0.5, length_includes_head=True, head_width=5)
                         
         if plotSat:
-            colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(self.LEO)))
+            colors = cm.rainbow(np.linspace(0, 1, len(self.LEO)))
 
             for plane, c in zip(self.LEO, colors):
                 for sat in plane.sats:
@@ -3103,25 +3106,55 @@ class Earth:
                     yValues.append(int((0.5 - hop[2] / 180) * 720))      # latitude
                 scat3 = plt.plot(xValues, yValues)  # , marker='.', c='b', linewidth=0.5, label = hop[0])
 
-        # plot the map with the usage of all the links
+        # Plot the map with the usage of all the links
         if paths is not None:
             link_usage = calculate_link_usage([block.QPath for block in paths])
-            # link_usage = calculate_link_usage(paths)
+            # Adjust the normalization to start from the usage threshold
+            min_usage = usage_threshold  # Setting minimum value to usage threshold
+            max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
 
-            max_usage = max([info['count'] for info in link_usage.values()])
+            norm = Normalize(vmin=min_usage, vmax=max_usage)
+            cmap = cm.get_cmap('RdYlGn_r')  # Use a red-yellow-green reversed colormap
+
             for link_str, info in link_usage.items():
                 usage = info['count']
+                if usage <= usage_threshold:  # Skip links with usage 500 or less
+                    continue
+
                 coordinates = info['coordinates']
                 width = 0.5 + (usage / max_usage) * 2  # Adjust width scaling as necessary
-                
-                start_x, start_y = int((0.5 + coordinates[0][0] / 360) * 1440), int((0.5 - coordinates[0][1] / 180) * 720)
-                end_x, end_y = int((0.5 + coordinates[1][0] / 360) * 1440), int((0.5 - coordinates[1][1] / 180) * 720)
-                
-                plt.plot([start_x, end_x], [start_y, end_y], linewidth=width, color='gray')  # Color can be adjusted
-                
-                # Calculate midpoint for the usage number annotation
-                # mid_x, mid_y = (start_x + end_x) / 2, (start_y + end_y) / 2
-                # plt.text(mid_x, mid_y, str(usage), fontsize=9, ha='center', va='center', color='blue', bbox=dict(facecolor='white', edgecolor='none', pad=1))
+
+                # Get original start and end points for adjusting
+                orig_start_x, orig_start_y = (0.5 + coordinates[0][0] / 360) * 1440, (0.5 - coordinates[0][1] / 180) * 720
+                orig_end_x, orig_end_y = (0.5 + coordinates[1][0] / 360) * 1440, (0.5 - coordinates[1][1] / 180) * 720
+
+                # Adjust start and end points using adjust_arrow_points
+                (start_x, start_y), (end_x, end_y) = adjust_arrow_points((orig_start_x, orig_start_y), (orig_end_x, orig_end_y), arrow_gap)
+
+                # Calculate control points for a slight curve, adjusted for the new start and end points
+                mid_x, mid_y = (start_x + end_x) / 2, (start_y + end_y) / 2
+                ctrl_x, ctrl_y = mid_x + (end_y - start_y) / 10, mid_y - (end_x - start_x) / 5  # Adjust divisor for curve tightness
+
+                # Create a Bezier curve for the directed link with adjusted start and end points
+                verts = [(start_x, start_y), (ctrl_x, ctrl_y), (end_x, end_y)]
+                codes = [Path.MOVETO, Path.CURVE3, Path.CURVE3]
+                path = Path(verts, codes)
+                color = cmap(norm(usage))  # Color based on usage
+                patch = FancyArrowPatch(path=path, arrowstyle='-|>', color=color, linewidth=width, mutation_scale=5, zorder=0.5)
+                plt.gca().add_patch(patch)
+        
+            # Add legend for congestion color coding
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+            sm.set_array([])
+            ticks = [usage_threshold] + list(np.linspace(usage_threshold, max_usage, num=5))  # Creates evenly spaced ticks from threshold to max_usage
+            plt.colorbar(sm, orientation='vertical', label='Packets per link', fraction=0.02, pad=0.04, ticks=ticks)
+            # plt.colorbar(sm, orientation='vertical', label='Number of packets', fraction=0.02, pad=0.04)
+
+            plt.xticks([])
+            plt.yticks([])
+            # outPath = outputPath + "/CongestionMapFigures/"
+            # fileName = outPath + "/CongestionMap.png"
+            # os.makedirs(outPath, exist_ok=True)
 
 
         if plotSat and plotGT:
@@ -5433,6 +5466,38 @@ def plotRatesFigures():
     plt.show()
     plt.close()
 
+
+def plotCongestionMap(self, paths, outPath):
+    def extract_gateways(path):
+        # Assuming QPath's first and last elements contain gateway identifiers
+        return path.QPath[0][0], path.QPath[-1][0]
+    
+    os.makedirs(outPath, exist_ok=True)
+
+    # Identify unique routes and filter by packet threshold (e.g., 500 packets)
+    unique_routes = {}
+    for block in paths:
+        if block.QPath:  # Ensure QPath is not empty
+            gateways = extract_gateways(block)
+            if gateways in unique_routes:
+                unique_routes[gateways] += 1
+            else:
+                unique_routes[gateways] = 1
+
+    filtered_routes = {route: count for route, count in unique_routes.items() if count > 500}
+
+    # Plot for each unique route above the threshold
+    for route, count in filtered_routes.items():
+        route_paths = [block for block in paths if extract_gateways(block) == route and block.QPath]
+        self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(route_paths),
+                     fileName=os.path.join(outPath, f"CongestionMap_{route[0]}_to_{route[1]}.png"))
+
+    # Plot for all routes combined
+    all_routes_paths = [block for block in paths if block.QPath and extract_gateways(block) in filtered_routes]
+    self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(all_routes_paths),
+                 fileName=os.path.join(outPath, "CongestionMap_all_routes.png"))
+
+
 # @profile
 def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
     start_time = datetime.now()
@@ -5554,6 +5619,10 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
         except pickle.PicklingError:
             print('Error with pickle and profiling')
+
+        print('Plotting link congestion figure...')
+        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/CongestionMaps/')
+        # earth1.plotMap(plotGT = True, plotSat = True, edges=False, save = True, paths=np.asarray(blocks), fileName=outputPath + "CongestionMap.png")
 
         # save learnt values
         if pathing == 'Q-Learning':

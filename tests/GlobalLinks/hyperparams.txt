@@ -1,7 +1,7 @@
 Constellation: Kepler
 Import QTables: False
 printPath: False
-Test length: 0.5
+Test length: 0.2
 Alpha: 0.25
 Gamma: 0.9
 Epsilon: 0.1
