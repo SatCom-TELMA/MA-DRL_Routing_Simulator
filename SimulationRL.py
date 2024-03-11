@@ -3,9 +3,6 @@ import pandas as pd
 import math
 import numpy as np
 import geopy.distance
-import matplotlib.pyplot as plt
-import pylab
-import matplotlib
 import simpy
 import numba
 import networkx as nx
@@ -21,7 +18,13 @@ from datetime import datetime
 import seaborn as sns
 import gc
 import cProfile
+
+import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from matplotlib.path import Path
+from matplotlib.patches import FancyArrowPatch
+from matplotlib.colors import Normalize
+import matplotlib.cm as cm
 
 
 ###############################################################################
@@ -85,7 +88,7 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by 1.000 km
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
-drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 importQVals = False      # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
@@ -95,15 +98,15 @@ gamma       = 0.9       # greedy factor. Smaller -> Greedy
 ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
 diff        = False     # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
-coordGran   = 10        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+coordGran   = 20        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 13        # rewards the getting to empty queues
+w1          = 24        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-latBias     = 0         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
-lonBias     = 0         # Same but with longitude
+latBias     = 90/coordGran         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
+lonBias     = 180/coordGran         # Same but with longitude
 
 GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
@@ -348,6 +351,7 @@ class BlocksForPickle:
         self.txLatency = block.txLatency  # total transmission time
         self.propLatency = block.propLatency  # total propagation latency
         self.totLatency = block.totLatency  # total latency
+        self.QPath = block.QPath # path followed due to Q-Learning
 
 
 class RFlink:
@@ -2986,11 +2990,28 @@ class Earth:
 
         print("number of GT paths that cannot meet flow restraints: {}".format(totalFailed))
 
-    def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=False, arrow_gap = 0.008, outputPath = ''):
+    def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=False, arrow_gap=0.008, outputPath='', paths=None, fileName="map.png"):
         plt.figure()
-        fileName = "map.png"
         legend_properties = {'size': 10, 'weight': 'bold'}
         markerscale = 1.5
+        usage_threshold = 100   # This is used in the paths part
+
+        # Compute the link usage
+        def calculate_link_usage(paths):
+            link_usage = {}
+            for path in paths:
+                for i in range(len(path) - 1):
+                    start_node, end_node = path[i], path[i+1]
+                    link_str = '{}_{}'.format(start_node[0], end_node[0])
+
+                    # Coordinates for plotting
+                    coordinates = [(start_node[1], start_node[2]), (end_node[1], end_node[2])]
+
+                    if link_str in link_usage:
+                        link_usage[link_str]['count'] += 1
+                    else:
+                        link_usage[link_str] = {'count': 1, 'coordinates': coordinates}
+            return link_usage
 
         # Function to adjust arrow start and end points
         def adjust_arrow_points(start, end, gap_value):
@@ -3037,7 +3058,7 @@ class Earth:
                                 shape='full', lw=0.5, length_includes_head=True, head_width=5)
                         
         if plotSat:
-            colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(self.LEO)))
+            colors = cm.rainbow(np.linspace(0, 1, len(self.LEO)))
 
             for plane, c in zip(self.LEO, colors):
                 for sat in plane.sats:
@@ -3084,6 +3105,57 @@ class Earth:
                     xValues.append(int((0.5 + hop[1] / 360) * 1440))     # longitude
                     yValues.append(int((0.5 - hop[2] / 180) * 720))      # latitude
                 scat3 = plt.plot(xValues, yValues)  # , marker='.', c='b', linewidth=0.5, label = hop[0])
+
+        # Plot the map with the usage of all the links
+        if paths is not None:
+            link_usage = calculate_link_usage([block.QPath for block in paths])
+            # Adjust the normalization to start from the usage threshold
+            min_usage = usage_threshold  # Setting minimum value to usage threshold
+            max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
+
+            norm = Normalize(vmin=min_usage, vmax=max_usage)
+            cmap = cm.get_cmap('RdYlGn_r')  # Use a red-yellow-green reversed colormap
+
+            for link_str, info in link_usage.items():
+                usage = info['count']
+                if usage <= usage_threshold:  # Skip links with usage 500 or less
+                    continue
+
+                coordinates = info['coordinates']
+                width = 0.5 + (usage / max_usage) * 2  # Adjust width scaling as necessary
+
+                # Get original start and end points for adjusting
+                orig_start_x, orig_start_y = (0.5 + coordinates[0][0] / 360) * 1440, (0.5 - coordinates[0][1] / 180) * 720
+                orig_end_x, orig_end_y = (0.5 + coordinates[1][0] / 360) * 1440, (0.5 - coordinates[1][1] / 180) * 720
+
+                # Adjust start and end points using adjust_arrow_points
+                (start_x, start_y), (end_x, end_y) = adjust_arrow_points((orig_start_x, orig_start_y), (orig_end_x, orig_end_y), arrow_gap)
+
+                # Calculate control points for a slight curve, adjusted for the new start and end points
+                mid_x, mid_y = (start_x + end_x) / 2, (start_y + end_y) / 2
+                ctrl_x, ctrl_y = mid_x + (end_y - start_y) / 10, mid_y - (end_x - start_x) / 5  # Adjust divisor for curve tightness
+
+                # Create a Bezier curve for the directed link with adjusted start and end points
+                verts = [(start_x, start_y), (ctrl_x, ctrl_y), (end_x, end_y)]
+                codes = [Path.MOVETO, Path.CURVE3, Path.CURVE3]
+                path = Path(verts, codes)
+                color = cmap(norm(usage))  # Color based on usage
+                patch = FancyArrowPatch(path=path, arrowstyle='-|>', color=color, linewidth=width, mutation_scale=5, zorder=0.5)
+                plt.gca().add_patch(patch)
+        
+            # Add legend for congestion color coding
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+            sm.set_array([])
+            ticks = [usage_threshold] + list(np.linspace(usage_threshold, max_usage, num=5))  # Creates evenly spaced ticks from threshold to max_usage
+            plt.colorbar(sm, orientation='vertical', label='Packets per link', fraction=0.02, pad=0.04, ticks=ticks)
+            # plt.colorbar(sm, orientation='vertical', label='Number of packets', fraction=0.02, pad=0.04)
+
+            plt.xticks([])
+            plt.yticks([])
+            # outPath = outputPath + "/CongestionMapFigures/"
+            # fileName = outPath + "/CongestionMap.png"
+            # os.makedirs(outPath, exist_ok=True)
+
 
         if plotSat and plotGT:
             plt.legend([scat1, scat2], ['Gateways', 'Satellites'], loc=3, prop=legend_properties, markerscale=markerscale)
@@ -5394,6 +5466,38 @@ def plotRatesFigures():
     plt.show()
     plt.close()
 
+
+def plotCongestionMap(self, paths, outPath):
+    def extract_gateways(path):
+        # Assuming QPath's first and last elements contain gateway identifiers
+        return path.QPath[0][0], path.QPath[-1][0]
+    
+    os.makedirs(outPath, exist_ok=True)
+
+    # Identify unique routes and filter by packet threshold (e.g., 500 packets)
+    unique_routes = {}
+    for block in paths:
+        if block.QPath:  # Ensure QPath is not empty
+            gateways = extract_gateways(block)
+            if gateways in unique_routes:
+                unique_routes[gateways] += 1
+            else:
+                unique_routes[gateways] = 1
+
+    filtered_routes = {route: count for route, count in unique_routes.items() if count > 500}
+
+    # Plot for each unique route above the threshold
+    for route, count in filtered_routes.items():
+        route_paths = [block for block in paths if extract_gateways(block) == route and block.QPath]
+        self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(route_paths),
+                     fileName=os.path.join(outPath, f"CongestionMap_{route[0]}_to_{route[1]}.png"))
+
+    # Plot for all routes combined
+    all_routes_paths = [block for block in paths if block.QPath and extract_gateways(block) in filtered_routes]
+    self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(all_routes_paths),
+                 fileName=os.path.join(outPath, "CongestionMap_all_routes.png"))
+
+
 # @profile
 def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
     start_time = datetime.now()
@@ -5495,6 +5599,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         print(pathBlocks[1][-1].path)
         print('Bottleneck:')
         print(findBottleneck(pathBlocks[1][-1].path, earth1))
+
         '''
         # add data for percentages bar plot
         # percentages['Queue time']       .append(results.meanQueueLatency)
@@ -5502,8 +5607,9 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         # percentages['Transmission time'].append(results.meanTransLatency)
         # percentages['GTnumber']         .append(GTnumber)
         '''
-        '''
+
         # save congestion test data
+        print('Saving congestion test data...')
         blocks = []
         for block in receivedDataBlocks:
             blocks.append(BlocksForPickle(block))
@@ -5513,7 +5619,10 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
         except pickle.PicklingError:
             print('Error with pickle and profiling')
-            '''
+
+        print('Plotting link congestion figure...')
+        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/CongestionMaps/')
+        # earth1.plotMap(plotGT = True, plotSat = True, edges=False, save = True, paths=np.asarray(blocks), fileName=outputPath + "CongestionMap.png")
 
         # save learnt values
         if pathing == 'Q-Learning':
