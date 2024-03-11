@@ -101,14 +101,14 @@ diff        = False     # If up, the state space gives no coordinates about the 
 coordGran   = 20        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 24        # rewards the getting to empty queues
+w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
 latBias     = 90/coordGran         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180/coordGran         # Same but with longitude
 
-GTs = [3]               # number of gateways to be tested
+GTs = [5]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 
