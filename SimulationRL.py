@@ -108,7 +108,7 @@ ArriveReward= 50        # Reward given to the system in case it sends the data b
 latBias     = 90/coordGran         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180/coordGran         # Same but with longitude
 
-GTs = [5]               # number of gateways to be tested
+GTs = [6]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 
@@ -2994,7 +2994,7 @@ class Earth:
         plt.figure()
         legend_properties = {'size': 10, 'weight': 'bold'}
         markerscale = 1.5
-        usage_threshold = 100   # This is used in the paths part
+        usage_threshold = 200   # This is used in the paths part
 
         # Compute the link usage
         def calculate_link_usage(paths):
