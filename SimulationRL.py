@@ -81,7 +81,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[1]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -92,7 +92,7 @@ drawDeliver = False     # create pictures of the path every 1/10 times a data bl
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 importQVals = False      # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = True     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor. Smaller -> Greedy
 ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
@@ -101,14 +101,14 @@ diff        = False     # If up, the state space gives no coordinates about the 
 coordGran   = 20        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 20        # rewards the getting to empty queues
+w1          = 25        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
 latBias     = 90/coordGran         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180/coordGran         # Same but with longitude
 
-GTs = [6]               # number of gateways to be tested
+GTs = [8]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 
@@ -267,7 +267,8 @@ def getBlockTransmissionStats(timeToSim, GTs, constellationType, earth):
             pathBlocks[1].append(block)
         
     # save congestion test data
-    blockPath = f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
+    # blockPath = f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
+    blockPath = outputPath + '/Congestion_Test/'     
     os.makedirs(blockPath, exist_ok=True)
     try:
         global CurrentGTnumber
@@ -3108,10 +3109,15 @@ class Earth:
 
         # Plot the map with the usage of all the links
         if paths is not None:
-            link_usage = calculate_link_usage([block.QPath for block in paths])
+            link_usage = calculate_link_usage([block.QPath for block in paths]) if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning' else calculate_link_usage([block.path for block in paths])
             # Adjust the normalization to start from the usage threshold
             min_usage = usage_threshold  # Setting minimum value to usage threshold
-            max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
+            try:
+                max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
+            except Exception as e:
+                print(f"Caught an exception: {e}. Lowering usage_threshold")
+                usage_threshold = 0
+                max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
 
             norm = Normalize(vmin=min_usage, vmax=max_usage)
             cmap = cm.get_cmap('RdYlGn_r')  # Use a red-yellow-green reversed colormap
@@ -3177,7 +3183,8 @@ class Earth:
             plt.title(f"Creation time: {time*1000:.0f}ms, block ID: {ID}")
 
         if save:
-            plt.savefig(fileName, dpi=1000)
+            plt.tight_layout()
+            plt.savefig(fileName, dpi=1000, bbox_inches='tight')
   
     def initializeQTables(self, NGT, hyperparams, g):
         '''
@@ -5430,6 +5437,9 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotat
             # Handle legend for the case when epsDF is None
             handles, labels = axes[i, 0].get_legend_handles_labels()
             axes[i, 0].legend(handles, labels, loc='upper right')
+
+        axes[i, 0].legend().set_visible(False)  # FIXME legend disabled
+        axes[i, 1].legend().set_visible(False)  # FIXME legend disabled
         
     # Adjust the layout
     plt.tight_layout()
@@ -5469,15 +5479,20 @@ def plotRatesFigures():
 
 def plotCongestionMap(self, paths, outPath):
     def extract_gateways(path):
-        # Assuming QPath's first and last elements contain gateway identifiers
-        return path.QPath[0][0], path.QPath[-1][0]
-    
+    # Assuming QPath's first and last elements contain gateway identifiers
+        # return path.QPath[0][0], path.QPath[-1][0] if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning' else path.path[0][0], path.path[-1][0]
+        if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
+            return path.QPath[0][0], path.QPath[-1][0]
+        else:
+            return path.path[0][0], path.path[-1][0]
+        
     os.makedirs(outPath, exist_ok=True)
 
     # Identify unique routes and filter by packet threshold (e.g., 500 packets)
     unique_routes = {}
     for block in paths:
-        if block.QPath:  # Ensure QPath is not empty
+        p = block.QPath if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning' else block.path
+        if p:  # Ensure QPath or path is not empty
             gateways = extract_gateways(block)
             if gateways in unique_routes:
                 unique_routes[gateways] += 1
@@ -5488,12 +5503,20 @@ def plotCongestionMap(self, paths, outPath):
 
     # Plot for each unique route above the threshold
     for route, count in filtered_routes.items():
-        route_paths = [block for block in paths if extract_gateways(block) == route and block.QPath]
+        if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
+            route_paths = [block for block in paths if extract_gateways(block) == route and block.QPath]
+        else:
+            route_paths = [block for block in paths if extract_gateways(block) == route and block.path]
+
         self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(route_paths),
                      fileName=os.path.join(outPath, f"CongestionMap_{route[0]}_to_{route[1]}.png"))
 
     # Plot for all routes combined
-    all_routes_paths = [block for block in paths if block.QPath and extract_gateways(block) in filtered_routes]
+    if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
+        all_routes_paths = [block for block in paths if block.QPath and extract_gateways(block) in filtered_routes]
+    else:
+        all_routes_paths = [block for block in paths if block.path and extract_gateways(block) in filtered_routes]
+
     self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(all_routes_paths),
                  fileName=os.path.join(outPath, "CongestionMap_all_routes.png"))
 
@@ -5568,7 +5591,6 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
 
         if testType == "Rates":
             plotRatesFigures()
-
         else:
             results, allLatencies, pathBlocks = getBlockTransmissionStats(timeToSim, inputParams['Locations'], inputParams['Constellation'][0], earth1)
             print(f'DataBlocks lost: {earth1.lostBlocks}')
@@ -5582,6 +5604,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
                 epsDF = save_epsilons(outputPath, eps, GTnumber)
 
                 # save & plot all paths latencies
+                print('Plotting latencies...')
                 plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF)
             
             elif pathing == "Deep Q-Learning":
@@ -5589,6 +5612,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
                 save_losses(outputPath, earth1, GTnumber)
                 
             else:
+                print('Plotting latencies...')
                 plotSaveAllLatencies(outputPath, GTnumber, allLatencies)
 
         plotShortestPath(earth1, pathBlocks[1][-1].path, outputPath)
@@ -5621,7 +5645,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             print('Error with pickle and profiling')
 
         print('Plotting link congestion figure...')
-        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/CongestionMaps/')
+        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/')
         # earth1.plotMap(plotGT = True, plotSat = True, edges=False, save = True, paths=np.asarray(blocks), fileName=outputPath + "CongestionMap.png")
 
         # save learnt values
