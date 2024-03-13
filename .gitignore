@@ -1,8 +1,9 @@
 # **/pictures/
-**/Congestion_Test
+# **/Congestion_Test
 **/Congestion_Test_old
 # **/Results/
 output
 SatNEx
 .venv
 **/.DS_Store
+**.npy

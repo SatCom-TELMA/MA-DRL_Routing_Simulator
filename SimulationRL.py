@@ -207,7 +207,7 @@ TrainThis   = Train     # Local for a single scenario with a certain number of G
 # nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
 if __name__ == '__main__':
     nnpath          = ''
-    outputPath      = './Results/latency Test/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
+    outputPath      = './Results/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
     populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
 
 ###############################################################################
@@ -3192,7 +3192,7 @@ class Earth:
         '''
         print('----------------------------')
 
-        path = './Results/latency Test/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
+        path = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
         if importQVals:
             print('Importing Q-Tables from: ' + path)
