@@ -101,7 +101,7 @@ diff        = False     # If up, the state space gives no coordinates about the 
 coordGran   = 20        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 21        # rewards the getting to empty queues
+w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
@@ -267,6 +267,7 @@ def getBlockTransmissionStats(timeToSim, GTs, constellationType, earth):
         
     # save congestion test data
     # blockPath = f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
+    print('Saving congestion test data...')
     blockPath = outputPath + '/Congestion_Test/'     
     os.makedirs(blockPath, exist_ok=True)
     try:
@@ -300,7 +301,7 @@ def getBlockTransmissionStats(timeToSim, GTs, constellationType, earth):
                       perPropLatency = sum(propLat)/totalTime*100,
                       perTransLatency = sum(txLat)/totalTime*100)
 
-    return results, allLatencies, pathBlocks
+    return results, allLatencies, pathBlocks, blocks
 
 
 def simProgress(simTimelimit, env):
@@ -5592,8 +5593,11 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         if testType == "Rates":
             plotRatesFigures()
         else:
-            results, allLatencies, pathBlocks = getBlockTransmissionStats(timeToSim, inputParams['Locations'], inputParams['Constellation'][0], earth1)
+            results, allLatencies, pathBlocks, blocks = getBlockTransmissionStats(timeToSim, inputParams['Locations'], inputParams['Constellation'][0], earth1)
             print(f'DataBlocks lost: {earth1.lostBlocks}')
+
+            print('Plotting link congestion figure...')
+            plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/')
             
             # save & plot ftirst 2 GTs path latencies
             plotSavePathLatencies(outputPath, GTnumber, pathBlocks)
@@ -5633,19 +5637,16 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         '''
 
         # save congestion test data
-        print('Saving congestion test data...')
-        blocks = []
-        for block in receivedDataBlocks:
-            blocks.append(BlocksForPickle(block))
-        blockPath = outputPath + f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
-        os.makedirs(blockPath, exist_ok=True)
-        try:
-            np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
-        except pickle.PicklingError:
-            print('Error with pickle and profiling')
-
-        print('Plotting link congestion figure...')
-        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/')
+        # print('Saving congestion test data...')
+        # blocks = []
+        # for block in receivedDataBlocks:
+        #     blocks.append(BlocksForPickle(block))
+        # blockPath = outputPath + f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
+        # os.makedirs(blockPath, exist_ok=True)
+        # try:
+        #     np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
+        # except pickle.PicklingError:
+        #     print('Error with pickle and profiling')
 
         # save learnt values
         if pathing == 'Q-Learning':
