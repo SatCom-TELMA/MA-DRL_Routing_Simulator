@@ -1,0 +1,159 @@
+Nº of Gateways: 9
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+17:25:08
+Locations:
+0    Mauritius
+1       Malaga
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.001
+Reward for deliver: 50
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+/Users/fedeloz/Documents/Workspace/Q-Learning_V0
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 2Finding cells within coverage area of GT 2 of 2
+Time taken to find cells that are within range of all GTs: 0.28940391540527344 seconds
+Time taken to add cell information to all GTs: 0.1705179214477539 seconds
+
+Matching: Greedy
+----------------------------------
+Removing duplicated links...
+0_1 east satellite duplicated: 6_19, 1_1
+Keeping most horizontal link: 1_1
+0_1 east satellite duplicated: 1_1, 3_0
+Keeping most horizontal link: 1_1
+0_2 West satellite duplicated: 6_17, 6_18
+Keeping most horizontal link: 6_18
+0_2 east satellite duplicated: 1_2, 6_19
+Keeping most horizontal link: 1_2
+0_3 West satellite duplicated: 6_16, 6_17
+Keeping most horizontal link: 6_17
+0_7 east satellite duplicated: 1_6, 1_7
+Keeping most horizontal link: 1_7
+0_8 east satellite duplicated: 1_7, 1_8
+Keeping most horizontal link: 1_8
+0_9 east satellite duplicated: 1_8, 1_9
+Keeping most horizontal link: 1_9
+0_11 West satellite duplicated: 5_9, 1_11
+Keeping most horizontal link: 1_11
+0_12 West satellite duplicated: 6_8, 6_7
+Keeping most horizontal link: 6_8
+0_12 West satellite duplicated: 6_8, 1_12
+Keeping most horizontal link: 1_12
+0_13 West satellite duplicated: 6_7, 6_6
+Keeping most horizontal link: 6_7
+0_13 West satellite duplicated: 6_7, 1_13
+Keeping most horizontal link: 1_13
+0_14 West satellite duplicated: 6_6, 1_14
+Keeping most horizontal link: 1_14
+0_15 West satellite duplicated: 1_15, 6_5
+Keeping most horizontal link: 1_15
+0_16 east satellite duplicated: 1_16, 6_4
+Keeping most horizontal link: 1_16
+0_17 east satellite duplicated: 1_17, 1_16
+Keeping most horizontal link: 1_17
+0_17 east satellite duplicated: 1_17, 6_3
+Keeping most horizontal link: 1_17
+0_18 east satellite duplicated: 1_18, 1_17
+Keeping most horizontal link: 1_18
+0_18 east satellite duplicated: 1_18, 6_2
+Keeping most horizontal link: 1_18
+0_19 east satellite duplicated: 1_19, 1_18
+Keeping most horizontal link: 1_19
+1_1 West satellite duplicated: 6_19, 0_1
+Keeping most horizontal link: 0_1
+1_1 east satellite duplicated: 2_1, 4_0
+Keeping most horizontal link: 2_1
+1_11 east satellite duplicated: 0_11, 6_9
+Keeping most horizontal link: 0_11
+1_11 east satellite duplicated: 0_11, 2_11
+Keeping most horizontal link: 2_11
+1_11 east satellite duplicated: 2_11, 4_10
+Keeping most horizontal link: 2_11
+1_12 east satellite duplicated: 2_12, 0_12
+Keeping most horizontal link: 0_12
+1_13 east satellite duplicated: 2_13, 0_13
+Keeping most horizontal link: 0_13
+1_14 east satellite duplicated: 2_14, 0_14
+Keeping most horizontal link: 0_14
+1_15 east satellite duplicated: 0_15, 2_15
+Keeping most horizontal link: 2_15
+2_9 east satellite duplicated: 0_10, 3_9
+Keeping most horizontal link: 3_9
+2_19 east satellite duplicated: 0_0, 3_19
+Keeping most horizontal link: 3_19
+3_10 West satellite duplicated: 2_10, 4_10
+Keeping most horizontal link: 4_10
+4_10 east satellite duplicated: 3_10, 5_10
+Keeping most horizontal link: 5_10
+5_1 West satellite duplicated: 4_1, 6_0
+Keeping most horizontal link: 4_1
+5_2 east satellite duplicated: 6_2, 6_1
+Keeping most horizontal link: 6_2
+5_11 West satellite duplicated: 4_11, 6_10
+Keeping most horizontal link: 4_11
+5_12 east satellite duplicated: 6_12, 6_11
+Keeping most horizontal link: 6_12
+6_9 West satellite duplicated: 0_11, 0_12
+Keeping most horizontal link: 0_11
+----------------------------------
+Traffic generated per GT (totalAvgFlow per Milliard):
+----------------------------------
+Malaga, Spain: 2.103214
+Mauritius: 1.810268
+----------------------------------
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+State size: 28 states
+Action Space:
+ ('U', 'D', 'R', 'L')
+----------------------------------
+Q-NETWORK created:
+----------------------------------
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense (Dense)               (None, 32)                928       
+                                                                 
+ dense_1 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_2 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2116 (8.27 KB)
+Trainable params: 2116 (8.27 KB)
+Non-trainable params: 0 (0.00 Byte)
+_________________________________________________________________
+----------------------------------
+DDQN enabled, TARGET NETWORK created:
+----------------------------------
+Model: "sequential_1"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense_3 (Dense)             (None, 32)                928       
+                                                                 
+ dense_4 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_5 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2116 (8.27 KB)
+Trainable params: 2116 (8.27 KB)
+Non-trainable params: 0 (0.00 Byte)
+_________________________________________________________________
+Saving hyperparams at: ./Results/Deep Q-Learning_2.0s_[50]_Del_[21]_w1_[20]_w2_[2]_GTs/
+Saving ISLs map...
+----------------------------
+Simulation progress: 1% Estimated time remaining: 220 seconds Current simulation time: 0.02Simulation progress: 2% Estimated time remaining: 704 seconds Current simulation time: 0.04

@@ -81,7 +81,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[1]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -92,7 +92,7 @@ drawDeliver = False     # create pictures of the path every 1/10 times a data bl
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 importQVals = False      # imports either QTables or NN from a certain path
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-mixLocs     = True     # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False      # if set to true all the generated traffic at each GT is equal
 gamma       = 0.9       # greedy factor. Smaller -> Greedy
 ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
@@ -101,20 +101,19 @@ diff        = False     # If up, the state space gives no coordinates about the 
 coordGran   = 20        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
-w1          = 25        # rewards the getting to empty queues
+w1          = 21        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
 latBias     = 90/coordGran         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180/coordGran         # Same but with longitude
 
-GTs = [8]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 
 # Other
 CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
-wasRandom       = -1    # This prints all the path in a different colour if the last action was random # TODO
 
 # Physical constants
 rKM = 500               # radio in km of the coverage of each gateway
@@ -3113,11 +3112,13 @@ class Earth:
             # Adjust the normalization to start from the usage threshold
             min_usage = usage_threshold  # Setting minimum value to usage threshold
             try:
-                max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
+                # max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
+                max_usage = max(info['count'] for info in link_usage.values())
             except Exception as e:
                 print(f"Caught an exception: {e}. Lowering usage_threshold")
                 usage_threshold = 0
-                max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
+                # max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
+                max_usage = max(info['count'] for info in link_usage.values())
 
             norm = Normalize(vmin=min_usage, vmax=max_usage)
             cmap = cm.get_cmap('RdYlGn_r')  # Use a red-yellow-green reversed colormap
@@ -5480,7 +5481,6 @@ def plotRatesFigures():
 def plotCongestionMap(self, paths, outPath):
     def extract_gateways(path):
     # Assuming QPath's first and last elements contain gateway identifiers
-        # return path.QPath[0][0], path.QPath[-1][0] if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning' else path.path[0][0], path.path[-1][0]
         if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
             return path.QPath[0][0], path.QPath[-1][0]
         else:
@@ -5637,7 +5637,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         blocks = []
         for block in receivedDataBlocks:
             blocks.append(BlocksForPickle(block))
-        blockPath = f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
+        blockPath = outputPath + f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
         os.makedirs(blockPath, exist_ok=True)
         try:
             np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
@@ -5646,7 +5646,6 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
 
         print('Plotting link congestion figure...')
         plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/')
-        # earth1.plotMap(plotGT = True, plotSat = True, edges=False, save = True, paths=np.asarray(blocks), fileName=outputPath + "CongestionMap.png")
 
         # save learnt values
         if pathing == 'Q-Learning':
