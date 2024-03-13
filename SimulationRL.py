@@ -81,7 +81,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[1]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -108,7 +108,7 @@ ArriveReward= 50        # Reward given to the system in case it sends the data b
 latBias     = 90/coordGran         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180/coordGran         # Same but with longitude
 
-GTs = [2]               # number of gateways to be tested
+GTs = [8]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 
@@ -3117,7 +3117,8 @@ class Earth:
                 max_usage = max(info['count'] for info in link_usage.values())
             except Exception as e:
                 print(f"Caught an exception: {e}. Lowering usage_threshold")
-                usage_threshold = 0
+                min_usage = 1
+                usage_threshold = 1
                 # max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
                 max_usage = max(info['count'] for info in link_usage.values())
 
@@ -3126,7 +3127,7 @@ class Earth:
 
             for link_str, info in link_usage.items():
                 usage = info['count']
-                if usage <= usage_threshold:  # Skip links with usage 500 or less
+                if usage <= usage_threshold:  # Skip links with usage usage_threshold or less
                     continue
 
                 coordinates = info['coordinates']
@@ -5511,6 +5512,7 @@ def plotCongestionMap(self, paths, outPath):
 
         self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(route_paths),
                      fileName=os.path.join(outPath, f"CongestionMap_{route[0]}_to_{route[1]}.png"))
+        plt.close()
 
     # Plot for all routes combined
     if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
@@ -5520,6 +5522,8 @@ def plotCongestionMap(self, paths, outPath):
 
     self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(all_routes_paths),
                  fileName=os.path.join(outPath, "CongestionMap_all_routes.png"))
+    plt.close()
+    
 
 
 # @profile
@@ -5595,9 +5599,6 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         else:
             results, allLatencies, pathBlocks, blocks = getBlockTransmissionStats(timeToSim, inputParams['Locations'], inputParams['Constellation'][0], earth1)
             print(f'DataBlocks lost: {earth1.lostBlocks}')
-
-            print('Plotting link congestion figure...')
-            plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/')
             
             # save & plot ftirst 2 GTs path latencies
             plotSavePathLatencies(outputPath, GTnumber, pathBlocks)
@@ -5621,6 +5622,9 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
 
         plotShortestPath(earth1, pathBlocks[1][-1].path, outputPath)
         plotQueues(earth1.queues, outputPath, GTnumber)
+
+        print('Plotting link congestion figure...')
+        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/')
 
         print(f"number of gateways: {GTnumber}")
         print('Path:')
