@@ -18,7 +18,8 @@
 ##SBATCH --gres=gpu:1
 ##SBATCH --constraint=dgx 
 ## SBATCH --constraint=cal 
-# SBATCH --constraint=bl
+## SBATCH --constraint=bl
+#SBATCH --constraint=bl
 #############################################
 
 # Set output and error files
