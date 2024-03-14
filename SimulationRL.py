@@ -267,7 +267,7 @@ def getBlockTransmissionStats(timeToSim, GTs, constellationType, earth):
         
     # save congestion test data
     # blockPath = f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
-    print('Saving congestion test data...')
+    print('Saving congestion test data...\n')
     blockPath = outputPath + '/Congestion_Test/'     
     os.makedirs(blockPath, exist_ok=True)
     try:
@@ -5503,6 +5503,16 @@ def plotCongestionMap(self, paths, outPath):
 
     filtered_routes = {route: count for route, count in unique_routes.items() if count > 500}
 
+    # Plot for all routes combined
+    if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
+        all_routes_paths = [block for block in paths if block.QPath and extract_gateways(block) in filtered_routes]
+    else:
+        all_routes_paths = [block for block in paths if block.path and extract_gateways(block) in filtered_routes]
+
+    self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(all_routes_paths),
+                 fileName=os.path.join(outPath, "all_routes_CongestionMap.png"))
+    plt.close()
+
     # Plot for each unique route above the threshold
     for route, count in filtered_routes.items():
         if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
@@ -5513,16 +5523,6 @@ def plotCongestionMap(self, paths, outPath):
         self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(route_paths),
                      fileName=os.path.join(outPath, f"CongestionMap_{route[0]}_to_{route[1]}.png"))
         plt.close()
-
-    # Plot for all routes combined
-    if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
-        all_routes_paths = [block for block in paths if block.QPath and extract_gateways(block) in filtered_routes]
-    else:
-        all_routes_paths = [block for block in paths if block.path and extract_gateways(block) in filtered_routes]
-
-    self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(all_routes_paths),
-                 fileName=os.path.join(outPath, "CongestionMap_all_routes.png"))
-    plt.close()
     
 
 
@@ -5623,7 +5623,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         plotShortestPath(earth1, pathBlocks[1][-1].path, outputPath)
         plotQueues(earth1.queues, outputPath, GTnumber)
 
-        print('Plotting link congestion figure...')
+        print('Plotting link congestion figures...')
         plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/')
 
         print(f"number of gateways: {GTnumber}")

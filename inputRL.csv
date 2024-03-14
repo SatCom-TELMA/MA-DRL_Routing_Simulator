@@ -1,27 +1,19 @@
 Locations,Constellation,Fraction,Test type,Test length
-Malaga,Kepler,0.5,Latency,2.00
+Los Angeles,Kepler,0.1,Latency,10.00
 Malaga
+Aalborg
+Nemea
+Nuuk
+Inuvik
+Mauritius
 Hawaii
-Nemea
-Mauritius
-Nuuk
-Tokyo
-Aalborg
-Inuvik
-Los Angeles
-Aalborg
-Cordoba
-Tolhuin
-Inuvik
-Nemea
-Nuuk
-Bangalore
-Tokyo
-Mauritius
-Awarua
 Svalbard
+Jeju
+Cordoba
+Bangalore
+Awarua
 Vardø
 Azores
 Singapore
-Hawaii
-Jeju
+Tokyo
+Tolhuin
