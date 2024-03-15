@@ -102,8 +102,9 @@ coordGran   = 20        # Granularity of the coordinates that will be the input 
 reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
 w1          = 20        # rewards the getting to empty queues
-w2          = 20        # rewards getting closes phisycally    
+w2          = 10        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
+biggestDist= -1        # Normalization factor for the distance reward. This is updated in the creation of the graph.
 
 latBias     = 90/coordGran         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180/coordGran         # Same but with longitude
@@ -181,7 +182,7 @@ unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a 
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
 MIN_EPSILON = 0.001     # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
-decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
+decayRate   = 8         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
 hardUpdate  = 1         # if up, the Q-network weights are copied inside the target network every updateF iterations. if down, this is done gradually
 # updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
@@ -4489,6 +4490,8 @@ def createGraph(earth, matching='Greedy'):
     print(f'Matching: {matching}')
     print('----------------------------------')
 
+    global biggestDist
+    biggestDist = -1
     for markovEdge in markovEdges:
         g.add_edge(markovEdge.i, markovEdge.j,  # source and destination IDs
         slant_range = markovEdge.slant_range,   # slant range
@@ -4497,12 +4500,16 @@ def createGraph(earth, matching='Greedy'):
         hop = 1,                                # in case we just want to count hops
         dij = markovEdge.dij,
         dji = markovEdge.dji)
+        if markovEdge.slant_range > biggestDist:  # keep the biggest possible distance for the normalization of the rewards
+            biggestDist = markovEdge.slant_range
 
     # remove duplicated links and keep the most horizontal ones
     print('Removing duplicated links...')
     for plane in earth.LEO:
         for sat in plane.sats:
             deleteDuplicatedLinks(sat, g, earth)
+    print(f'Biggest slant range between satellites: {biggestDist/1000:.2f} km')
+
     print('----------------------------------')
 
     return g
@@ -5175,7 +5182,8 @@ def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
 
 def getDistanceRewardV4(sat, nextSat, destination, w2):
     SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
-    return w2*SLr/1000000
+    return w2*SLr/biggestDist
+    # return w2*SLr/1000000
 
 
 def getDistanceRewardV5(sat, nextSat, w2):
