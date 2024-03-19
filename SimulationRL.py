@@ -89,29 +89,24 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
-Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-importQVals = False      # imports either QTables or NN from a certain path
-explore     = True      # If True, makes random actions eventually, if false only exploitation
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
-balancedFlow= False      # if set to true all the generated traffic at each GT is equal
-gamma       = 0.9       # greedy factor. Smaller -> Greedy
-ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
-updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
-diff        = False     # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
-coordGran   = 20        # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
-reducedState= False     # if set to true the DNN will receive as input only the positional information, but not the queueing information
+balancedFlow= False     # if set to true all the generated traffic at each GT is equal
 
-w1          = 20        # rewards the getting to empty queues
+Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
+explore     = True      # If True, makes random actions eventually, if false only exploitation
+importQVals = False     # imports either QTables or NN from a certain path
+onlinePhase = False      # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+if onlinePhase:         # Just in case
+    Train       = False
+    explore     = False
+    importQVals = True
+
+w1          = 21        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-biggestDist= -1        # Normalization factor for the distance reward. This is updated in the creation of the graph.
-
-latBias     = 90/coordGran         # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
-lonBias     = 180/coordGran         # Same but with longitude
 
 GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
-
 
 # Other
 CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
@@ -151,11 +146,19 @@ ndeltas     = 25        # This number will multiply deltaT. If bigger, will make
 matching    = 'Greedy'  # ['Markovian', 'Greedy']
 minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
 
+# State pre-processing
+coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+latBias     = 90/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
+lonBias     = 180/coordGran # Same but with longitude
+diff        = False         # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
+
 # Deep & Q Learning
+ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
-# gamma       = 0.6       # greedy factor. Smaller -> Greedy
+gamma       = 0.9       # greedy factor. Smaller -> Greedy
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
@@ -177,6 +180,7 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 # w2          = 20        # rewards getting closes phisically     
 againPenalty= -0.5      # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
+biggestDist= -1         # Normalization factor for the distance reward. This is updated in the creation of the graph.
 
 # Deep Learning
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
@@ -185,7 +189,7 @@ LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep le
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
 hardUpdate  = 1         # if up, the Q-network weights are copied inside the target network every updateF iterations. if down, this is done gradually
-# updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
+updateF     = 1000      # every updateF updates, the Q-Network will be copied inside the target Network. This is done if hardUpdate is up
 batchSize   = 16        # batchSize samples are taken from bufferSize samples to train the network
 bufferSize  = 50        # bufferSize samples are used to train the network
 
@@ -206,7 +210,7 @@ TrainThis   = Train     # Local for a single scenario with a certain number of G
 # nnpath = f'./latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
 if __name__ == '__main__':
-    nnpath          = ''
+    nnpath          = f'./pre_trained_NNs/qNetwork_8GTs.h5'
     outputPath      = './Results/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
     populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
 
@@ -512,9 +516,10 @@ class Satellite:
         self.sendBufferSatsInter = []
         self.sendBlocksSatsIntra = []
         self.sendBlocksSatsInter = []
-        self.newBuffer = [False]
+        self.newBuffer  = [False]
 
-        self.QLearning = None   # Q-learning table that will be updated in case the pathing is 'Q-Learning'
+        self.QLearning  = None  # Q-learning table that will be updated in case the pathing is 'Q-Learning'
+        self.DDQNA      = None  # DDQN agent for each satellite. Only used in the online phase
         self.maxSlantRange = self.GetmaxSlantRange()
 
     def GetmaxSlantRange(self):
@@ -598,15 +603,19 @@ class Satellite:
         # Compute the next hop in the path and add it to the second last position (Last is the destination gateway)
         # we let the (Deep) Q-model choose the next hop and it will be added to the block.QPath as mentioned
         # if the next hop is the linked gateway it will simply not add anything and will let the model work normally
-        if ((self.QLearning) or (self.orbPlane.earth.DDQNA is not None)):
+        if ((self.QLearning) or (self.orbPlane.earth.DDQNA is not None) or (self.DDQNA is not None)):
             if len(block.QPath) > 3: # the block does not come from a gateway
                 if self.QLearning:
                     nextHop = self.QLearning.makeAction(block, self, self.orbPlane.earth.gateways[0].graph, self.orbPlane.earth, prevSat = (findByID(self.orbPlane.earth, block.QPath[len(block.QPath)-3][0])))
+                elif self.DDQNA:
+                    nextHop = self.DDQNA.makeDeepAction(block, self, self.orbPlane.earth.gateways[0].graph, self.orbPlane.earth, prevSat = (findByID(self.orbPlane.earth, block.QPath[len(block.QPath)-3][0])))
                 else:
                     nextHop = self.orbPlane.earth.DDQNA.makeDeepAction(block, self, self.orbPlane.earth.gateways[0].graph, self.orbPlane.earth, prevSat = (findByID(self.orbPlane.earth, block.QPath[len(block.QPath)-3][0])))
             else:
                 if self.QLearning:
                     nextHop = self.QLearning.makeAction(block, self, self.orbPlane.earth.gateways[0].graph, self.orbPlane.earth)
+                elif self.DDQNA:
+                    nextHop = self.DDQNA.makeDeepAction(block, self, self.orbPlane.earth.gateways[0].graph, self.orbPlane.earth)
                 else:
                     nextHop = self.orbPlane.earth.DDQNA.makeDeepAction(block, self, self.orbPlane.earth.gateways[0].graph, self.orbPlane.earth)
 
@@ -2442,6 +2451,12 @@ class Earth:
                                                                     sat.orbPlane.earth.gateways[0].graph,
                                                                     sat.orbPlane.earth, prevSat=(
                                         findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
+                            elif sat.DDQNA:
+                                nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
+                                                                                   sat.orbPlane.earth.gateways[
+                                                                                       0].graph,
+                                                                                   sat.orbPlane.earth, prevSat=(
+                                        findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
                             else:
                                 nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
                                                                                    sat.orbPlane.earth.gateways[
@@ -2452,6 +2467,11 @@ class Earth:
                             if sat.QLearning:
                                 nextHop = sat.QLearning.makeAction(block, sat,
                                                                     sat.orbPlane.earth.gateways[0].graph,
+                                                                    sat.orbPlane.earth)
+                            elif sat.DDQNA:
+                                nextHop = sat.DDQNA.makeDeepAction(block, sat,
+                                                                    sat.orbPlane.earth.gateways[
+                                                                        0].graph,
                                                                     sat.orbPlane.earth)
                             else:
                                 nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
@@ -2492,6 +2512,12 @@ class Earth:
                                                                    sat.orbPlane.earth.gateways[0].graph,
                                                                    sat.orbPlane.earth, prevSat=(
                                         findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
+                            elif sat.DDQNA:
+                                nextHop = sat.DDQNA.makeDeepAction(block, sat,
+                                                                                  sat.orbPlane.earth.gateways[
+                                                                                      0].graph,
+                                                                                  sat.orbPlane.earth, prevSat=(
+                                        findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
                             else:
                                 nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
                                                                                   sat.orbPlane.earth.gateways[
@@ -2503,6 +2529,12 @@ class Earth:
                                 nextHop = sat.QLearning.makeAction(block, sat,
                                                                    sat.orbPlane.earth.gateways[0].graph,
                                                                    sat.orbPlane.earth)
+                            elif sat.DDQNA:
+                                nextHop = sat.DDQNA.makeDeepAction(block, sat,
+                                                                                  sat.orbPlane.earth.gateways[
+                                                                                      0].graph,
+                                                                                  sat.orbPlane.earth)
+
                             else:
                                 nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
                                                                                   sat.orbPlane.earth.gateways[
@@ -2541,6 +2573,12 @@ class Earth:
                                                                sat.orbPlane.earth.gateways[0].graph,
                                                                sat.orbPlane.earth, prevSat=(
                                     findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
+                        elif sat.DDQNA:
+                            nextHop = sat.DDQNA.makeDeepAction(block, sat,
+                                                                              sat.orbPlane.earth.gateways[
+                                                                                  0].graph,
+                                                                              sat.orbPlane.earth, prevSat=(
+                                    findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
                         else:
                             nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
                                                                               sat.orbPlane.earth.gateways[
@@ -2552,6 +2590,11 @@ class Earth:
                             nextHop = sat.QLearning.makeAction(block, sat,
                                                                sat.orbPlane.earth.gateways[0].graph,
                                                                sat.orbPlane.earth)
+                        elif sat.DDQNA:
+                            nextHop = sat.DDQNA.makeDeepAction(block, sat,
+                                                                              sat.orbPlane.earth.gateways[
+                                                                                  0].graph,
+                                                                              sat.orbPlane.earth)
                         else:
                             nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
                                                                               sat.orbPlane.earth.gateways[
@@ -3067,6 +3110,7 @@ class Earth:
                     gridSatX = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
                     gridSatY = int((0.5 - math.degrees(sat.latitude) / 180) * 720) #GT.totalY)
                     scat2 = plt.scatter(gridSatX, gridSatY, marker='o', s=18, linewidth=0.5, edgecolors='black', color=c, label=sat.ID)
+                    plt.text(gridSatX + 10, gridSatY - 10, sat.ID, fontsize=6, ha='left', va='center')
 
         if plotGT:
             for GT in self.gateways:
@@ -3302,7 +3346,7 @@ class QLearning:
         The value of each (state, action) pair is initialized ranomly.
         '''
         satUp, satDown, satRight, satLeft = 3, 3, 3, 3
-        linkedSats   = getlinkedSats(sat, g, earth)
+        linkedSats   = getLinkedSats(sat, g, earth)
         self.linkedSats =  {'U': linkedSats['U'],
                             'D': linkedSats['D'],
                             'R': linkedSats['R'],
@@ -3433,7 +3477,7 @@ class QLearning:
 
 # @profile
 class DDQNAgent:
-    def __init__(self, NGT, hyperparams):   
+    def __init__(self, NGT, hyperparams, sat_ID = None):   
         self.actions        = ('U', 'D', 'R', 'L')
         if not reducedState:
             self.states         = ('UpLinked Up', 'UpLinked Down','UpLinked Right','UpLinked Left',                        # Up Link
@@ -3458,9 +3502,10 @@ class DDQNAgent:
         self.actionSize     = len(self.actions)
         self.stateSize      = len(self.states)
         self.destinations   = NGT
-        print(f'State Space:\n {self.states}\nState size: {self.stateSize} states')
-        print(f'Action Space:\n {self.actions}')
 
+        if sat_ID is None:
+            print(f'State Space:\n {self.states}\nState size: {self.stateSize} states')
+            print(f'Action Space:\n {self.actions}')
 
         self.alpha  = hyperparams.alpha
         self.gamma  = hyperparams.gamma
@@ -3494,41 +3539,47 @@ class DDQNAgent:
             '''
             # The first model makes the predictions for Q-values which are used to make a action
             self.qNetwork = self.createModel()
-            print('----------------------------------')
-            print(f"Q-NETWORK created:")
-            print('----------------------------------')
-            self.qNetwork.summary()
+            if sat_ID is None:
+                print('----------------------------------')
+                print(f"Q-NETWORK created:")
+                print('----------------------------------')
+                self.qNetwork.summary()
+            else:
+                print(f'Satellite {sat_ID} Q-Network initialized')
             if ddqn:
-                print('----------------------------------')
-                print("DDQN enabled, TARGET NETWORK created:")
-                print('----------------------------------')
                 self.qTarget  = self.createModel()
-                self.qTarget.summary()
-            
-            # tf.keras.utils.plot_model(self.qNetwork, to_file='qNetwork.png', show_shapes=True)
-            # self.qNetwork.compile(loss='mse', optimizer=Adam(learning_rate=self.alpha))
-
-            # Build a target model for the prediction of future rewards.
-            # The weights of a target model get updated every updateF steps thus when the loss between the Q-values is calculated the target Q-value is stable
-            # self.qTarget  = self.createModel()
+                if sat_ID is None:
+                    print('----------------------------------')
+                    print("DDQN enabled, TARGET NETWORK created:")
+                    print('----------------------------------')
+                    self.qTarget.summary()
+                else:
+                    print(f'Satellite {sat_ID} Q-Target initialized')
         else:
             # if import models, it will import a trained model
             try:
                 global nnpath
                 self.qNetwork = keras.models.load_model(nnpath)
-                print('----------------------------------')
-                print(f"Q-NETWORK imported from:\n {nnpath}!!!")
-                print('----------------------------------')
-                self.qNetwork.summary()
+                if sat_ID is None:
+                    print('----------------------------------')
+                    print(f"Q-NETWORK imported from:\n {nnpath}!!!")
+                    print('----------------------------------')
+                    self.qNetwork.summary()
+                else:
+                    print(f'Satellite {sat_ID} Q-Network imported')
+                
                 if ddqn:
-                    print('----------------------------------')
-                    print("DDQN enabled, TARGET NETWORK copied from Q-NETWORK:")
-                    print('----------------------------------')
                     self.qTarget = self.qNetwork
+                    if sat_ID is None:
+                        print('----------------------------------')
+                        print("DDQN enabled, TARGET NETWORK copied from Q-NETWORK:")
+                        print('----------------------------------')
+                    else:
+                        print(f'Satellite {sat_ID} Q-Target copied from Q-Network')
 
             except FileNotFoundError:
                 print('----------------------------------')
-                print(f"Neural Network path wrong")
+                print(f"Wrong Neural Network path")
                 print('----------------------------------')
         
     def getNextHop(self, newState, linkedSats, sat):
@@ -3591,7 +3642,7 @@ class DDQNAgent:
         6. Update the qTarget every n iterations.
         '''
         # 1. Observe the state and search for the satellites linked to the one making the action
-        linkedSats  = getlinkedSats(sat, g, earth)
+        linkedSats  = getDeepLinkedSats(sat, g, earth)
         if reducedState:
             newState    = getDeepStateV3(block, sat, linkedSats)
         elif diff:
@@ -3642,10 +3693,10 @@ class DDQNAgent:
             if distanceRew == 1:
                 distanceReward  = getDistanceReward(prevSat, sat, block.destination, self.w2)
             elif distanceRew == 2:
-                prevLinkedSats  = getlinkedSats(prevSat, g, earth)
+                prevLinkedSats  = getDeepLinkedSats(prevSat, g, earth)
                 distanceReward  = getDistanceRewardV2(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
             elif distanceRew == 3:
-                prevLinkedSats  = getlinkedSats(prevSat, g, earth)
+                prevLinkedSats  = getDeepLinkedSats(prevSat, g, earth)
                 distanceReward  = getDistanceRewardV3(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
             elif distanceRew == 4:
                 distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2)
@@ -3868,19 +3919,16 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
                     GT.paths[destination.name] = path
                     paths.append(path)
 
-    # add ISl references to all satellites and adjust data rate to GTs
+    # add ISL references to all satellites and adjust data rate to GTs
     sats = []
     for plane in earth.LEO:
         for sat in plane.sats:
             sats.append(sat)
 
     fiveNeighbors = ([0],[])
-
     pathNames = [name[0] for name in path]
-
     for plane in earth.LEO:
         for sat in plane.sats:
-
             if sat.linkedGT is not None:
                 sat.adjustDownRate()
                 # make a process for the GSL from sat to GT
@@ -3891,11 +3939,9 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
                 fiveNeighbors[1].append(neighbors)
             itt = 0
             for sat2 in sats:
-
                 if sat2.ID in neighbors:
                     dataRate = nx.path_weight(graph,[sat2.ID, sat.ID], "dataRateOG")
                     distance = nx.path_weight(graph,[sat2.ID, sat.ID], "slant_range")
-
                     # check if satellite is inter- or intra-plane
                     if sat2.in_plane == sat.in_plane:
                         sat.intraSats.append((distance, sat2, dataRate))
@@ -3909,7 +3955,6 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
                         sat.sendBufferSatsInter.append(([sat.env.event()], [], sat2.ID))
                         # make a process for inter ISL
                         sat.sendBlocksSatsInter.append(sat.env.process(sat.sendBlock((distance, sat2, dataRate), True, False)))
-
                     itt += 1
                     if itt == len(neighbors):
                         break
@@ -3936,7 +3981,16 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
     if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
         hyperparams = hyperparam(pathing)
     if pathing == 'Deep Q-Learning':
-        earth.DDQNA = DDQNAgent(len(earth.gateways), hyperparams)
+        if not onlinePhase:
+            # Initialize global agent
+            earth.DDQNA = DDQNAgent(len(earth.gateways), hyperparams)
+        else:
+            print('----------------------------------')
+            print('Creating satellites agents...')
+            for plane in earth.LEO:
+                for sat in plane.sats:
+                    sat.DDQNA = DDQNAgent(len(earth.gateways), hyperparams, sat.ID)
+            print('----------------------------------')
 
     # save hyperparams
     if pathing == 'Q-Learning' or pathing == "Deep Q-Learning":
@@ -4781,7 +4835,7 @@ def getDestination(Block, g, sat = None):
         return getGridPosition(GridSize, [tuple([math.degrees(satDest.latitude), math.degrees(satDest.longitude), satDest.ID])], False, False)[0]
 
 
-def getlinkedSats(satA, g, earth):
+def getLinkedSats(satA, g, earth):
     '''
     Given a satellite the function will return a list with the linked satellite at each direction.
     If that direction has no linked satellite, it will be None
@@ -4831,6 +4885,39 @@ def getlinkedSats(satA, g, earth):
 
         else:
             pass
+    return linkedSats
+
+
+def getDeepLinkedSats(satA, earth):
+    '''
+    Given a satellite, this function will return a dictionary with the linked satellite
+    at each direction based on the new definition of upper and lower satellites.
+    Satellite at the right and left are determined based on inter-plane links.
+    '''
+    linkedSats = {'U':None, 'D':None, 'R':None, 'L':None}
+
+    # Use the provided logic to find intra-plane neighbours (upper and lower)
+    # satA.findIntraNeighbours(earth)
+    linkedSats['U'] = satA.upper
+    linkedSats['D'] = satA.lower
+
+    # Find inter-plane neighbours (right and left)
+    for edge in list(earth.graph.edges(satA.ID)):
+        if edge[1][0].isdigit():
+            satB = findByID(earth, edge[1])
+            dir = getDirection(satA, satB)
+            if(dir == 3):                                         # Found Satellite at East
+                if linkedSats['R'] is not None:
+                    print(f"{satA.ID} east satellite duplicated! Replacing {linkedSats['R'].ID} with {satB.ID}")
+                linkedSats['R']  = satB
+
+            elif(dir == 4):                                       # Found Satellite at West
+                if linkedSats['L'] is not None:
+                    print(f"{satA.ID} west satellite duplicated! Replacing {linkedSats['L'].ID} with {satB.ID}")
+                linkedSats['L']  = satB
+        else:
+            pass
+
     return linkedSats
 
 
@@ -5239,11 +5326,16 @@ def saveQTables(outputPath, earth):
 
 def saveDeepNetworks(outputPath, earth):
     print('Saving Deep Neural networks at: ' + outputPath)
-    earth.DDQNA.qNetwork.save(outputPath + 'qNetwork_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
-    if ddqn:
-        earth.DDQNA.qTarget.save(outputPath + 'qTarget_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
-    
-
+    if not onlinePhase:
+        earth.DDQNA.qNetwork.save(outputPath + 'qNetwork_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
+        if ddqn:
+            earth.DDQNA.qTarget.save(outputPath + 'qTarget_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
+    else:
+        for plane in earth.LEO:
+            for sat in plane.sats:
+                sat.DDQNA.qNetwork.save(outputPath + sat.ID + 'qNetwork_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
+                if ddqn:
+                    sat.DDQNA.qTarget.save(outputPath + sat.ID + 'qTarget_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
 
 ###############################################################################
 #########################    Simulation && Results    #########################
@@ -5533,7 +5625,6 @@ def plotCongestionMap(self, paths, outPath):
         plt.close()
     
 
-
 # @profile
 def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
     start_time = datetime.now()
@@ -5568,7 +5659,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         CurrentGTnumber = GTnumber
         
         if firstGT:
-            nnpath  = f'./pre_trained_NNs/qNetwork_1GTs.h5'
+            # nnpath  = f'./pre_trained_NNs/qNetwork_1GTs.h5'   # Already set
             firstGT = False
         else:
             nnpath  = f'{outputPath}/NNs/qNetwork_{GTnumber-1}GTs.h5'
@@ -5612,9 +5703,15 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             plotSavePathLatencies(outputPath, GTnumber, pathBlocks)
             
             if pathing == "Deep Q-Learning" or pathing == 'Q-Learning':
-                eps = earth1.DDQNA.epsilon if pathing == "Deep Q-Learning" else earth1.epsilon
+                if not onlinePhase:
+                    eps = earth1.DDQNA.epsilon if pathing == "Deep Q-Learning" else earth1.epsilon
+                else:
+                    eps = earth1.LEO[0].sats[0].DDQNA.epsilon if pathing == "Deep Q-Learning" else earth1.epsilon
                 # save epsilons
-                epsDF = save_epsilons(outputPath, eps, GTnumber)
+                if Train:
+                    epsDF = save_epsilons(outputPath, eps, GTnumber)
+                else:
+                    epsDF = None
 
                 # save & plot all paths latencies
                 print('Plotting latencies...')
@@ -5629,7 +5726,8 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
                 plotSaveAllLatencies(outputPath, GTnumber, allLatencies)
 
         plotShortestPath(earth1, pathBlocks[1][-1].path, outputPath)
-        plotQueues(earth1.queues, outputPath, GTnumber)
+        if not onlinePhase:
+            plotQueues(earth1.queues, outputPath, GTnumber)
 
         print('Plotting link congestion figures...')
         plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/')
