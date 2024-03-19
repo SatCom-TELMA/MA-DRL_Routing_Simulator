@@ -101,7 +101,7 @@ if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
 
-w1          = 21        # rewards the getting to empty queues
+w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
@@ -4888,7 +4888,7 @@ def getLinkedSats(satA, g, earth):
     return linkedSats
 
 
-def getDeepLinkedSats(satA, earth):
+def getDeepLinkedSats(satA, g, earth):
     '''
     Given a satellite, this function will return a dictionary with the linked satellite
     at each direction based on the new definition of upper and lower satellites.
@@ -4902,7 +4902,7 @@ def getDeepLinkedSats(satA, earth):
     linkedSats['D'] = satA.lower
 
     # Find inter-plane neighbours (right and left)
-    for edge in list(earth.graph.edges(satA.ID)):
+    for edge in list(g.edges(satA.ID)):
         if edge[1][0].isdigit():
             satB = findByID(earth, edge[1])
             dir = getDirection(satA, satB)
