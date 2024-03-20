@@ -91,6 +91,7 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
+diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = True      # If True, makes random actions eventually, if false only exploitation
@@ -100,6 +101,8 @@ if onlinePhase:         # Just in case
     Train       = False
     explore     = False
     importQVals = True
+nnpath          = f'./pre_trained_NNs/qNetwork_2GTs.h5'
+
 
 w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
@@ -150,7 +153,7 @@ minElAngle  = 30        # For satellites. Value is taken from NGSO constellation
 coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 latBias     = 90/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180/coordGran # Same but with longitude
-diff        = False         # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+# diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
 # Deep & Q Learning
@@ -210,7 +213,7 @@ TrainThis   = Train     # Local for a single scenario with a certain number of G
 # nnpath = f'./latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
 # nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
 if __name__ == '__main__':
-    nnpath          = f'./pre_trained_NNs/qNetwork_8GTs.h5'
+    # nnpath          = f'./pre_trained_NNs/qNetwork_8GTs.h5'
     outputPath      = './Results/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
     populationMap   = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
 
@@ -4960,7 +4963,7 @@ def getBiasedLongitude(sat):
         return -1 
 
 
-def getDeepStateV3(block, sat, linkedSats):
+# def getDeepStateV3(block, sat, linkedSats):
     satDest = block.destination.linkedSat[1]
     if satDest is None:
         print(f'{block.destination} has no linked satellite :(')
@@ -4979,7 +4982,7 @@ def getDeepStateV3(block, sat, linkedSats):
                     getBiasedLongitude(satDest)]).reshape(1,-1)                 # Destination Longitude
   
 
-def getDeepStateV2(block, sat, linkedSats):
+# def getDeepStateV20(block, sat, linkedSats):
     '''
     The state has a pre-process where, instead of giving directly the coordinates of the neighbors,
     it gives the difference from the current agent to the neighbors coordinates
@@ -5024,6 +5027,87 @@ def getDeepStateV2(block, sat, linkedSats):
                     currentLon,                                                 # Actual Longitude
                     getBiasedLatitude(satDest) - currentLat,                        # Destination Latitude
                     getBiasedLongitude(satDest) - currentLon]).reshape(1,-1)       # Destination Longitude
+
+
+def getDeepStateV2(block, sat, linkedSats):
+    def normalize_angle_diff(angle_diff):
+        # Normalize the difference in the angle to the range [-180, 180]
+        return (angle_diff + 180) % 360 - 180
+
+    def getDifferentialCoordinate(coord, ref_coord):
+        # Calculate the differential coordinate considering the wrap-around effect
+        return normalize_angle_diff(coord - ref_coord)
+
+    def getBiasedDifferentialLatitude(sat, ref_sat):
+        # Calculate the biased differential latitude
+        try:
+            lat_diff = getDifferentialCoordinate(math.degrees(sat.latitude), math.degrees(ref_sat.latitude))
+            return (lat_diff + latBias) / coordGran
+        except AttributeError:
+            return -1
+
+    def getBiasedDifferentialLongitude(sat, ref_sat):
+        # Calculate the biased differential longitude
+        try:
+            lon_diff = getDifferentialCoordinate(math.degrees(sat.longitude), math.degrees(ref_sat.longitude))
+            return (lon_diff + lonBias) / coordGran
+        except AttributeError:
+            return -1
+    
+    satDest = block.destination.linkedSat[1]
+    if satDest is None:
+        print(f'{block.destination} has no linked satellite :(')
+        return None
+    
+    current_lat = math.degrees(sat.latitude)
+    current_lon = math.degrees(sat.longitude)
+
+    queuesU = getQueues(linkedSats['U'], DDQN = True)
+    queuesD = getQueues(linkedSats['D'], DDQN = True)
+    queuesR = getQueues(linkedSats['R'], DDQN = True)
+    queuesL = getQueues(linkedSats['L'], DDQN = True)
+    
+    # Preparing the state array with differential positions
+    state = [
+                    getDeepSatScore(queuesU['U']),                             # Up link scores
+                    getDeepSatScore(queuesU['D']),
+                    getDeepSatScore(queuesU['R']),
+                    getDeepSatScore(queuesU['L']),
+                    getBiasedDifferentialLatitude(linkedSats['U'], sat),        # Up link Positions
+                    getBiasedDifferentialLongitude(linkedSats['U'], sat),
+
+                    getDeepSatScore(queuesD['U']),                              # Down link scores
+                    getDeepSatScore(queuesD['D']),
+                    getDeepSatScore(queuesD['R']),
+                    getDeepSatScore(queuesD['L']),
+                    getBiasedDifferentialLatitude(linkedSats['D'], sat),        # Down link Positions
+                    getBiasedDifferentialLongitude(linkedSats['D'], sat),
+
+                    getDeepSatScore(queuesR['U']),                              # Right link scores
+                    getDeepSatScore(queuesR['D']),
+                    getDeepSatScore(queuesR['R']),
+                    getDeepSatScore(queuesR['L']),
+                    getBiasedDifferentialLatitude(linkedSats['R'], sat),        # Right link Positions
+                    getBiasedDifferentialLongitude(linkedSats['R'], sat),
+
+                    getDeepSatScore(queuesL['U']),                              # Left link scores
+                    getDeepSatScore(queuesL['D']),
+                    getDeepSatScore(queuesL['R']),
+                    getDeepSatScore(queuesL['L']),
+                    getBiasedDifferentialLatitude(linkedSats['L'], sat),        # Left link Positions
+                    getBiasedDifferentialLongitude(linkedSats['L'], sat),
+
+                    # Current satellite's coordinates
+                    (current_lat + latBias) / coordGran,
+                    (current_lon + lonBias) / coordGran,
+
+                    # Destination's differential coordinates
+                    getBiasedDifferentialLatitude(satDest, sat),
+                    getBiasedDifferentialLongitude(satDest, sat)
+    ]
+
+    # Reshape the state array into the required format
+    return np.array(state).reshape(1, -1)
 
 
 def getDeepState(block, sat, linkedSats):
@@ -5072,7 +5156,7 @@ def getDeepState(block, sat, linkedSats):
                     getBiasedLongitude(satDest)]).reshape(1,-1)                 # Destination Longitude
     
 
-def getDeepStateGrid(block, sat, g):
+# def getDeepStateGrid(block, sat, g):
     '''
     DEPRECATED. Use getGridPosition in getdeepstate
 
@@ -5093,7 +5177,7 @@ def getDeepStateGrid(block, sat, g):
 
 
 # def getGridPosition(n: int, locations: List[Tuple([float, float, str])], draw = False, bigGrid = False):
-def getGridPosition(n: int, locations, draw = False, bigGrid = False):
+# def getGridPosition(n: int, locations, draw = False, bigGrid = False):
     '''
     Given:
     n           -> the granularity of the grid. 2n will be the number of squares that the earh has per row.
