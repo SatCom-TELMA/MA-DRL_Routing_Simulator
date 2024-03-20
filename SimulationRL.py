@@ -102,13 +102,13 @@ if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
 nnpath          = f'./pre_trained_NNs/qNetwork_2GTs.h5'
-
+notAvail        = 0     # this value is set in the state space when the satellite neighbour is not available
 
 w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-GTs = [2]               # number of gateways to be tested
+GTs = [8]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 # Other
@@ -161,7 +161,7 @@ ddqn        = True      # Activates DDQN, where now there are two DNNs, a target
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
-gamma       = 0.9       # greedy factor. Smaller -> Greedy
+gamma       = 0.99      # greedy factor. Smaller -> Greedy
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
@@ -1618,6 +1618,7 @@ class Earth:
         self.DDQNA  = None
         self.step   = 0
         self.epsilon=[]
+        self.rewards=[]
 
         pop_count_data = Image.open(img_path)
 
@@ -3480,7 +3481,7 @@ class QLearning:
 
 # @profile
 class DDQNAgent:
-    def __init__(self, NGT, hyperparams, sat_ID = None):   
+    def __init__(self, NGT, hyperparams, earth, sat_ID = None):   
         self.actions        = ('U', 'D', 'R', 'L')
         if not reducedState:
             self.states         = ('UpLinked Up', 'UpLinked Down','UpLinked Right','UpLinked Left',                        # Up Link
@@ -3505,6 +3506,7 @@ class DDQNAgent:
         self.actionSize     = len(self.actions)
         self.stateSize      = len(self.states)
         self.destinations   = NGT
+        self.earth          = earth
 
         if sat_ID is None:
             print(f'State Space:\n {self.states}\nState size: {self.stateSize} states')
@@ -3595,6 +3597,7 @@ class DDQNAgent:
             action   = self.actions[actIndex]
             while(linkedSats[action] == None):   # if that direction has no linked satellite
                 self.experienceReplay.store(newState, actIndex, unavPenalty, newState, False) # stores experience, repeats randomly
+                self.earth.rewards.append([unavPenalty, sat.env.now])
                 action = self.actions[random.randrange(len(self.actions))]
 
         # highest value (Exploitation)
@@ -3605,6 +3608,7 @@ class DDQNAgent:
             action   = self.actions[actIndex]
             while(linkedSats[action] == None):              # the chosen action has no linked satellite. NEGATIVE REWARD and store it, motherfucker.
                 self.experienceReplay.store(newState, actIndex, unavPenalty, newState, False) # from state to the same state, reward -1, not terminated
+                self.earth.rewards.append([unavPenalty, sat.env.now])
                 qValues[0][actIndex] = -np.inf              # it will not be chosen again (as the model has still not trained with that)
                 actIndex = np.argmax(qValues)               # find again for the highest value
                 action   = self.actions[actIndex]  
@@ -3665,13 +3669,16 @@ class DDQNAgent:
                 queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
                 reward          = distanceReward + queueReward + ArriveReward
                 self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, True)
+                self.earth.rewards.append([reward, sat.env.now])
                 # self.experienceReplay.store(block.oldState, block.oldAction, ArriveReward, newState, True)
             elif distanceRew == 5:
                 distanceReward  = getDistanceRewardV5(prevSat, sat, self.w2)
                 reward          = distanceReward + ArriveReward
                 self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, True)
+                self.earth.rewards.append([reward, sat.env.now])
             else:
                 self.experienceReplay.store(block.oldState, block.oldAction, ArriveReward, newState, True)
+                self.earth.rewards.append([ArriveReward, sat.env.now])
 
             if TrainThis: self.train(sat) # FIXME why here a train?? should not be here. Make a test without this when the model is stable
             if drawDeliver:
@@ -3711,6 +3718,7 @@ class DDQNAgent:
 
         # 5. Store the experience of previous Node (Agent, satellite) if it was not a gateway  
             self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, False) # action index
+            self.earth.rewards.append([reward, sat.env.now])
 
         # 6. Learning, train the Q-Network at every time we store experience
             if TrainThis and self.step % nTrain == 0:
@@ -3986,13 +3994,13 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
     if pathing == 'Deep Q-Learning':
         if not onlinePhase:
             # Initialize global agent
-            earth.DDQNA = DDQNAgent(len(earth.gateways), hyperparams)
+            earth.DDQNA = DDQNAgent(len(earth.gateways), hyperparams, earth)
         else:
             print('----------------------------------')
             print('Creating satellites agents...')
             for plane in earth.LEO:
                 for sat in plane.sats:
-                    sat.DDQNA = DDQNAgent(len(earth.gateways), hyperparams, sat.ID)
+                    sat.DDQNA = DDQNAgent(len(earth.gateways), hyperparams, earth, sat.ID)
             print('----------------------------------')
 
     # save hyperparams
@@ -4181,7 +4189,7 @@ def get_slant_range(edge):
         return(edge.slant_range)
 
 
-@numba.jit  # Using this decorator you can mark a function for optimization by Numba's JIT compiler
+# @numba.jit  # Using this decorator you can mark a function for optimization by Numba's JIT compiler
 def get_slant_range_optimized(Positions, N):
     '''
     returns a matrix with the all the distances between the satellites (optimized)
@@ -4193,6 +4201,29 @@ def get_slant_range_optimized(Positions, N):
             slant_range[i,j] = np.linalg.norm(Positions[i,:] - Positions[j,:])
     slant_range += np.transpose(slant_range)
     return slant_range
+
+# @numba.jit
+# def get_slant_range_optimized(Positions, N):
+#     '''
+#     Returns a matrix with all the distances between the satellites, considering the wrap-around effect near the 180-degree meridian.
+#     '''
+#     slant_range = np.zeros((N,N))
+#     for i in range(N):
+#         slant_range[i,i] = math.inf
+#         for j in range(i+1,N):
+#             # Calculate the difference in longitude, accounting for wrap-around
+#             delta_longitude = abs(Positions[j,0] - Positions[i,0])
+#             if delta_longitude > 180:
+#                 delta_longitude = 360 - delta_longitude
+            
+#             # Adjust positions to include wrap-around effect for distance calculation
+#             adjusted_positions_i = np.array([delta_longitude, Positions[i,1], Positions[i,2]])
+#             adjusted_positions_j = np.array([0, Positions[j,1], Positions[j,2]])
+
+#             # Calculate the Euclidean distance considering the adjusted longitudes
+#             slant_range[i,j] = np.linalg.norm(adjusted_positions_i - adjusted_positions_j)
+#     slant_range += np.transpose(slant_range)
+#     return slant_range
 
 
 @numba.jit  # Using this decorator you can mark a function for optimization by Numba's JIT compiler
@@ -4511,6 +4542,75 @@ def deleteDuplicatedLinks(satA, g, earth):
                     linkedSats['L']  = satB
 
 
+def deleteDuplicatedLinksV20(satA, g, earth):
+    '''
+    Given a satellite, searches for its east and west neighbor. If the east or west link is duplicated,
+    it will remove the link with a higher latitude difference, keeping the horizontal links.
+    Now considers the 180° meridian crossing links and does not delete them mistakenly.
+    '''
+
+    def normalize_longitude(longitude):
+        # Normalize a longitude to the range [-180, 180]
+        return ((longitude + 180) % 360) - 180
+
+    def longitude_difference(lon1, lon2):
+        # Calculate the smallest difference between two longitudes considering the 180° meridian
+        diff = normalize_longitude(lon1) - normalize_longitude(lon2)
+        if diff > 180:
+            diff -= 360
+        elif diff < -180:
+            diff += 360
+        return diff
+
+    def getMostHorizontal(currentSat, satA, satB):
+        # Chooses the satellite with the closest latitude to currentSat
+        lat_diff_a = abs(normalize_longitude(satA.latitude) - normalize_longitude(currentSat.latitude))
+        lat_diff_b = abs(normalize_longitude(satB.latitude) - normalize_longitude(currentSat.latitude))
+        return (satA, satB) if lat_diff_a < lat_diff_b else (satB, satA)
+
+    linkedSats = {'U': None, 'D': None, 'R': None, 'L': None}
+    for edge in list(g.edges(satA.ID)):
+        if edge[1][0].isdigit():
+            satB = findByID(earth, edge[1])
+            dir = getDirection(satA, satB)
+            # Change: Calculate longitude difference considering 180° meridian
+            lon_diff = longitude_difference(satA.longitude, satB.longitude)
+
+            # Handling East or crossing 180° meridian from West to East
+            if dir == 3 or (dir == 4 and lon_diff > 0):
+                if linkedSats['R'] is not None:
+                    # Change: Check for crossing the 180° meridian condition
+                    existing_lon_diff = longitude_difference(satA.longitude, linkedSats['R'].longitude)
+                    if abs(existing_lon_diff) > 90 and abs(lon_diff) > 90:
+                        # If both satellites are on opposite sides of the 180° meridian, keep both links
+                        print(f"180° meridian crossing detected, keeping link between {satA.ID} and {satB.ID}")
+                        continue
+                    most_horizontal, less_horizontal = getMostHorizontal(satA, linkedSats['R'], satB)
+                    linkedSats['R'] = most_horizontal
+                    print(f"{satA.ID} east satellite duplicated: {linkedSats['R'].ID}, {satB.ID}")
+                    print(f'Keeping most horizontal link: {most_horizontal.ID}, removing {less_horizontal.ID}')
+                    g.remove_edge(satA.ID, less_horizontal.ID)
+                else:
+                    linkedSats['R'] = satB
+
+            # Handling West or crossing 180° meridian from East to West
+            elif dir == 4 or (dir == 3 and lon_diff < 0):
+                if linkedSats['L'] is not None:
+                    # Change: Check for crossing the 180° meridian condition
+                    existing_lon_diff = longitude_difference(satA.longitude, linkedSats['L'].longitude)
+                    if abs(existing_lon_diff) > 90 and abs(lon_diff) > 90:
+                        # If both satellites are on opposite sides of the 180° meridian, keep both links
+                        print(f"180° meridian crossing detected, keeping link between {satA.ID} and {satB.ID}")
+                        continue
+                    most_horizontal, less_horizontal = getMostHorizontal(satA, linkedSats['L'], satB)
+                    linkedSats['L'] = most_horizontal
+                    print(f"{satA.ID} west satellite duplicated: {linkedSats['L'].ID}, {satB.ID}")
+                    print(f'Keeping most horizontal link: {most_horizontal.ID}, removing {less_horizontal.ID}')
+                    g.remove_edge(satA.ID, less_horizontal.ID)
+                else:
+                    linkedSats['L'] = satB
+
+
 def createGraph(earth, matching='Greedy'):
     '''
     Each satellite has two transceiver antennas that are connected to the closest satellite in east and west direction to a satellite
@@ -4776,7 +4876,7 @@ def getDeepSatScore(queueLength):
     return queueVals if queueLength > infQueue else int(np.floor(queueVals*np.log10(queueLength + 1)/np.log10(infQueue)))
 
 
-def getDirection(satA, satB):
+def getDirection_deprecated(satA, satB):
     '''
     Returns the direction of going from satA to satB.
     If the satellites are very far away (More than half of the radious of the Earth, pi) the East-West logic is reversed
@@ -4809,6 +4909,38 @@ def getDirection(satA, satB):
             return 4
 
 
+def getDirection(satA, satB):
+    '''
+    Returns the direction from satA to satB, considering the Earth's wrap-around for longitude.
+    '''
+
+    def normalize_longitude(lon):
+        # Normalize longitude to the range [-math.pi, math.pi]
+        return ((lon + math.pi) % (2 * math.pi)) - math.pi
+
+    planei = int(satA.in_plane)
+    planej = int(satB.in_plane)
+
+    if planei == planej:
+        if satA.latitude < satB.latitude:
+            return 1  # Go Upper
+        else:
+            return 2  # Go Lower
+
+    # Normalize the longitudes
+    norm_lonA = normalize_longitude(satA.longitude)
+    norm_lonB = normalize_longitude(satB.longitude)
+
+    # Calculate the normalized longitude difference
+    lon_diff = normalize_longitude(norm_lonB - norm_lonA)
+
+    # Decide direction based on normalized difference
+    if lon_diff > 0:
+        return 3  # Go Right
+    else:
+        return 4  # Go Left
+
+
 def linkedSatsList(g):
     '''
     This funtion retunrs a dictionary (Gateway: linekdSatellite)
@@ -4834,8 +4966,9 @@ def getDestination(Block, g, sat = None):
     if sat is None:
         return blockDestination
     else:
-        satDest = Block.destination.linkedSat[1]
-        return getGridPosition(GridSize, [tuple([math.degrees(satDest.latitude), math.degrees(satDest.longitude), satDest.ID])], False, False)[0]
+        pass
+        # satDest = Block.destination.linkedSat[1]
+        # return getGridPosition(GridSize, [tuple([math.degrees(satDest.latitude), math.degrees(satDest.longitude), satDest.ID])], False, False)[0]
 
 
 def getLinkedSats(satA, g, earth):
@@ -4952,7 +5085,7 @@ def getBiasedLatitude(sat):
         return (int(math.degrees(sat.latitude))+latBias)/coordGran
     except AttributeError as e:
         # print(f"getBiasedLatitude Caught an exception: {e}")
-        return -1
+        return notAvail
 
 
 def getBiasedLongitude(sat):
@@ -4960,10 +5093,10 @@ def getBiasedLongitude(sat):
         return (int(math.degrees(sat.longitude))+lonBias)/coordGran
     except AttributeError as e:
         # print(f"getBiasedLongitude Caught an exception: {e}")
-        return -1 
+        return notAvail
 
 
-# def getDeepStateV3(block, sat, linkedSats):
+def getDeepStateV3(block, sat, linkedSats):
     satDest = block.destination.linkedSat[1]
     if satDest is None:
         print(f'{block.destination} has no linked satellite :(')
@@ -5044,7 +5177,7 @@ def getDeepStateV2(block, sat, linkedSats):
             lat_diff = getDifferentialCoordinate(math.degrees(sat.latitude), math.degrees(ref_sat.latitude))
             return (lat_diff + latBias) / coordGran
         except AttributeError:
-            return -1
+            return notAvail
 
     def getBiasedDifferentialLongitude(sat, ref_sat):
         # Calculate the biased differential longitude
@@ -5052,7 +5185,7 @@ def getDeepStateV2(block, sat, linkedSats):
             lon_diff = getDifferentialCoordinate(math.degrees(sat.longitude), math.degrees(ref_sat.longitude))
             return (lon_diff + lonBias) / coordGran
         except AttributeError:
-            return -1
+            return notAvail
     
     satDest = block.destination.linkedSat[1]
     if satDest is None:
@@ -5474,6 +5607,31 @@ def extract_block_index(block_id):
     return int(block_id.split('_')[-1])
 
 
+def save_plot_rewards(outputPath, reward, GTnumber, window_size=50):
+    rewards = [x[0] for x in reward]
+    times    = [x[1] for x in reward]
+
+    # Calculate moving average
+    rewards_smoothed = pd.Series(rewards).rolling(window=window_size, center=True).mean()
+
+    plt.plot(times, rewards, label='Original Rewards')
+    plt.plot(times, rewards_smoothed, color='red', label='Smoothed Rewards (Window = {})'.format(window_size))
+    plt.title("Rewards over Time")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Rewards")
+    plt.legend()
+    os.makedirs(outputPath + '/Rewards/', exist_ok=True) # create output path
+    plt.savefig(outputPath + '/Rewards/' + "rewards_{}_gateways.png".format(GTnumber))
+    plt.close()
+
+    data = {'Rewards': rewards, 'Smoothed Rewards': rewards_smoothed, 'Time': times}
+    df = pd.DataFrame(data)
+    os.makedirs(outputPath + '/csv/', exist_ok=True)  # create output path
+    df.to_csv(outputPath + '/csv/' + "rewards_{}_gateways.csv".format(GTnumber), index=False)
+
+    return df
+
+
 def save_epsilons(outputPath, eps, GTnumber):
     epsilons = [x[0] for x in eps]
     times    = [x[1] for x in eps]
@@ -5787,6 +5945,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             plotSavePathLatencies(outputPath, GTnumber, pathBlocks)
             
             if pathing == "Deep Q-Learning" or pathing == 'Q-Learning':
+                save_plot_rewards(outputPath, earth1.rewards, GTnumber)
                 if not onlinePhase:
                     eps = earth1.DDQNA.epsilon if pathing == "Deep Q-Learning" else earth1.epsilon
                 else:
