@@ -101,8 +101,8 @@ if onlinePhase:         # Just in case
     Train       = False
     explore     = False
     importQVals = True
-nnpath          = f'./pre_trained_NNs/qNetwork_2GTs.h5'
-notAvail        = 0     # this value is set in the state space when the satellite neighbour is not available
+nnpath      = './pre_trained_NNs/qNetwork_8GTs.h5'
+notAvail    = 0     # this value is set in the state space when the satellite neighbour is not available
 
 w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
@@ -3114,7 +3114,7 @@ class Earth:
                     gridSatX = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
                     gridSatY = int((0.5 - math.degrees(sat.latitude) / 180) * 720) #GT.totalY)
                     scat2 = plt.scatter(gridSatX, gridSatY, marker='o', s=18, linewidth=0.5, edgecolors='black', color=c, label=sat.ID)
-                    plt.text(gridSatX + 10, gridSatY - 10, sat.ID, fontsize=6, ha='left', va='center')
+                    # plt.text(gridSatX + 10, gridSatY - 10, sat.ID, fontsize=6, ha='left', va='center')    # plots the text of the ID of the satellites
 
         if plotGT:
             for GT in self.gateways:
@@ -5607,9 +5607,9 @@ def extract_block_index(block_id):
     return int(block_id.split('_')[-1])
 
 
-def save_plot_rewards(outputPath, reward, GTnumber, window_size=50):
+def save_plot_rewards(outputPath, reward, GTnumber, window_size=100):
     rewards = [x[0] for x in reward]
-    times    = [x[1] for x in reward]
+    times   = [x[1] for x in reward]
 
     # Calculate moving average
     rewards_smoothed = pd.Series(rewards).rolling(window=window_size, center=True).mean()
@@ -5713,7 +5713,7 @@ def plotSavePathLatencies(outputPath, GTnumber, pathBlocks):
     data = {'Latency': [l for l in latency], 'Arrival Time': [t for t in arrival]}
     df = pd.DataFrame(data)
     df.to_csv(outputPath + '/csv/' + "pathLatencies_{}_gateways.csv".format(GTnumber), index=False)
-    os.makedirs(outputPath + '/loss/', exist_ok=True) # create output path
+    # os.makedirs(outputPath + '/loss/', exist_ok=True) # create output path
 
 
 def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotate_min_latency=True):  

@@ -8,3 +8,4 @@ SatNExV2
 .venv
 **/.DS_Store
 **.npy
+# **/pre_trained_NNs/**
