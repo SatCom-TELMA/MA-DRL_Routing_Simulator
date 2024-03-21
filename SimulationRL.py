@@ -91,7 +91,7 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
-diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = True      # If True, makes random actions eventually, if false only exploitation
@@ -108,7 +108,7 @@ w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally    
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-GTs = [8]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 # Other
@@ -151,8 +151,8 @@ minElAngle  = 30        # For satellites. Value is taken from NGSO constellation
 
 # State pre-processing
 coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
-latBias     = 90/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
-lonBias     = 180/coordGran # Same but with longitude
+latBias     = 90#/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
+lonBias     = 180#/coordGran # Same but with longitude
 # diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
@@ -4439,10 +4439,6 @@ def greedyMatching(earth):
     slant_range_los = los_slant_range(slant_range, meta, Max_slnt_rng, Positions)   # distance matrix but if d>dMax, d=infinite
     shannonRate     = get_data_rate(slant_range_los, interISL)                      # max dataRate
 
-    # Positions, _ = get_pos_vectors_omni(Satellites)
-    # slant_range = get_slant_range_optimized(Positions, N)
-    # shannonRate = get_data_rate(slant_range, interISL)
-
     # Create edges for inter-plane links (closest east and west satellites)
     for i, sat in enumerate(Satellites):
         closest_east, closest_west = None, None
@@ -4484,19 +4480,6 @@ def greedyMatching(earth):
             slant_range_los[i, j],                          # distance between satellites
             None, None,                                     # directions
             shannonRate[i,j]))                              # Max dataRate
-
-    # for sat in Satellites:
-    #     sat.findIntraNeighbours(earth)  # find upper and lower neighbors
-    #     upper_neighbor = sat.upper
-    #     lower_neighbor = sat.lower
-
-    #     upper_index = Satellites.index(upper_neighbor)
-    #     lower_index = Satellites.index(lower_neighbor)
-
-    #     # Add edges for upper and lower neighbors
-    #     _A_Greedy.append(edge(sat.ID, upper_neighbor.ID, slant_range_los[sat.i_in_plane, upper_index], None, None, shannonRate[sat.i_in_plane, upper_index]))
-    #     _A_Greedy.append(edge(sat.ID, lower_neighbor.ID, slant_range_los[sat.i_in_plane, lower_index], None, None, shannonRate[sat.i_in_plane, lower_index]))
-
 
     return _A_Greedy
 
@@ -4542,6 +4525,7 @@ def deleteDuplicatedLinks(satA, g, earth):
                     linkedSats['L']  = satB
 
 
+"""
 def deleteDuplicatedLinksV20(satA, g, earth):
     '''
     Given a satellite, searches for its east and west neighbor. If the east or west link is duplicated,
@@ -4609,7 +4593,7 @@ def deleteDuplicatedLinksV20(satA, g, earth):
                     g.remove_edge(satA.ID, less_horizontal.ID)
                 else:
                     linkedSats['L'] = satB
-
+"""
 
 def createGraph(earth, matching='Greedy'):
     '''
@@ -5114,12 +5098,12 @@ def getDeepStateV3(block, sat, linkedSats):
                     getBiasedLatitude(satDest),                                 # Destination Latitude
                     getBiasedLongitude(satDest)]).reshape(1,-1)                 # Destination Longitude
   
-
-# def getDeepStateV20(block, sat, linkedSats):
-    '''
+'''
+def getDeepStateV2(block, sat, linkedSats):
+    """
     The state has a pre-process where, instead of giving directly the coordinates of the neighbors,
     it gives the difference from the current agent to the neighbors coordinates
-    '''
+    """
     satDest = block.destination.linkedSat[1]
     if satDest is None:
         print(f'{block.destination} has no linked satellite :(')
@@ -5160,6 +5144,7 @@ def getDeepStateV3(block, sat, linkedSats):
                     currentLon,                                                 # Actual Longitude
                     getBiasedLatitude(satDest) - currentLat,                        # Destination Latitude
                     getBiasedLongitude(satDest) - currentLon]).reshape(1,-1)       # Destination Longitude
+'''
 
 
 def getDeepStateV2(block, sat, linkedSats):
