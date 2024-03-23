@@ -3040,7 +3040,11 @@ class Earth:
         print("number of GT paths that cannot meet flow restraints: {}".format(totalFailed))
 
     def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=False, arrow_gap=0.008, outputPath='', paths=None, fileName="map.png"):
-        plt.figure()
+        if paths is None:
+            plt.figure()
+        else:
+            plt.figure(figsize=(6, 3))
+
         legend_properties = {'size': 10, 'weight': 'bold'}
         markerscale = 1.5
         usage_threshold = 200   # This is used in the paths part
@@ -3159,28 +3163,30 @@ class Earth:
         # Plot the map with the usage of all the links
         if paths is not None:
             link_usage = calculate_link_usage([block.QPath for block in paths]) if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning' else calculate_link_usage([block.path for block in paths])
-            # Adjust the normalization to start from the usage threshold
-            min_usage = usage_threshold  # Setting minimum value to usage threshold
-            try:
-                # max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
-                max_usage = max(info['count'] for info in link_usage.values())
-            except Exception as e:
-                print(f"Caught an exception: {e}. Lowering usage_threshold")
-                min_usage = 1
-                usage_threshold = 1
-                # max_usage = max([info['count'] for info in link_usage.values() if info['count'] > usage_threshold])
-                max_usage = max(info['count'] for info in link_usage.values())
 
-            norm = Normalize(vmin=min_usage, vmax=max_usage)
-            cmap = cm.get_cmap('RdYlGn_r')  # Use a red-yellow-green reversed colormap
+            # After calculating max_usage in the plotting section
+            max_usage = max(info['count'] for info in link_usage.values())
+            min_usage = max_usage * 0.1  # Set minimum usage to 10% of the maximum
+
+            # Find the most used link
+            most_used_link = max(link_usage.items(), key=lambda x: x[1]['count'])
+            print(f"Most used link: {most_used_link[0]}, Packets: {most_used_link[1]['count']}")
+
+            norm = Normalize(vmin=10, vmax=100)
+            # cmap = cm.get_cmap('RdYlGn_r')  # Use a red-yellow-green reversed colormap
+            cmap = cm.get_cmap('inferno_r')  # Use a darker colormap
 
             for link_str, info in link_usage.items():
                 usage = info['count']
-                if usage <= usage_threshold:  # Skip links with usage usage_threshold or less
-                    continue
+                # Convert usage to a percentage of the maximum, with a floor of 10%
+                usage_percentage = max(10, (usage / max_usage) * 100)  # Ensure minimum of 10%
+                # Adjust width based on usage_percentage instead of raw usage
+                width = 0.5 + (usage_percentage / 100) * 2  # Use usage_percentage for scaling
+                
+                # Use usage_percentage for color scaling
+                color = cmap(norm(usage_percentage))  # This line should use `usage_percentage` for color scaling
 
                 coordinates = info['coordinates']
-                width = 0.5 + (usage / max_usage) * 2  # Adjust width scaling as necessary
 
                 # Get original start and end points for adjusting
                 orig_start_x, orig_start_y = (0.5 + coordinates[0][0] / 360) * 1440, (0.5 - coordinates[0][1] / 180) * 720
@@ -3197,15 +3203,16 @@ class Earth:
                 verts = [(start_x, start_y), (ctrl_x, ctrl_y), (end_x, end_y)]
                 codes = [Path.MOVETO, Path.CURVE3, Path.CURVE3]
                 path = Path(verts, codes)
-                color = cmap(norm(usage))  # Color based on usage
+
+                # Ensure this color variable is used for the FancyArrowPatch
                 patch = FancyArrowPatch(path=path, arrowstyle='-|>', color=color, linewidth=width, mutation_scale=5, zorder=0.5)
                 plt.gca().add_patch(patch)
-        
+
             # Add legend for congestion color coding
             sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
             sm.set_array([])
-            ticks = [usage_threshold] + list(np.linspace(usage_threshold, max_usage, num=5))  # Creates evenly spaced ticks from threshold to max_usage
-            plt.colorbar(sm, orientation='vertical', label='Packets per link', fraction=0.02, pad=0.04, ticks=ticks)
+            ticks = [10] + list(np.linspace(10, 100, num=5))  # Ticks from 10% to 100%
+            plt.colorbar(sm, orientation='vertical', label='Relative Traffic Load (%)', fraction=0.02, pad=0.04, ticks=ticks) 
             # plt.colorbar(sm, orientation='vertical', label='Number of packets', fraction=0.02, pad=0.04)
 
             plt.xticks([])
@@ -3225,9 +3232,13 @@ class Earth:
         plt.xticks([])
         plt.yticks([])
 
-        cell_users = np.array(self.getCellUsers()).transpose()
-        plt.imshow(cell_users, norm=LogNorm(), cmap='viridis')
+        if paths is None:
+            cell_users = np.array(self.getCellUsers()).transpose()
+            plt.imshow(cell_users, norm=LogNorm(), cmap='viridis')
+        else:
+            plt.gca().invert_yaxis()
 
+        # plt.show()
         # plt.imshow(np.log10(np.array(self.getCellUsers()).transpose() + 1), )
 
         # Add title
@@ -3236,7 +3247,7 @@ class Earth:
 
         if save:
             plt.tight_layout()
-            plt.savefig(fileName, dpi=1000, bbox_inches='tight')
+            plt.savefig(fileName, dpi=1000, bbox_inches='tight', pad_inches=0)   
   
     def initializeQTables(self, NGT, hyperparams, g):
         '''
