@@ -94,14 +94,15 @@ balancedFlow= False     # if set to true all the generated traffic at each GT is
 diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
+explore     = False      # If True, makes random actions eventually, if false only exploitation
+importQVals = True     # imports either QTables or NN from a certain path
 onlinePhase = False      # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
-    Train       = False
+    # Train       = False
     explore     = False
     importQVals = True
 nnpath      = './pre_trained_NNs/qNetwork_8GTs.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_8GTs.h5'
 notAvail    = 0     # this value is set in the state space when the satellite neighbour is not available
 
 w1          = 20        # rewards the getting to empty queues
@@ -3585,13 +3586,17 @@ class DDQNAgent:
                     print(f'Satellite {sat_ID} Q-Network imported')
                 
                 if ddqn:
-                    self.qTarget = self.qNetwork
+                    global nnpathTarget
+                    # self.qTarget = self.qNetwork
+                    self.qTarget = keras.models.load_model(nnpathTarget)
                     if sat_ID is None:
                         print('----------------------------------')
-                        print("DDQN enabled, TARGET NETWORK copied from Q-NETWORK:")
+                        # print("DDQN enabled, TARGET NETWORK copied from Q-NETWORK:")
+                        print(f"Q-NETWORK imported from:\n {nnpathTarget}!!!")
                         print('----------------------------------')
                     else:
-                        print(f'Satellite {sat_ID} Q-Target copied from Q-Network')
+                        # print(f'Satellite {sat_ID} Q-Target copied from Q-Network')
+                        print(f'Satellite {sat_ID} Q-Target Q-Target imported')
 
             except FileNotFoundError:
                 print('----------------------------------')
@@ -5890,9 +5895,11 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
     firstGT = True
     for GTnumber in GTs:
         global CurrentGTnumber
-        global nnpath
         global Train
         global TrainThis
+        global nnpath
+        if ddqn:
+            global nnpathTarget
         TrainThis       = Train
         CurrentGTnumber = GTnumber
         
@@ -5901,6 +5908,8 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             firstGT = False
         else:
             nnpath  = f'{outputPath}/NNs/qNetwork_{GTnumber-1}GTs.h5'
+            if ddqn:
+                nnpathTarget = f'{outputPath}/NNs/qTarget_{GTnumber-1}GTs.h5'
 
         env = simpy.Environment()
 
