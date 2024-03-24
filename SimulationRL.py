@@ -94,8 +94,8 @@ balancedFlow= False     # if set to true all the generated traffic at each GT is
 diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = False      # If True, makes random actions eventually, if false only exploitation
-importQVals = True     # imports either QTables or NN from a certain path
+explore     = True      # If True, makes random actions eventually, if false only exploitation
+importQVals = False     # imports either QTables or NN from a certain path
 onlinePhase = False      # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
@@ -151,7 +151,7 @@ matching    = 'Greedy'  # ['Markovian', 'Greedy']
 minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
 
 # State pre-processing
-coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+coordGran   = 10            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 latBias     = 90#/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180#/coordGran # Same but with longitude
 # diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
@@ -162,7 +162,7 @@ ddqn        = True      # Activates DDQN, where now there are two DNNs, a target
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
-gamma       = 0.99      # greedy factor. Smaller -> Greedy
+gamma       = 0.9       # greedy factor. Smaller -> Greedy
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
@@ -3428,8 +3428,7 @@ class QLearning:
        
         # 3. Choose an action (the direction of the next hop)
         # randomly
-        # if random.uniform(0, 1)<self.epsilon:
-        if random.uniform(0, 1)<self.alignEpsilon(earth, sat) and explore:
+        if explore and random.uniform(0, 1)<self.alignEpsilon(earth, sat):
             action = self.actions[random.randrange(len(self.actions))]
             while(self.linkedSats[action] == None): 
                 action = self.actions[random.randrange(len(self.actions))]  # if that direction has no linked satellite
@@ -3608,7 +3607,7 @@ class DDQNAgent:
         Given a new observed state and the linkied satellites, it will return the next hop
         '''
         # randomly (Exploration)
-        if random.uniform(0, 1)<self.alignEpsilon(self.step, sat) and explore:
+        if explore and random.uniform(0, 1)<self.alignEpsilon(self.step, sat):
             actIndex = random.randrange(self.actionSize)
             action   = self.actions[actIndex]
             while(linkedSats[action] == None):   # if that direction has no linked satellite
@@ -3667,9 +3666,9 @@ class DDQNAgent:
         # 1. Observe the state and search for the satellites linked to the one making the action
         linkedSats  = getDeepLinkedSats(sat, g, earth)
         if reducedState:
-            newState    = getDeepStateV3(block, sat, linkedSats)
+            newState    = getDeepStateReduced(block, sat, linkedSats)
         elif diff:
-            newState    = getDeepStateV2(block, sat, linkedSats)
+            newState    = getDeepStateDiff(block, sat, linkedSats)
         else:
             newState    = getDeepState(block, sat, linkedSats)
 
@@ -3915,6 +3914,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
     constellationType = inputParams['Constellation'][0]
     fraction = inputParams['Fraction'][0]
     testType = inputParams['Test type'][0]
+    print(f'Fraction of traffic generated: {fraction}, test type: {testType}')
     # pathing  = inputParams['Pathing'][0]
 
     if testType == "Rates":
@@ -5096,7 +5096,7 @@ def getBiasedLongitude(sat):
         return notAvail
 
 
-def getDeepStateV3(block, sat, linkedSats):
+def getDeepStateReduced(block, sat, linkedSats):
     satDest = block.destination.linkedSat[1]
     if satDest is None:
         print(f'{block.destination} has no linked satellite :(')
@@ -5113,134 +5113,84 @@ def getDeepStateV3(block, sat, linkedSats):
                     getBiasedLongitude(sat),                                    # Actual Longitude
                     getBiasedLatitude(satDest),                                 # Destination Latitude
                     getBiasedLongitude(satDest)]).reshape(1,-1)                 # Destination Longitude
-  
-'''
-def getDeepStateV2(block, sat, linkedSats):
-    """
-    The state has a pre-process where, instead of giving directly the coordinates of the neighbors,
-    it gives the difference from the current agent to the neighbors coordinates
-    """
-    satDest = block.destination.linkedSat[1]
-    if satDest is None:
-        print(f'{block.destination} has no linked satellite :(')
-        return None
-
-    queuesU = getQueues(linkedSats['U'], DDQN = True)
-    queuesD = getQueues(linkedSats['D'], DDQN = True)
-    queuesR = getQueues(linkedSats['R'], DDQN = True)
-    queuesL = getQueues(linkedSats['L'], DDQN = True)
-    currentLat = getBiasedLatitude(sat)
-    currentLon = getBiasedLatitude(sat)
-    return np.array([getDeepSatScore(queuesU['U']),                             # Up link scores
-                    getDeepSatScore(queuesU['D']),
-                    getDeepSatScore(queuesU['R']),
-                    getDeepSatScore(queuesU['L']),
-                    getBiasedLatitude(linkedSats['U']) - currentLat,            # Up link Positions
-                    getBiasedLongitude(linkedSats['U']) - currentLon,
-                    getDeepSatScore(queuesD['U']),                              # Down link scores
-                    getDeepSatScore(queuesD['D']),
-                    getDeepSatScore(queuesD['R']),
-                    getDeepSatScore(queuesD['L']),
-                    getBiasedLatitude(linkedSats['D']) - currentLat,            # Down link Positions
-                    getBiasedLongitude(linkedSats['D']) - currentLon,
-                    getDeepSatScore(queuesR['U']),                              # Right link scores
-                    getDeepSatScore(queuesR['D']),
-                    getDeepSatScore(queuesR['R']),
-                    getDeepSatScore(queuesR['L']),
-                    getBiasedLatitude(linkedSats['R']) - currentLat,            # Right link Positions
-                    getBiasedLongitude(linkedSats['R']) - currentLon,
-                    getDeepSatScore(queuesL['U']),                              # Left link scores
-                    getDeepSatScore(queuesL['D']),
-                    getDeepSatScore(queuesL['R']),
-                    getDeepSatScore(queuesL['L']),
-                    getBiasedLatitude(linkedSats['L']) - currentLat,            # Left link Positions
-                    getBiasedLongitude(linkedSats['L']) - currentLon,
-
-                    currentLat,                                                 # Actual Latitude
-                    currentLon,                                                 # Actual Longitude
-                    getBiasedLatitude(satDest) - currentLat,                        # Destination Latitude
-                    getBiasedLongitude(satDest) - currentLon]).reshape(1,-1)       # Destination Longitude
-'''
 
 
-def getDeepStateV2(block, sat, linkedSats):
+def getDeepStateDiff(block, sat, linkedSats):
     def normalize_angle_diff(angle_diff):
-        # Normalize the difference in the angle to the range [-180, 180]
+        # Ensure the angle difference is within [-180, 180]
         return (angle_diff + 180) % 360 - 180
 
-    def getDifferentialCoordinate(coord, ref_coord):
-        # Calculate the differential coordinate considering the wrap-around effect
-        return normalize_angle_diff(coord - ref_coord)
-
-    def getBiasedDifferentialLatitude(sat, ref_sat):
-        # Calculate the biased differential latitude
+    def get_relative_position(neighbor_sat, current_coord, is_lat=True):
+        # Convert and calculate relative position, considering the 180-degree discontinuity
         try:
-            lat_diff = getDifferentialCoordinate(math.degrees(sat.latitude), math.degrees(ref_sat.latitude))
-            return (lat_diff + latBias) / coordGran
+            neighbor_coord = math.degrees(neighbor_sat.latitude if is_lat else neighbor_sat.longitude)
+            current_coord = math.degrees(current_coord)
+            diff = normalize_angle_diff(neighbor_coord - current_coord)
+            return diff / coordGran
         except AttributeError:
             return notAvail
+        
+    def get_absolute_position(coord, bias, gran):
+        # Convert absolute position to a normalized value within the specified range
+        return (math.degrees(coord) + bias) / gran
 
-    def getBiasedDifferentialLongitude(sat, ref_sat):
-        # Calculate the biased differential longitude
-        try:
-            lon_diff = getDifferentialCoordinate(math.degrees(sat.longitude), math.degrees(ref_sat.longitude))
-            return (lon_diff + lonBias) / coordGran
-        except AttributeError:
-            return notAvail
-    
     satDest = block.destination.linkedSat[1]
     if satDest is None:
         print(f'{block.destination} has no linked satellite :(')
         return None
-    
-    current_lat = math.degrees(sat.latitude)
-    current_lon = math.degrees(sat.longitude)
 
-    queuesU = getQueues(linkedSats['U'], DDQN = True)
-    queuesD = getQueues(linkedSats['D'], DDQN = True)
-    queuesR = getQueues(linkedSats['R'], DDQN = True)
-    queuesL = getQueues(linkedSats['L'], DDQN = True)
-    
-    # Preparing the state array with differential positions
+    # Current coordinates
+    current_lat = sat.latitude
+    current_lon = sat.longitude
+
+    # Queues
+    queuesU = getQueues(linkedSats['U'], DDQN=True)
+    queuesD = getQueues(linkedSats['D'], DDQN=True)
+    queuesR = getQueues(linkedSats['R'], DDQN=True)
+    queuesL = getQueues(linkedSats['L'], DDQN=True)
+
     state = [
-                    getDeepSatScore(queuesU['U']),                             # Up link scores
-                    getDeepSatScore(queuesU['D']),
-                    getDeepSatScore(queuesU['R']),
-                    getDeepSatScore(queuesU['L']),
-                    getBiasedDifferentialLatitude(linkedSats['U'], sat),        # Up link Positions
-                    getBiasedDifferentialLongitude(linkedSats['U'], sat),
+        # Up link scores and positions
+        getDeepSatScore(queuesU['U']),
+        getDeepSatScore(queuesU['D']),
+        getDeepSatScore(queuesU['R']),
+        getDeepSatScore(queuesU['L']),
+        get_relative_position(linkedSats['U'], current_lat, is_lat=True),
+        get_relative_position(linkedSats['U'], current_lon, is_lat=False),
 
-                    getDeepSatScore(queuesD['U']),                              # Down link scores
-                    getDeepSatScore(queuesD['D']),
-                    getDeepSatScore(queuesD['R']),
-                    getDeepSatScore(queuesD['L']),
-                    getBiasedDifferentialLatitude(linkedSats['D'], sat),        # Down link Positions
-                    getBiasedDifferentialLongitude(linkedSats['D'], sat),
+        # Down link scores and positions
+        getDeepSatScore(queuesD['U']),
+        getDeepSatScore(queuesD['D']),
+        getDeepSatScore(queuesD['R']),
+        getDeepSatScore(queuesD['L']),
+        get_relative_position(linkedSats['D'], current_lat, is_lat=True),
+        get_relative_position(linkedSats['D'], current_lon, is_lat=False),
 
-                    getDeepSatScore(queuesR['U']),                              # Right link scores
-                    getDeepSatScore(queuesR['D']),
-                    getDeepSatScore(queuesR['R']),
-                    getDeepSatScore(queuesR['L']),
-                    getBiasedDifferentialLatitude(linkedSats['R'], sat),        # Right link Positions
-                    getBiasedDifferentialLongitude(linkedSats['R'], sat),
+        # Right link scores and positions
+        getDeepSatScore(queuesR['U']),
+        getDeepSatScore(queuesR['D']),
+        getDeepSatScore(queuesR['R']),
+        getDeepSatScore(queuesR['L']),
+        get_relative_position(linkedSats['R'], current_lat, is_lat=True),
+        get_relative_position(linkedSats['R'], current_lon, is_lat=False),
 
-                    getDeepSatScore(queuesL['U']),                              # Left link scores
-                    getDeepSatScore(queuesL['D']),
-                    getDeepSatScore(queuesL['R']),
-                    getDeepSatScore(queuesL['L']),
-                    getBiasedDifferentialLatitude(linkedSats['L'], sat),        # Left link Positions
-                    getBiasedDifferentialLongitude(linkedSats['L'], sat),
+        # Left link scores and positions
+        getDeepSatScore(queuesL['U']),
+        getDeepSatScore(queuesL['D']),
+        getDeepSatScore(queuesL['R']),
+        getDeepSatScore(queuesL['L']),
+        get_relative_position(linkedSats['L'], current_lat, is_lat=True),
+        get_relative_position(linkedSats['L'], current_lon, is_lat=False),
 
-                    # Current satellite's coordinates
-                    (current_lat + latBias) / coordGran,
-                    (current_lon + lonBias) / coordGran,
+        # Absolute current satellite's coordinates
+        get_absolute_position(current_lat, latBias, coordGran),
+        get_absolute_position(current_lon, lonBias, coordGran),
 
-                    # Destination's differential coordinates
-                    getBiasedDifferentialLatitude(satDest, sat),
-                    getBiasedDifferentialLongitude(satDest, sat)
+        # Destination's differential coordinates
+        get_relative_position(satDest, current_lat, is_lat=True),
+        get_relative_position(satDest, current_lon, is_lat=False)
     ]
 
-    # Reshape the state array into the required format
     return np.array(state).reshape(1, -1)
 
 
