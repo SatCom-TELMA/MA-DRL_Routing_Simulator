@@ -5758,10 +5758,14 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotat
             for path in unique_paths:
                 df_path = df[df['Path'] == path]
                 min_latency = df_path['Latency_Rolling_Avg'].min()
-                min_pos = df_path[metric][df_path['Latency_Rolling_Avg'].idxmin()]
-                axes[i, 0].annotate(f'{min_latency:.0f} ms', xy=(min_pos, min_latency), 
-                                    xytext=(-50, 30), textcoords='offset points', 
-                                    arrowprops=dict(arrowstyle='->', color='black'))
+                try:
+                    min_pos = df_path[metric][df_path['Latency_Rolling_Avg'].idxmin()]
+                    axes[i, 0].annotate(f'{min_latency:.0f} ms', xy=(min_pos, min_latency), 
+                                        xytext=(-50, 30), textcoords='offset points', 
+                                        arrowprops=dict(arrowstyle='->', color='black'))
+                except KeyError as e:
+                    print(f"Error annotating minimum latency: {e}")
+
 
         # Scatter Plots on the right (column index 1)
         scatterplot = sns.scatterplot(x=metric, y='Latency', hue='Path', ax=axes[i, 1], data=df, marker='o', s=marker_size)
@@ -5778,7 +5782,9 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotat
             handles1, labels1 = axes[i, 0].get_legend_handles_labels()
             handles2, labels2 = ax2.get_legend_handles_labels()
             axes[i, 0].legend(handles1 + handles2, labels1 + labels2, loc='upper right')
-            ax2.get_legend().remove()
+            # Check if ax2 has a legend before trying to remove it
+            if ax2.get_legend():
+                ax2.get_legend().remove()
         else:
             # Handle legend for the case when epsDF is None
             handles, labels = axes[i, 0].get_legend_handles_labels()
