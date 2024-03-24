@@ -151,7 +151,7 @@ matching    = 'Greedy'  # ['Markovian', 'Greedy']
 minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
 
 # State pre-processing
-coordGran   = 10            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+coordGran   = 2            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 latBias     = 90#/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180#/coordGran # Same but with longitude
 # diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
@@ -3166,8 +3166,12 @@ class Earth:
             link_usage = calculate_link_usage([block.QPath for block in paths]) if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning' else calculate_link_usage([block.path for block in paths])
 
             # After calculating max_usage in the plotting section
-            max_usage = max(info['count'] for info in link_usage.values())
-            min_usage = max_usage * 0.1  # Set minimum usage to 10% of the maximum
+            try:
+                max_usage = max(info['count'] for info in link_usage.values())
+                min_usage = max_usage * 0.1  # Set minimum usage to 10% of the maximum
+            except ValueError:
+                print("Error: No data available for plotting congestion map.")
+                return  # If this is within a function, it will exit. If not, remove or adjust this line.
 
             # Find the most used link
             most_used_link = max(link_usage.items(), key=lambda x: x[1]['count'])
@@ -5557,7 +5561,7 @@ def plotQueues(queues, outputPath, GTnumber):
 def extract_block_index(block_id):
     return int(block_id.split('_')[-1])
 
-
+'''
 def save_plot_rewards(outputPath, reward, GTnumber, window_size=100):
     rewards = [x[0] for x in reward]
     times   = [x[1] for x in reward]
@@ -5581,6 +5585,45 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=100):
     df.to_csv(outputPath + '/csv/' + "rewards_{}_gateways.csv".format(GTnumber), index=False)
 
     return df
+'''
+
+
+def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
+    rewards = [x[0] for x in reward]
+    times   = [x[1] for x in reward]
+    data    = pd.DataFrame({'Rewards': rewards, 'Time': times})
+
+    # Smoothed Rewards
+    data['Smoothed Rewards'] = data['Rewards'].rolling(window=window_size).mean()
+
+    # Top 10% and Bottom 10% Rewards
+    data['Top 10% Avg Rewards'] = data['Rewards'].rolling(window=window_size).apply(lambda x: np.mean(np.partition(x, -int(len(x)*0.1))[-int(len(x)*0.1):]), raw=True)
+    data['Bottom 10% Avg Rewards'] = data['Rewards'].rolling(window=window_size).apply(lambda x: np.mean(np.partition(x, int(len(x)*0.1))[:int(len(x)*0.1)]), raw=True)
+
+    # Plotting
+    plt.figure(figsize=(12, 6))
+    plt.plot(data['Time'], data['Rewards'], label='Original Rewards', alpha=0.3, color='grey')
+    plt.plot(data['Time'], data['Smoothed Rewards'], color='blue', linewidth=2, label='Smoothed Rewards')
+    plt.plot(data['Time'], data['Top 10% Avg Rewards'], color='green', linewidth=2, linestyle='--', label='Top 10% Avg Rewards')
+    plt.plot(data['Time'], data['Bottom 10% Avg Rewards'], color='red', linewidth=2, linestyle='-.', label='Bottom 10% Avg Rewards')
+    plt.title("Rewards over Time")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Rewards")
+    plt.legend()
+    plt.grid(True)
+
+    # Save plot
+    rewards_dir = os.path.join(outputPath, 'Rewards')
+    os.makedirs(rewards_dir, exist_ok=True)  # create output path
+    plt.savefig(os.path.join(rewards_dir, "rewards_{}_gateways.png".format(GTnumber)))
+    plt.close()
+
+    # Save CSV
+    csv_dir = os.path.join(outputPath, 'csv')
+    os.makedirs(csv_dir, exist_ok=True)  # create output path
+    data.to_csv(os.path.join(csv_dir, "rewards_{}_gateways.csv".format(GTnumber)), index=False)
+
+    return data
 
 
 def save_epsilons(outputPath, eps, GTnumber):
