@@ -101,15 +101,16 @@ if onlinePhase:         # Just in case
     # Train       = False
     explore     = False
     importQVals = True
-nnpath      = './pre_trained_NNs/qNetwork_8GTs.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_8GTs.h5'
+nnpath      = './pre_trained_NNs/qNetwork_2GTs.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_2GTs.h5'
 notAvail    = 0     # this value is set in the state space when the satellite neighbour is not available
 
 w1          = 20        # rewards the getting to empty queues
-w2          = 20        # rewards getting closes phisycally    
+w2          = 20        # rewards getting closes phisycally  
+w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-GTs = [8]               # number of gateways to be tested
+GTs = [3]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 # Other
@@ -3119,7 +3120,7 @@ class Earth:
                     gridSatX = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
                     gridSatY = int((0.5 - math.degrees(sat.latitude) / 180) * 720) #GT.totalY)
                     scat2 = plt.scatter(gridSatX, gridSatY, marker='o', s=18, linewidth=0.5, edgecolors='black', color=c, label=sat.ID)
-                    # plt.text(gridSatX + 10, gridSatY - 10, sat.ID, fontsize=6, ha='left', va='center')    # plots the text of the ID of the satellites
+                    plt.text(gridSatX + 10, gridSatY - 10, sat.ID, fontsize=6, ha='left', va='center')    # ANCHOR plots the text of the ID of the satellites
 
         if plotGT:
             for GT in self.gateways:
@@ -3681,7 +3682,7 @@ class DDQNAgent:
             return 0
         self.step   += 1
 
-        # 2. Check if the destination is the linked gateway. The reward is 10 here and goes to the previous satellite. # ANCHOR plot delivered deep NN
+        # 2. Check if the destination is the linked gateway. The reward is ArriveReward here and goes to the previous satellite. # ANCHOR plot delivered deep NN
         if sat.linkedGT and (block.destination.ID == sat.linkedGT.ID):    # Compare IDs
             if distanceRew == 4:
                 distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2)
@@ -5441,7 +5442,9 @@ def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
 
 def getDistanceRewardV4(sat, nextSat, destination, w2):
     SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
-    return w2*SLr/biggestDist
+    TravelDistance = getSlantRange(sat, nextSat)
+    return w2*(SLr-TravelDistance/w3)/biggestDist
+    # return w2*(SLr/biggestDist)
     # return w2*SLr/1000000
 
 
@@ -5783,8 +5786,8 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotat
             handles, labels = axes[i, 0].get_legend_handles_labels()
             axes[i, 0].legend(handles, labels, loc='upper right')
 
-        axes[i, 0].legend().set_visible(False)  # FIXME legend disabled
-        axes[i, 1].legend().set_visible(False)  # FIXME legend disabled
+        axes[i, 0].legend().set_visible(False)  # FIXME latency figure legend disabled
+        axes[i, 1].legend().set_visible(False)  # FIXME latency figure legend disabled
         
     # Adjust the layout
     plt.tight_layout()
