@@ -89,7 +89,7 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
-mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = True     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
 diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
@@ -110,7 +110,8 @@ w2          = 20        # rewards getting closes phisycally
 w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-GTs = [2]               # number of gateways to be tested
+# GTs = [2]               # number of gateways to be tested
+GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
 # Other
@@ -5894,10 +5895,16 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             if ddqn:
                 nnpathTarget = f'{outputPath}/NNs/qTarget_{GTnumber-1}GTs.h5'
 
+        if len(GTs)>1:
+            start_time_GT = datetime.now()
+
         env = simpy.Environment()
 
         if mixLocs: # changes the selected GTs every iteration
-            random.shuffle(locations)
+            firstLocs = locations[:max(GTs)]
+            random.shuffle(firstLocs)
+            locations[:max(GTs)] = firstLocs
+            # random.shuffle(locations)
         inputParams['Locations'] = locations[:GTnumber]
         print('----------------------------------')
         print('Time:')
@@ -6009,6 +6016,16 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         del env
         del _
         gc.collect()
+
+        if len(GTs)>1:
+            print('----------------------------------')
+            print('Time:')
+            end_time_GT = datetime.now()
+            print(end_time_GT.strftime("%H:%M:%S"))
+            print('----------------------------------')
+            elapsed_time_GT = end_time_GT - start_time_GT
+            print(f"Elapsed time for {GTnumber} GTs: {elapsed_time_GT}")
+            print('----------------------------------')
 
     # plotLatenciesBars(percentages, outputPath)
 
