@@ -95,7 +95,7 @@ diff        = True      # If up, the state space gives no coordinates about the 
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
+importQVals = True     # imports either QTables or NN from a certain path
 onlinePhase = False      # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
@@ -110,7 +110,7 @@ w2          = 20        # rewards getting closes phisycally
 w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-GTs = [3]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 # Other
@@ -3585,7 +3585,7 @@ class DDQNAgent:
                 self.qNetwork = keras.models.load_model(nnpath)
                 if sat_ID is None:
                     print('----------------------------------')
-                    print(f"Q-NETWORK imported from:\n {nnpath}!!!")
+                    print(f"Q-Network imported from:\n {nnpath}!!!")
                     print('----------------------------------')
                     self.qNetwork.summary()
                 else:
@@ -3598,7 +3598,7 @@ class DDQNAgent:
                     if sat_ID is None:
                         print('----------------------------------')
                         # print("DDQN enabled, TARGET NETWORK copied from Q-NETWORK:")
-                        print(f"Q-NETWORK imported from:\n {nnpathTarget}!!!")
+                        print(f"Q-Target imported from:\n {nnpathTarget}!!!")
                         print('----------------------------------')
                     else:
                         # print(f'Satellite {sat_ID} Q-Target copied from Q-Network')
@@ -5567,36 +5567,10 @@ def plotQueues(queues, outputPath, GTnumber):
 def extract_block_index(block_id):
     return int(block_id.split('_')[-1])
 
-'''
-def save_plot_rewards(outputPath, reward, GTnumber, window_size=100):
-    rewards = [x[0] for x in reward]
-    times   = [x[1] for x in reward]
-
-    # Calculate moving average
-    rewards_smoothed = pd.Series(rewards).rolling(window=window_size, center=True).mean()
-
-    plt.plot(times, rewards, label='Original Rewards')
-    plt.plot(times, rewards_smoothed, color='red', label='Smoothed Rewards (Window = {})'.format(window_size))
-    plt.title("Rewards over Time")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Rewards")
-    plt.legend()
-    os.makedirs(outputPath + '/Rewards/', exist_ok=True) # create output path
-    plt.savefig(outputPath + '/Rewards/' + "rewards_{}_gateways.png".format(GTnumber))
-    plt.close()
-
-    data = {'Rewards': rewards, 'Smoothed Rewards': rewards_smoothed, 'Time': times}
-    df = pd.DataFrame(data)
-    os.makedirs(outputPath + '/csv/', exist_ok=True)  # create output path
-    df.to_csv(outputPath + '/csv/' + "rewards_{}_gateways.csv".format(GTnumber), index=False)
-
-    return df
-'''
-
 
 def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
     rewards = [x[0] for x in reward]
-    times   = [x[1] for x in reward]
+    times   = [x[1]*1000 for x in reward]
     data    = pd.DataFrame({'Rewards': rewards, 'Time': times})
 
     # Smoothed Rewards
@@ -5607,15 +5581,19 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
     data['Bottom 10% Avg Rewards'] = data['Rewards'].rolling(window=window_size).apply(lambda x: np.mean(np.partition(x, int(len(x)*0.1))[:int(len(x)*0.1)]), raw=True)
 
     # Plotting
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(8, 6))
     plt.plot(data['Time'], data['Rewards'], label='Original Rewards', alpha=0.3, color='grey')
     plt.plot(data['Time'], data['Smoothed Rewards'], color='blue', linewidth=2, label='Smoothed Rewards')
     plt.plot(data['Time'], data['Top 10% Avg Rewards'], color='green', linewidth=2, linestyle='--', label='Top 10% Avg Rewards')
     plt.plot(data['Time'], data['Bottom 10% Avg Rewards'], color='red', linewidth=2, linestyle='-.', label='Bottom 10% Avg Rewards')
-    plt.title("Rewards over Time")
-    plt.xlabel("Time (s)")
+    plt.title("Rewards over Time", fontsize=14)  # Increase title font size
+    plt.xlabel("Time (s)", fontsize=20)
+    plt.ylabel("Rewards", fontsize=20)
+    plt.legend(fontsize=15)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
+    plt.xlabel("Time (ms)")
     plt.ylabel("Rewards")
-    plt.legend()
     plt.grid(True)
 
     # Save plot
