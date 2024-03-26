@@ -95,7 +95,7 @@ diff        = True      # If up, the state space gives no coordinates about the 
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = True     # imports either QTables or NN from a certain path
+importQVals = False     # imports either QTables or NN from a certain path
 onlinePhase = False      # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
@@ -110,8 +110,8 @@ w2          = 20        # rewards getting closes phisycally
 w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-# GTs = [2]               # number of gateways to be tested
-GTs = [i for i in range(2,9)] # 19.
+GTs = [8]               # number of gateways to be tested
+# GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
 # Other
