@@ -9,3 +9,4 @@ SatNExV2
 **/.DS_Store
 **.npy
 # **/pre_trained_NNs/**
+SimulationRL_Old.py

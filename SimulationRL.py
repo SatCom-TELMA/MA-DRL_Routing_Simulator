@@ -107,10 +107,10 @@ notAvail    = 0     # this value is set in the state space when the satellite ne
 
 w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
-w3          = 5        # Normalization for the distance reward, for the traveled distance factor  
+w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-GTs = [8]               # number of gateways to be tested
+GTs = [3]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 # Other
@@ -152,7 +152,7 @@ matching    = 'Greedy'  # ['Markovian', 'Greedy']
 minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
 
 # State pre-processing
-coordGran   = 2            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 latBias     = 90#/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180#/coordGran # Same but with longitude
 # diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
@@ -163,7 +163,7 @@ ddqn        = True      # Activates DDQN, where now there are two DNNs, a target
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
-gamma       = 0.9       # greedy factor. Smaller -> Greedy
+gamma       = 0.99       # greedy factor. Smaller -> Greedy
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
@@ -3329,6 +3329,7 @@ class hyperparam:
         self.ArriveR    = ArriveReward
         self.w1         = w1
         self.w2         = w2
+        self.w3         = w3
         self.pathing    = pathing
         self.tau        = tau
         self.updateF    = updateF
@@ -3535,6 +3536,7 @@ class DDQNAgent:
         self.minEps = hyperparams.MIN_EPSILON
         self.w1     = hyperparams.w1
         self.w2     = hyperparams.w2
+        self.w3     = hyperparams.w3
         self.tau    = hyperparams.tau
         self.updateF= hyperparams.updateF
         self.batchS = hyperparams.batchSize
@@ -3685,7 +3687,7 @@ class DDQNAgent:
         # 2. Check if the destination is the linked gateway. The reward is ArriveReward here and goes to the previous satellite. # ANCHOR plot delivered deep NN
         if sat.linkedGT and (block.destination.ID == sat.linkedGT.ID):    # Compare IDs
             if distanceRew == 4:
-                distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2)
+                distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2, self.w3)
                 queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
                 reward          = distanceReward + queueReward + ArriveReward
                 self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, True)
@@ -3729,7 +3731,7 @@ class DDQNAgent:
                 prevLinkedSats  = getDeepLinkedSats(prevSat, g, earth)
                 distanceReward  = getDistanceRewardV3(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
             elif distanceRew == 4:
-                distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2)
+                distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2, self.w3)
             elif distanceRew == 5:
                 distanceReward  = getDistanceRewardV5(prevSat, sat, self.w2)
 
@@ -5440,7 +5442,7 @@ def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
     return w2*SLr/max(SLrs)
     
 
-def getDistanceRewardV4(sat, nextSat, destination, w2):
+def getDistanceRewardV4(sat, nextSat, destination, w2, w3):
     SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
     TravelDistance = getSlantRange(sat, nextSat)
     return w2*(SLr-TravelDistance/w3)/biggestDist
@@ -5467,6 +5469,7 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
                 'Arrive Reward: ' + str(hyperparams.ArriveR), 
                 'w1: ' + str(hyperparams.w1), 
                 'w2: ' + str(hyperparams.w2),
+                'w3: ' + str(hyperparams.w3),
                 'Coords granularity: ' + str(hyperparams.coordGran),
                 'Update freq: ' + str(hyperparams.updateF),
                 'Batch Size: ' + str(hyperparams.batchSize),
