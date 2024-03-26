@@ -110,8 +110,8 @@ w2          = 20        # rewards getting closes phisycally
 w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-GTs = [8]               # number of gateways to be tested
-# GTs = [i for i in range(2,9)] # 19.
+# GTs = [8]               # number of gateways to be tested
+GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
 # Other
@@ -5807,7 +5807,7 @@ def plotRatesFigures():
     plt.close()
 
 
-def plotCongestionMap(self, paths, outPath):
+def plotCongestionMap(self, paths, outPath, GTnumber):
     def extract_gateways(path):
     # Assuming QPath's first and last elements contain gateway identifiers
         if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
@@ -5837,7 +5837,7 @@ def plotCongestionMap(self, paths, outPath):
         all_routes_paths = [block for block in paths if block.path and extract_gateways(block) in filtered_routes]
 
     self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(all_routes_paths),
-                 fileName=os.path.join(outPath, "all_routes_CongestionMap.png"))
+                 fileName=os.path.join(outPath, f"all_routes_CongestionMap_{GTnumber}GTs.png"))
     plt.close()
 
     # Plot for each unique route above the threshold
@@ -5848,7 +5848,7 @@ def plotCongestionMap(self, paths, outPath):
             route_paths = [block for block in paths if extract_gateways(block) == route and block.path]
 
         self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(route_paths),
-                     fileName=os.path.join(outPath, f"CongestionMap_{route[0]}_to_{route[1]}.png"))
+                     fileName=os.path.join(outPath, f"CongestionMap_{route[0]}_to_{route[1]}_{GTnumber}GTs.png"))
         plt.close()
     
 
@@ -5968,7 +5968,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             plotQueues(earth1.queues, outputPath, GTnumber)
 
         print('Plotting link congestion figures...')
-        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/')
+        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/', GTnumber)
 
         print(f"number of gateways: {GTnumber}")
         print('Path:')
