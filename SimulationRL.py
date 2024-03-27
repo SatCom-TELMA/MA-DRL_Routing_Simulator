@@ -89,20 +89,20 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
-mixLocs     = True     # If true, every time we make a new simulation the locations are going to change their order of selection
+mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
 diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
+explore     = False      # If True, makes random actions eventually, if false only exploitation
+importQVals = True     # imports either QTables or NN from a certain path
 onlinePhase = False      # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
     explore     = False
     importQVals = True
-nnpath      = './pre_trained_NNs/qNetwork_2GTs.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_2GTs.h5'
+nnpath      = './pre_trained_NNs/qNetwork_8GTs.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_8GTs.h5'
 notAvail    = 0     # this value is set in the state space when the satellite neighbour is not available
 
 w1          = 20        # rewards the getting to empty queues
@@ -110,8 +110,8 @@ w2          = 20        # rewards getting closes phisycally
 w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-# GTs = [8]               # number of gateways to be tested
-GTs = [i for i in range(2,9)] # 19.
+GTs = [8]               # number of gateways to be tested
+# GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
 # Other
