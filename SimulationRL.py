@@ -110,7 +110,7 @@ w2          = 20        # rewards getting closes phisycally
 w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-GTs = [8]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
@@ -3871,7 +3871,7 @@ class ExperienceReplay:
         appends a set of (state, action, reward, next state, terminated) to the experience replay buffer
         '''
         # if the buffer is full, it behave as a FIFO
-        self.buffer.append((state, action, reward, nextState, terminated)) # stores the number of the action
+        self.buffer.append((state, action, reward, nextState, terminated))
 
     def getBatch(self, batchSize):
         '''
@@ -5582,12 +5582,12 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
     data['Bottom 10% Avg Rewards'] = data['Rewards'].rolling(window=window_size).apply(lambda x: np.mean(np.partition(x, int(len(x)*0.1))[:int(len(x)*0.1)]), raw=True)
 
     # Plotting
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(10, 5))
     plt.plot(data['Time'], data['Rewards'], label='Original Rewards', alpha=0.3, color='grey')
     plt.plot(data['Time'], data['Smoothed Rewards'], color='blue', linewidth=2, label='Smoothed Rewards')
     plt.plot(data['Time'], data['Top 10% Avg Rewards'], color='green', linewidth=2, linestyle='--', label='Top 10% Avg Rewards')
     plt.plot(data['Time'], data['Bottom 10% Avg Rewards'], color='red', linewidth=2, linestyle='-.', label='Bottom 10% Avg Rewards')
-    plt.title("Rewards over Time", fontsize=14)  # Increase title font size
+    plt.title("Rewards over Time", fontsize=20)  # Increase title font size
     plt.xlabel("Time (s)", fontsize=20)
     plt.ylabel("Rewards", fontsize=20)
     plt.legend(fontsize=15)
@@ -5596,6 +5596,7 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
     plt.xlabel("Time (ms)")
     plt.ylabel("Rewards")
     plt.grid(True)
+    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
 
     # Save plot
     rewards_dir = os.path.join(outputPath, 'Rewards')
@@ -5768,8 +5769,8 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotat
             handles, labels = axes[i, 0].get_legend_handles_labels()
             axes[i, 0].legend(handles, labels, loc='upper right')
 
-        axes[i, 0].legend().set_visible(False)  # FIXME latency figure legend disabled
-        axes[i, 1].legend().set_visible(False)  # FIXME latency figure legend disabled
+        axes[i, 0].legend().set_visible(False)  # REVIEW latency figure legend disabled
+        axes[i, 1].legend().set_visible(False)  # REVIEW latency figure legend disabled
         
     # Adjust the layout
     plt.tight_layout()
