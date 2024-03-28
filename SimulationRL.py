@@ -81,7 +81,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[1]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -96,13 +96,13 @@ diff        = True      # If up, the state space gives no coordinates about the 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
 importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = False      # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = True      # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
     explore     = False
     importQVals = True
-nnpath      = './pre_trained_NNs/qNetwork_8GTs.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_8GTs.h5'
+nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 notAvail    = 0     # this value is set in the state space when the satellite neighbour is not available
 
 w1          = 20        # rewards the getting to empty queues
@@ -110,7 +110,7 @@ w2          = 20        # rewards getting closes phisycally
 w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 
-GTs = [2]               # number of gateways to be tested
+GTs = [8]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
@@ -3173,7 +3173,7 @@ class Earth:
                 min_usage = max_usage * 0.1  # Set minimum usage to 10% of the maximum
             except ValueError:
                 print("Error: No data available for plotting congestion map.")
-                return  # If this is within a function, it will exit. If not, remove or adjust this line.
+                return  -1 # If this is within a function, it will exit. If not, remove or adjust this line.
 
             # Find the most used link
             most_used_link = max(link_usage.items(), key=lambda x: x[1]['count'])
@@ -5743,7 +5743,7 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotat
                                         xytext=(-50, 30), textcoords='offset points', 
                                         arrowprops=dict(arrowstyle='->', color='black'))
                 except KeyError as e:
-                    print(f"Error annotating minimum latency: {e}")
+                    print(f"Error annotating minimum latency for the path path {path}: {e}")
 
 
         # Scatter Plots on the right (column index 1)
@@ -5837,9 +5837,11 @@ def plotCongestionMap(self, paths, outPath, GTnumber):
     else:
         all_routes_paths = [block for block in paths if block.path and extract_gateways(block) in filtered_routes]
 
-    self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(all_routes_paths),
+    done = self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(all_routes_paths),
                  fileName=os.path.join(outPath, f"all_routes_CongestionMap_{GTnumber}GTs.png"))
     plt.close()
+    if done == -1:
+        print('Congestion map for all routes not available')
 
     # Plot for each unique route above the threshold
     for route, count in filtered_routes.items():
@@ -5848,9 +5850,11 @@ def plotCongestionMap(self, paths, outPath, GTnumber):
         else:
             route_paths = [block for block in paths if extract_gateways(block) == route and block.path]
 
-        self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(route_paths),
+        done = self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(route_paths),
                      fileName=os.path.join(outPath, f"CongestionMap_{route[0]}_to_{route[1]}_{GTnumber}GTs.png"))
         plt.close()
+        if done == -1:
+            print(f'Congestion map for {route} not available')
     
 
 # @profile
