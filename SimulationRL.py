@@ -81,12 +81,15 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[1]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
                          # 4: Distance reward normalized by 1.000 km
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
+
+rotate      = True
+ndeltas     = 0.05        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
@@ -96,11 +99,13 @@ diff        = True      # If up, the state space gives no coordinates about the 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 importQVals = False     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
     explore     = False
     importQVals = True
+# nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
 nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
 nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 notAvail    = 0     # this value is set in the state space when the satellite neighbour is not available
@@ -148,7 +153,7 @@ blockSize   = 64800
 
 # Movement and structure
 movementTime= 10 * 3600 # should be in the order of 10's of hours. If the test is not 'Rates', the movement time is still kept large to avoid the constellation moving
-ndeltas     = 25        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+# ndeltas     = 25        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 matching    = 'Greedy'  # ['Markovian', 'Greedy']
 minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
 
@@ -1695,6 +1700,11 @@ class Earth:
 
         # create constellation of satellites
         self.LEO = create_Constellation(constellation, env, self)
+
+        if rotate:
+            print('Rotating constellation...')
+            for constellation in self.LEO:
+                constellation.rotate(ndeltas*deltaT)
 
         # Simpy process for handling moving the constellation and the satellites within the constellation
         self.moveConstellation = env.process(self.moveConstellation(env, deltaT, getRates))
