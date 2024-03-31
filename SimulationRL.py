@@ -81,7 +81,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[1]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -94,9 +94,9 @@ balancedFlow= False     # if set to true all the generated traffic at each GT is
 diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = False      # If True, makes random actions eventually, if false only exploitation
-importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = True      # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = True      # If True, makes random actions eventually, if false only exploitation
+importQVals = False     # imports either QTables or NN from a certain path
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
     explore     = False
@@ -3173,6 +3173,8 @@ class Earth:
                 min_usage = max_usage * 0.1  # Set minimum usage to 10% of the maximum
             except ValueError:
                 print("Error: No data available for plotting congestion map.")
+                print('Link usage values:\n')
+                print(link_usage.values())  # FIXME why does this break whe few values?
                 return  -1 # If this is within a function, it will exit. If not, remove or adjust this line.
 
             # Find the most used link
@@ -3349,6 +3351,7 @@ class hyperparam:
         self.diff       = diff
         self.explore    = explore
         self.reducedState= reducedState
+        self.online     = onlinePhase
  
     def __repr__(self):
         return 'Hyperparameters:\nalpha: {}\ngamma: {}\nepsilon: {}\nw1: {}\nw2: {}\n'.format(
@@ -3544,6 +3547,7 @@ class DDQNAgent:
         self.bufferS= hyperparams.bufferSize
         self.hardUpd= hyperparams.hardUpdate
         self.importQ= hyperparams.importQ
+        self.online = hyperparams.online
 
         self.step   = 0
         self.i      = 0
@@ -5481,7 +5485,8 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
                 'Latitude bias: ' + str(hyperparams.latBias),
                 'Longitude bias: ' + str(hyperparams.lonBias),
                 'Diff: ' + str(hyperparams.diff),
-                'Reduced State: ' + str(hyperparams.reducedState)]
+                'Reduced State: ' + str(hyperparams.reducedState),
+                'Online phase: ' + str(hyperparams.online)]
 
     # save hyperparams
     with open(outputPath + 'hyperparams.txt', 'w') as f:
@@ -5515,6 +5520,7 @@ def saveDeepNetworks(outputPath, earth):
                 sat.DDQNA.qNetwork.save(outputPath + sat.ID + 'qNetwork_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
                 if ddqn:
                     sat.DDQNA.qTarget.save(outputPath + sat.ID + 'qTarget_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
+
 
 ###############################################################################
 #########################    Simulation && Results    #########################
