@@ -1,0 +1,225 @@
+Nº of Gateways: 18
+Routing metric: Deep Q-Learning
+----------------------------------
+Time:
+21:53:15
+Locations:
+0         Malaga
+1          Vardø
+2    Los Angeles
+3      Mauritius
+4         Azores
+5           Nuuk
+6      Bangalore
+7          Nemea
+Name: Locations, dtype: object
+Movement Time: 36000
+Rotation Factor: 25
+Minimum epsilon: 0.001
+Reward for deliver: 50
+Stop Loss: False, number of samples considered: 50, threshold: 0.5
+----------------------------------
+Fraction of traffic generated: 0.1, test type: Latency
+Using Kepler constellation design
+total divisions in x = 1440
+ total divisions in y = 720
+ total cells = 1036800
+ window of operation (longitudes) = (0, 1440)
+ window of operation (latitudes) = (0, 720)
+
+Finding cells within coverage area of GT 1 of 8Finding cells within coverage area of GT 2 of 8Finding cells within coverage area of GT 3 of 8Finding cells within coverage area of GT 4 of 8Finding cells within coverage area of GT 5 of 8Finding cells within coverage area of GT 6 of 8Finding cells within coverage area of GT 7 of 8Finding cells within coverage area of GT 8 of 8
+Time taken to find cells that are within range of all GTs: 2.505309581756592 seconds
+Time taken to add cell information to all GTs: 0.07351922988891602 seconds
+
+Matching: Greedy
+----------------------------------
+Removing duplicated links...
+0_1 east satellite duplicated: 6_19, 3_0
+Keeping most horizontal link: 6_19
+0_2 West satellite duplicated: 6_17, 6_18
+Keeping most horizontal link: 6_18
+0_2 east satellite duplicated: 1_2, 6_19
+Keeping most horizontal link: 1_2
+0_3 West satellite duplicated: 6_16, 6_17
+Keeping most horizontal link: 6_17
+0_7 east satellite duplicated: 1_6, 1_7
+Keeping most horizontal link: 1_7
+0_8 east satellite duplicated: 1_7, 1_8
+Keeping most horizontal link: 1_8
+0_9 east satellite duplicated: 1_8, 1_9
+Keeping most horizontal link: 1_9
+0_11 east satellite duplicated: 6_9, 1_11
+Keeping most horizontal link: 1_11
+0_12 West satellite duplicated: 6_8, 6_7
+Keeping most horizontal link: 6_8
+0_12 east satellite duplicated: 1_12, 6_9
+Keeping most horizontal link: 1_12
+0_13 West satellite duplicated: 6_7, 6_6
+Keeping most horizontal link: 6_7
+0_17 east satellite duplicated: 1_17, 1_16
+Keeping most horizontal link: 1_17
+0_18 east satellite duplicated: 1_18, 1_17
+Keeping most horizontal link: 1_18
+0_19 east satellite duplicated: 1_19, 1_18
+Keeping most horizontal link: 1_19
+1_1 east satellite duplicated: 2_1, 4_0
+Keeping most horizontal link: 2_1
+1_11 West satellite duplicated: 0_11, 6_9
+Keeping most horizontal link: 0_11
+1_11 east satellite duplicated: 2_11, 4_10
+Keeping most horizontal link: 2_11
+2_9 east satellite duplicated: 0_10, 3_9
+Keeping most horizontal link: 3_9
+2_19 east satellite duplicated: 0_0, 3_19
+Keeping most horizontal link: 3_19
+5_1 West satellite duplicated: 4_1, 6_0
+Keeping most horizontal link: 4_1
+5_2 east satellite duplicated: 6_2, 6_1
+Keeping most horizontal link: 6_2
+5_11 West satellite duplicated: 4_11, 6_10
+Keeping most horizontal link: 4_11
+5_12 east satellite duplicated: 6_12, 6_11
+Keeping most horizontal link: 6_12
+Biggest slant range between satellites: 3708.31 km
+----------------------------------
+Traffic generated per GT (totalAvgFlow per Milliard):
+----------------------------------
+Malaga, Spain: 0.2103214
+Los Angeles, California, US: 0.18516475
+Nemea, Greece: 0.18516475
+Nuuk, Greenland: 0.15386125
+Bangalore, India (partner station): 0.1644751
+Mauritius: 0.1810268
+Vardø, Norway: 0.2103214
+Azores, Portugal (partner station): 0.1644751
+----------------------------------
+State Space:
+ ('UpLinked Up', 'UpLinked Down', 'UpLinked Right', 'UpLinked Left', 'Up Latitude', 'Up Longitude', 'DownLinked Up', 'DownLinked Down', 'DownLinked Right', 'DownLinked Left', 'Down Latitude', 'Down Longitude', 'RightLinked Up', 'RightLinked Down', 'RightLinked Right', 'RightLinked Left', 'Right Latitude', 'Right Longitude', 'LeftLinked Up', 'LeftLinked Down', 'LeftLinked Right', 'LeftLinked Left', 'Left Latitude', 'Left Longitude', 'Actual latitude', 'Actual longitude', 'Destination latitude', 'Destination longitude')
+State size: 28 states
+Action Space:
+ ('U', 'D', 'R', 'L')
+----------------------------------
+Q-NETWORK created:
+----------------------------------
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense (Dense)               (None, 32)                928       
+                                                                 
+ dense_1 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_2 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2116 (8.27 KB)
+Trainable params: 2116 (8.27 KB)
+Non-trainable params: 0 (0.00 Byte)
+_________________________________________________________________
+----------------------------------
+DDQN enabled, TARGET NETWORK created:
+----------------------------------
+Model: "sequential_1"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ dense_3 (Dense)             (None, 32)                928       
+                                                                 
+ dense_4 (Dense)             (None, 32)                1056      
+                                                                 
+ dense_5 (Dense)             (None, 4)                 132       
+                                                                 
+=================================================================
+Total params: 2116 (8.27 KB)
+Trainable params: 2116 (8.27 KB)
+Non-trainable params: 0 (0.00 Byte)
+_________________________________________________________________
+Saving hyperparams at: ./Results/Deep Q-Learning_6.0s_[50]_Del_[20]_w1_[20]_w2_[8]_GTs/
+Saving ISLs map...
+----------------------------
+Simulation progress: 1% Estimated time remaining: 6148 seconds Current simulation time: 0.06Simulation progress: 2% Estimated time remaining: 13734 seconds Current simulation time: 0.12Simulation progress: 3% Estimated time remaining: 20799 seconds Current simulation time: 0.18Simulation progress: 4% Estimated time remaining: 27155 seconds Current simulation time: 0.24Simulation progress: 5% Estimated time remaining: 33742 seconds Current simulation time: 0.3Simulation progress: 6% Estimated time remaining: 39957 seconds Current simulation time: 0.36Simulation progress: 7% Estimated time remaining: 45704 seconds Current simulation time: 0.42Simulation progress: 8% Estimated time remaining: 50753 seconds Current simulation time: 0.48Simulation progress: 9% Estimated time remaining: 55027 seconds Current simulation time: 0.54Simulation progress: 10% Estimated time remaining: 58002 seconds Current simulation time: 0.6000000000000001Simulation progress: 11% Estimated time remaining: 59726 seconds Current simulation time: 0.6600000000000001Simulation progress: 12% Estimated time remaining: 60594 seconds Current simulation time: 0.7200000000000002Simulation progress: 13% Estimated time remaining: 60565 seconds Current simulation time: 0.7800000000000002Simulation progress: 14% Estimated time remaining: 59891 seconds Current simulation time: 0.8400000000000003Simulation progress: 15% Estimated time remaining: 58866 seconds Current simulation time: 0.9000000000000004Simulation progress: 16% Estimated time remaining: 57724 seconds Current simulation time: 0.9600000000000004Simulation progress: 17% Estimated time remaining: 56402 seconds Current simulation time: 1.0200000000000005Simulation progress: 18% Estimated time remaining: 54927 seconds Current simulation time: 1.0800000000000005Simulation progress: 19% Estimated time remaining: 53408 seconds Current simulation time: 1.1400000000000006Simulation progress: 20% Estimated time remaining: 52009 seconds Current simulation time: 1.2000000000000006Simulation progress: 21% Estimated time remaining: 50593 seconds Current simulation time: 1.2600000000000007Simulation progress: 22% Estimated time remaining: 49231 seconds Current simulation time: 1.3200000000000007Simulation progress: 23% Estimated time remaining: 47894 seconds Current simulation time: 1.3800000000000008Simulation progress: 24% Estimated time remaining: 46576 seconds Current simulation time: 1.4400000000000008Simulation progress: 25% Estimated time remaining: 45331 seconds Current simulation time: 1.5000000000000009Simulation progress: 26% Estimated time remaining: 44134 seconds Current simulation time: 1.560000000000001Simulation progress: 27% Estimated time remaining: 42984 seconds Current simulation time: 1.620000000000001Simulation progress: 28% Estimated time remaining: 41860 seconds Current simulation time: 1.680000000000001Simulation progress: 29% Estimated time remaining: 40768 seconds Current simulation time: 1.740000000000001Simulation progress: 30% Estimated time remaining: 39716 seconds Current simulation time: 1.8000000000000012Simulation progress: 31% Estimated time remaining: 38653 seconds Current simulation time: 1.8600000000000012Simulation progress: 32% Estimated time remaining: 37640 seconds Current simulation time: 1.9200000000000013Simulation progress: 33% Estimated time remaining: 36661 seconds Current simulation time: 1.9800000000000013Simulation progress: 34% Estimated time remaining: 35717 seconds Current simulation time: 2.0400000000000014Simulation progress: 35% Estimated time remaining: 34796 seconds Current simulation time: 2.1000000000000014Simulation progress: 36% Estimated time remaining: 33909 seconds Current simulation time: 2.1600000000000015Simulation progress: 37% Estimated time remaining: 33026 seconds Current simulation time: 2.2200000000000015Simulation progress: 38% Estimated time remaining: 32161 seconds Current simulation time: 2.2800000000000016Simulation progress: 39% Estimated time remaining: 31312 seconds Current simulation time: 2.3400000000000016Simulation progress: 40% Estimated time remaining: 30477 seconds Current simulation time: 2.4000000000000017Simulation progress: 41% Estimated time remaining: 29686 seconds Current simulation time: 2.4600000000000017Simulation progress: 42% Estimated time remaining: 28937 seconds Current simulation time: 2.520000000000002Simulation progress: 43% Estimated time remaining: 28179 seconds Current simulation time: 2.580000000000002Simulation progress: 44% Estimated time remaining: 27445 seconds Current simulation time: 2.640000000000002Simulation progress: 45% Estimated time remaining: 26735 seconds Current simulation time: 2.700000000000002Simulation progress: 46% Estimated time remaining: 26030 seconds Current simulation time: 2.760000000000002Simulation progress: 47% Estimated time remaining: 25331 seconds Current simulation time: 2.820000000000002Simulation progress: 48% Estimated time remaining: 24660 seconds Current simulation time: 2.880000000000002Simulation progress: 49% Estimated time remaining: 24007 seconds Current simulation time: 2.940000000000002Simulation progress: 50% Estimated time remaining: 23366 seconds Current simulation time: 3.000000000000002Simulation progress: 51% Estimated time remaining: 22723 seconds Current simulation time: 3.0600000000000023Simulation progress: 52% Estimated time remaining: 22104 seconds Current simulation time: 3.1200000000000023Simulation progress: 53% Estimated time remaining: 21491 seconds Current simulation time: 3.1800000000000024Simulation progress: 54% Estimated time remaining: 20903 seconds Current simulation time: 3.2400000000000024Simulation progress: 55% Estimated time remaining: 20313 seconds Current simulation time: 3.3000000000000025Simulation progress: 56% Estimated time remaining: 19723 seconds Current simulation time: 3.3600000000000025Simulation progress: 57% Estimated time remaining: 19166 seconds Current simulation time: 3.4200000000000026Simulation progress: 58% Estimated time remaining: 18607 seconds Current simulation time: 3.4800000000000026Simulation progress: 59% Estimated time remaining: 18036 seconds Current simulation time: 3.5400000000000027Simulation progress: 60% Estimated time remaining: 17494 seconds Current simulation time: 3.6000000000000028Simulation progress: 61% Estimated time remaining: 16961 seconds Current simulation time: 3.660000000000003Simulation progress: 62% Estimated time remaining: 16431 seconds Current simulation time: 3.720000000000003Simulation progress: 63% Estimated time remaining: 15907 seconds Current simulation time: 3.780000000000003Simulation progress: 64% Estimated time remaining: 15389 seconds Current simulation time: 3.840000000000003Simulation progress: 65% Estimated time remaining: 14877 seconds Current simulation time: 3.900000000000003Simulation progress: 66% Estimated time remaining: 14375 seconds Current simulation time: 3.960000000000003Simulation progress: 67% Estimated time remaining: 13878 seconds Current simulation time: 4.020000000000003Simulation progress: 68% Estimated time remaining: 13389 seconds Current simulation time: 4.080000000000003Simulation progress: 69% Estimated time remaining: 12906 seconds Current simulation time: 4.140000000000002Simulation progress: 70% Estimated time remaining: 12432 seconds Current simulation time: 4.200000000000002Simulation progress: 71% Estimated time remaining: 11955 seconds Current simulation time: 4.260000000000002Simulation progress: 72% Estimated time remaining: 11478 seconds Current simulation time: 4.320000000000001Simulation progress: 73% Estimated time remaining: 11008 seconds Current simulation time: 4.380000000000001Simulation progress: 74% Estimated time remaining: 10544 seconds Current simulation time: 4.44Simulation progress: 75% Estimated time remaining: 10091 seconds Current simulation time: 4.5Simulation progress: 76% Estimated time remaining: 9639 seconds Current simulation time: 4.56Simulation progress: 77% Estimated time remaining: 9196 seconds Current simulation time: 4.619999999999999Simulation progress: 78% Estimated time remaining: 8753 seconds Current simulation time: 4.679999999999999Simulation progress: 79% Estimated time remaining: 8314 seconds Current simulation time: 4.739999999999998Simulation progress: 80% Estimated time remaining: 7880 seconds Current simulation time: 4.799999999999998Simulation progress: 81% Estimated time remaining: 7454 seconds Current simulation time: 4.859999999999998Simulation progress: 82% Estimated time remaining: 7031 seconds Current simulation time: 4.919999999999997Simulation progress: 83% Estimated time remaining: 6612 seconds Current simulation time: 4.979999999999997Simulation progress: 84% Estimated time remaining: 6195 seconds Current simulation time: 5.0399999999999965Simulation progress: 85% Estimated time remaining: 5784 seconds Current simulation time: 5.099999999999996Simulation progress: 86% Estimated time remaining: 5374 seconds Current simulation time: 5.159999999999996Simulation progress: 87% Estimated time remaining: 4969 seconds Current simulation time: 5.219999999999995Simulation progress: 88% Estimated time remaining: 4571 seconds Current simulation time: 5.279999999999995Simulation progress: 89% Estimated time remaining: 4175 seconds Current simulation time: 5.3399999999999945Simulation progress: 90% Estimated time remaining: 3782 seconds Current simulation time: 5.399999999999994Simulation progress: 91% Estimated time remaining: 3392 seconds Current simulation time: 5.459999999999994Simulation progress: 92% Estimated time remaining: 3004 seconds Current simulation time: 5.519999999999993Simulation progress: 93% Estimated time remaining: 2618 seconds Current simulation time: 5.579999999999993Simulation progress: 94% Estimated time remaining: 2236 seconds Current simulation time: 5.639999999999993Simulation progress: 95% Estimated time remaining: 1857 seconds Current simulation time: 5.699999999999992Simulation progress: 96% Estimated time remaining: 1480 seconds Current simulation time: 5.759999999999992Simulation progress: 97% Estimated time remaining: 1106 seconds Current simulation time: 5.819999999999991Simulation progress: 98% Estimated time remaining: 735 seconds Current simulation time: 5.879999999999991Simulation progress: 99% Estimated time remaining: 366 seconds Current simulation time: 5.939999999999991Simulation progress: 100% Estimated time remaining: 0 seconds Current simulation time: 5.99999999999999Saving congestion test data...
+
+
+########## Results #########
+
+The simulation took 36505.404901742935 seconds to run
+A total of 55603 data blocks were created
+A total of 55125 data blocks were transmitted
+A total of 478 data blocks were stuck
+Average transmission time for all blocks were 0.10014945379030159
+Total latecies:
+Queue time: 6.0673%
+Transmission time: 1.2692%
+Propagation time: 92.6635%
+DataBlocks lost: 0
+Plotting latencies...
+Plotting link congestion figures...
+Most used link: 0_3_1_3, Packets: 8560
+Most used link: Malaga, Spain_0_3, Packets: 1119
+Most used link: Malaga, Spain_0_3, Packets: 1154
+Most used link: Azores, Portugal (partner station)_6_17, Packets: 916
+Most used link: Nuuk, Greenland_4_19, Packets: 811
+Most used link: Los Angeles, California, US_2_17, Packets: 981
+Most used link: 2_1_1_1, Packets: 1168
+Most used link: Azores, Portugal (partner station)_6_17, Packets: 877
+Most used link: Mauritius_2_6, Packets: 886
+Most used link: Vardø, Norway_2_1, Packets: 1154
+Most used link: Nemea, Greece_1_3, Packets: 1019
+Most used link: Vardø, Norway_2_1, Packets: 1151
+Most used link: Malaga, Spain_0_3, Packets: 1149
+Most used link: Nemea, Greece_1_3, Packets: 1046
+Most used link: Vardø, Norway_2_1, Packets: 1175
+Most used link: Nemea, Greece_1_3, Packets: 976
+Most used link: Nuuk, Greenland_4_19, Packets: 824
+Most used link: Azores, Portugal (partner station)_6_17, Packets: 946
+Most used link: Azores, Portugal (partner station)_6_17, Packets: 895
+Most used link: Azores, Portugal (partner station)_6_17, Packets: 874
+Most used link: Malaga, Spain_0_3, Packets: 1139
+Most used link: Nuuk, Greenland_4_19, Packets: 850
+Most used link: Mauritius_2_6, Packets: 983
+Most used link: Malaga, Spain_0_3, Packets: 1140
+Most used link: Nuuk, Greenland_4_19, Packets: 831
+Most used link: Los Angeles, California, US_2_17, Packets: 1003
+Most used link: Vardø, Norway_2_1, Packets: 1134
+Most used link: Nuuk, Greenland_4_19, Packets: 842
+Most used link: Mauritius_2_6, Packets: 995
+Most used link: Nemea, Greece_1_3, Packets: 955
+Most used link: Bangalore, India (partner station)_3_4, Packets: 875
+Most used link: Nuuk, Greenland_4_19, Packets: 868
+Most used link: 3_4_3_5, Packets: 862
+Most used link: Bangalore, India (partner station)_3_4, Packets: 904
+Most used link: Malaga, Spain_0_3, Packets: 1181
+Most used link: Mauritius_2_6, Packets: 1024
+Most used link: Azores, Portugal (partner station)_6_17, Packets: 862
+Most used link: Los Angeles, California, US_2_17, Packets: 1011
+Most used link: Malaga, Spain_0_3, Packets: 1194
+Most used link: Vardø, Norway_2_1, Packets: 1108
+Most used link: Mauritius_2_6, Packets: 916
+Most used link: Bangalore, India (partner station)_3_4, Packets: 884
+Most used link: Bangalore, India (partner station)_3_4, Packets: 890
+Most used link: Bangalore, India (partner station)_3_4, Packets: 914
+Most used link: Nemea, Greece_1_3, Packets: 1009
+Most used link: Nemea, Greece_1_3, Packets: 1029
+Most used link: Los Angeles, California, US_2_17, Packets: 996
+Most used link: Azores, Portugal (partner station)_6_17, Packets: 886
+Most used link: Los Angeles, California, US_2_17, Packets: 997
+Most used link: Los Angeles, California, US_2_17, Packets: 1002
+Most used link: Mauritius_2_6, Packets: 972
+Most used link: Vardø, Norway_2_1, Packets: 1140
+Most used link: Nemea, Greece_1_3, Packets: 976
+Most used link: Los Angeles, California, US_2_17, Packets: 991
+Most used link: Mauritius_2_6, Packets: 969
+Most used link: Bangalore, India (partner station)_3_4, Packets: 874
+Most used link: Nuuk, Greenland_4_19, Packets: 821
+number of gateways: 8
+Path:
+[['Malaga, Spain', -4.41, 36.72], ['0_3', -6.200510898102968, 35.533328282969194], ['6_17', -19.513774816182757, 35.53332828296918], ['5_17', -45.228060530468476, 35.53332828296918], ['4_17', -70.94234624475418, 35.53332828296918], ['3_17', -96.6566319590399, 35.53332828296918], ['2_17', -122.3709176733256, 35.53332828296918], ['Los Angeles, California, US', -118.24, 34.05]]
+Bottleneck:
+([['Malaga,0_3', '0_3,6_17', '6_17,5_17', '5_17,4_17', '4_17,3_17', '3_17,2_17', '2_17,Los Angeles'], [2950427500.0, 1185021500.0, 544290500.0, 544290500.0, 544290500.0, 544290500.0, 1851647500.0], [36.72, 0.6201735727298358, 0.6201735727298355, 0.6201735727298355, 0.6201735727298355, 0.6201735727298355, 34.05], []], 544290500.0)
+Saving Deep Neural networks at: ./Results/Deep Q-Learning_6.0s_[50]_Del_[20]_w1_[20]_w2_[8]_GTs//NNs/
+----------------------------------
+Time:
+08:15:02
+----------------------------------
+Elapsed time: 10:21:46.457569
+----------------------------------
