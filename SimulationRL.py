@@ -81,7 +81,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -97,8 +97,8 @@ balancedFlow= False     # if set to true all the generated traffic at each GT is
 diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = False      # If True, makes random actions eventually, if false only exploitation
-importQVals = True     # imports either QTables or NN from a certain path
+explore     = True      # If True, makes random actions eventually, if false only exploitation
+importQVals = False     # imports either QTables or NN from a certain path
 onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
@@ -108,12 +108,16 @@ if onlinePhase:         # Just in case
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
 nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
 nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
+tablesPath  = './pre_trained_NNs/qTablesExport_ 2GTs/'
+# tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 notAvail    = 0     # this value is set in the state space when the satellite neighbour is not available
 
 w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
+gamma       = 0.6       # greedy factor. Smaller -> Greedy
+
 
 GTs = [8]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
@@ -169,7 +173,7 @@ ddqn        = True      # Activates DDQN, where now there are two DNNs, a target
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
-gamma       = 0.99       # greedy factor. Smaller -> Greedy
+# gamma       = 0.99       # greedy factor. Smaller -> Greedy
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
@@ -3274,7 +3278,8 @@ class Earth:
         '''
         print('----------------------------')
 
-        path = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
+        # path = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
+        path = tablesPath
 
         if importQVals:
             print('Importing Q-Tables from: ' + path)
@@ -3469,13 +3474,15 @@ class QLearning:
         # 4. Receive reward/penalty for the previous action
         if prevSat is not None:
             hop = [sat.ID, math.degrees(sat.longitude), math.degrees(sat.latitude)]
-            # if the next hop was already visited before the reward will be -1
+            # if the next hop was already visited before the reward will be againPenalty
             if hop in block.QPath[:len(block.QPath)-2]:
                 reward = againPenalty
             else:
                 distanceReward = getDistanceReward(prevSat, sat, block.destination, self.w2)
                 queueReward    = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
                 reward = distanceReward + queueReward
+            
+            earth.rewards.append([reward, sat.env.now])
 
         # 5. Updates Q-Table 
         # Update QTable of previous Node (Agent, satellite) if it was not a gateway     
