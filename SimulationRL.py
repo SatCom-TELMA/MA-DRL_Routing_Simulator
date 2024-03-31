@@ -99,7 +99,7 @@ diff        = True      # If up, the state space gives no coordinates about the 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
 importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
     explore     = False
