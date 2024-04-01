@@ -10,3 +10,4 @@ SatNExV2
 **.npy
 # **/pre_trained_NNs/**
 SimulationRL_Old.py
+**/Transactions/**.csv
