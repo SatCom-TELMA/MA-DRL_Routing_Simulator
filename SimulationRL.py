@@ -81,7 +81,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -91,7 +91,7 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
 rotate      = False
 ndeltas     = 0.2        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
-drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
 diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
@@ -99,15 +99,15 @@ diff        = True      # If up, the state space gives no coordinates about the 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 importQVals = False     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
     explore     = False
     importQVals = True
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
-nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
+nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_8GTs_4secs_nocon.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_ 2GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 notAvail    = 0     # this value is set in the state space when the satellite neighbour is not available
@@ -116,7 +116,7 @@ w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-gamma       = 0.6       # greedy factor. Smaller -> Greedy
+gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
 
 GTs = [8]               # number of gateways to be tested

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{512}_{8}_Q_05
+#SBATCH -J DQL_{512}_{8}_Online
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
