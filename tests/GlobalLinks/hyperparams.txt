@@ -1,15 +1,16 @@
 Constellation: Kepler
 Import QTables: False
 printPath: False
-Test length: 0.2
+Test length: 1.0
 Alpha: 0.25
-Gamma: 0.9
+Gamma: 0.6
 Epsilon: 0.1
 Max epsilon: 0.99
 Min epsilon: 0.001
 Arrive Reward: 50
-w1: 24
+w1: 20
 w2: 20
+w3: 10
 Coords granularity: 20
 Update freq: 1000
 Batch Size: 16
@@ -17,7 +18,8 @@ Buffer Size: 50
 Hard Update: True
 Exploration: True
 DDQN: True
-Latitude bias: 4.5
-Longitude bias: 9.0
-Diff: False
+Latitude bias: 90
+Longitude bias: 180
+Diff: True
 Reduced State: False
+Online phase: False

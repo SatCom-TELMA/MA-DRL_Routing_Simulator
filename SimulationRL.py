@@ -81,7 +81,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -91,15 +91,15 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
 rotate      = False
 ndeltas     = 0.2        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
-drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 balancedFlow= False     # if set to true all the generated traffic at each GT is equal
 diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = False      # If True, makes random actions eventually, if false only exploitation
+importQVals = True     # imports either QTables or NN from a certain path
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     # Train       = False
     explore     = False
@@ -116,7 +116,7 @@ w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-gamma       = 0.6       # greedy factor. Smaller -> Greedy
+gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
 
 GTs = [8]               # number of gateways to be tested
@@ -3135,7 +3135,7 @@ class Earth:
                     gridSatX = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
                     gridSatY = int((0.5 - math.degrees(sat.latitude) / 180) * 720) #GT.totalY)
                     scat2 = plt.scatter(gridSatX, gridSatY, marker='o', s=18, linewidth=0.5, edgecolors='black', color=c, label=sat.ID)
-                    plt.text(gridSatX + 10, gridSatY - 10, sat.ID, fontsize=6, ha='left', va='center')    # ANCHOR plots the text of the ID of the satellites
+                    # plt.text(gridSatX + 10, gridSatY - 10, sat.ID, fontsize=6, ha='left', va='center')    # ANCHOR plots the text of the ID of the satellites
 
         if plotGT:
             for GT in self.gateways:
