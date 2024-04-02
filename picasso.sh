@@ -37,4 +37,3 @@ hostname
 
 # $SLURM_CPUS_PER_TASK has the same value requested in --cpus-per-task 
 time /mnt/home/users/tic_102_2_uma/fedeloz/Q-Learning/SatNEx/bin/python ./SimulationRL.py -t $SLURM_CPUS_PER_TASK 
-
