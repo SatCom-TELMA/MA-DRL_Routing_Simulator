@@ -93,15 +93,12 @@ ndeltas     = 0.2        # This number will multiply deltaT. If bigger, will mak
 
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
-balancedFlow= False     # if set to true all the generated traffic at each GT is equal
-diff        = True      # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
 importQVals = True     # imports either QTables or NN from a certain path
 onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
-    # Train       = False
     explore     = False
     importQVals = True
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
@@ -148,7 +145,7 @@ Tn      = 290   #50 Noise temperature in K
 min_rate= 10e3  # Minimum rate in kbps
 
 # Uplink Parameters
-# balancedFlow= True        # if set to true all the generated traffic at each GT is equal
+balancedFlow= False         # if set to true all the generated traffic at each GT is equal
 totalFlow   = 2*1000000000  # Total average flow per GT when the balanced traffc option is enabled. Malaga has 3*, LA has 3*, Nuuk/500
 avUserLoad  = 8593 * 8      # average traffic usage per second in bits
 
@@ -165,7 +162,7 @@ minElAngle  = 30        # For satellites. Value is taken from NGSO constellation
 coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 latBias     = 90#/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180#/coordGran # Same but with longitude
-# diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
 
 # Deep & Q Learning
