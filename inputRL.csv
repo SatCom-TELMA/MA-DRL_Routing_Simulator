@@ -1,6 +1,5 @@
 Locations,Constellation,Fraction,Test type,Test length
-<<<<<<< HEAD
-Malaga,Kepler,0.1,Latency,2.00
+Malaga,Kepler,0.2,Latency,10.00
 Los Angeles
 Mauritius
 Vardø
@@ -8,10 +7,6 @@ Nuuk
 Nemea
 Azores
 Bangalore
-=======
-Los Angeles,Kepler,0.2,Latency,10.00
-Malaga
->>>>>>> 704e189d (Movement dqn)
 Aalborg
 Inuvik
 Hawaii

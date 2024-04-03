@@ -19,7 +19,7 @@
 ##SBATCH --constraint=dgx 
 ## SBATCH --constraint=cal 
 ## SBATCH --constraint=bl
-#SBATCH --constraint=bl
+# SBATCH --constraint=bl
 #############################################
 
 # Set output and error files
