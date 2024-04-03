@@ -645,7 +645,8 @@ class Satellite:
                 if int(block.ID[len(block.ID)-1]) == 0:
                     os.makedirs(self.orbPlane.earth.outputPath + '/pictures/', exist_ok=True) # create output path
                     outputPath = self.orbPlane.earth.outputPath + '/pictures/' + block.ID + '_' + str(len(block.QPath)) + '_'
-                    plotShortestPath(self.orbPlane.earth, pathPlot, outputPath)
+                    # plotShortestPath(self.orbPlane.earth, pathPlot, outputPath)
+                    plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath, ID=block.ID, time = block.creationTime)
             #################################################################
 
             path = block.QPath  # if there is Q-Learning the path will be repalced with the QPath
@@ -2429,6 +2430,8 @@ class Earth:
 
     def updateSatelliteProcessesRL(self, graph):
         """
+        Update: This function works now. The issue is that all the inter-plane packets that were in a queue to be sent are discarded
+        when the graph is updated and those links stop existing.
         This function does not work correctly! The remaking of processes and queues fails when the satellites move
         enough so that new links must be formed.
 
@@ -2523,7 +2526,8 @@ class Earth:
                                             exist_ok=True)  # create output path
                                 outputPath = sat.orbPlane.earth.outputPath + '/pictures/' + block.ID + '_' + str(
                                     len(block.QPath)) + '_'
-                                plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath)
+                                # plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath)
+                                plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath, ID=block.ID, time = block.creationTime)
                         #################################################################
 
                         # path = block.QPath  # if there is Q-Learning the path will be repalced with the QPath
@@ -2585,7 +2589,8 @@ class Earth:
                                             exist_ok=True)  # create output path
                                 outputPath = sat.orbPlane.earth.outputPath + '/pictures/' + block.ID + '_' + str(
                                     len(block.QPath)) + '_'
-                                plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath)
+                                # plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath)
+                                plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath, ID=block.ID, time = block.creationTime)
                         #################################################################
 
                         # path = block.QPath  # if there is Q-Learning the path will be repalced with the QPath
@@ -2645,7 +2650,8 @@ class Earth:
                                         exist_ok=True)  # create output path
                             outputPath = sat.orbPlane.earth.outputPath + '/pictures/' + block.ID + '_' + str(
                                 len(block.QPath)) + '_'
-                            plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath)
+                            # plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath)
+                            plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath, ID=block.ID, time = block.creationTime)
                     #################################################################
 
                     # path = block.QPath  # if there is Q-Learning the path will be repalced with the QPath
@@ -3463,7 +3469,7 @@ class QLearning:
                 if int(block.ID[len(block.ID)-1]) == 0: # Draws 1/10 arrivals
                     os.makedirs(earth.outputPath + '/pictures/', exist_ok=True) # drawing delivered
                     outputPath = earth.outputPath + '/pictures/' + block.ID + '_' + str(len(block.QPath)) + '_'
-                    plotShortestPath(earth, block.QPath, outputPath, ID=block.ID)
+                    plotShortestPath(earth, block.QPath, outputPath, ID=block.ID, time = block.creationTime)
             
             return 0
 
