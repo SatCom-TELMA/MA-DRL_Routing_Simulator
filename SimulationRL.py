@@ -88,8 +88,9 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by 1.000 km
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
-rotate      = False
-ndeltas     = 0.2        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+rotateFirst = False
+movementTime= 0.25#2896.21 # Halg orbital period# 10 * 3600 
+ndeltas     = 2896.21/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
@@ -103,8 +104,8 @@ if onlinePhase:         # Just in case
     importQVals = True
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
-nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_8GTs_4secs_nocon.h5'
+nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_ 2GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 notAvail    = 0     # this value is set in the state space when the satellite neighbour is not available
@@ -116,7 +117,7 @@ ArriveReward= 50        # Reward given to the system in case it sends the data b
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
 
-GTs = [8]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
@@ -153,7 +154,7 @@ avUserLoad  = 8593 * 8      # average traffic usage per second in bits
 blockSize   = 64800
 
 # Movement and structure
-movementTime= 10 * 3600 # should be in the order of 10's of hours. If the test is not 'Rates', the movement time is still kept large to avoid the constellation moving
+# movementTime= 10 * 3600 # should be in the order of 10's of hours. If the test is not 'Rates', the movement time is still kept large to avoid the constellation moving
 # ndeltas     = 25        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 matching    = 'Greedy'  # ['Markovian', 'Greedy']
 minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
@@ -808,7 +809,7 @@ class Satellite:
                     sendBuffer[0].pop(0)
                     sendBuffer[1].pop(0)
             except simpy.Interrupt:
-                print(f'Simpy interrupt at sending block at satellite self.ID to {destination}')
+                print(f'Simpy interrupt at sending block at satellite {self.ID} to {destination[1].ID}')
                 break
 
     def adjustDownRate(self):
@@ -1626,8 +1627,10 @@ class Earth:
         self.lossAv = []
         self.DDQNA  = None
         self.step   = 0
+        self.nMovs  = 0 # number of total movements done by the constellation
         self.epsilon=[]
         self.rewards=[]
+        self.graph  = None
 
         pop_count_data = Image.open(img_path)
 
@@ -1702,7 +1705,7 @@ class Earth:
         # create constellation of satellites
         self.LEO = create_Constellation(constellation, env, self)
 
-        if rotate:
+        if rotateFirst:
             print('Rotating constellation...')
             for constellation in self.LEO:
                 constellation.rotate(ndeltas*deltaT)
@@ -2126,7 +2129,8 @@ class Earth:
                             path = block.path[:i] + newPath
                             break
                     if path is None:
-                        print("no path to GT:")
+                        
+                        ("no path to GT:")
                         print(block)
                         exit()
                     block.isNewPath = True
@@ -2446,10 +2450,17 @@ class Earth:
         This function differentiates from the simple version by allowing continued operation of send-processes after
         constellation movement if the link is not broken.
         """
+        # update linked sats
         sats = []
         for plane in self.LEO:
-            for sat1 in plane.sats:
-                sats.append(sat1)
+            for sat in plane.sats:
+                sats.append(sat)
+                if self.pathParam == 'Q-Learning': # self.pathParam == 'Deep Q-Learning' or 
+                    linkedSats   = getLinkedSats(sat, graph, self)
+                    sat.QLearning.linkedSats =  {'U': linkedSats['U'],
+                                    'D': linkedSats['D'],
+                                    'R': linkedSats['R'],
+                                    'L': linkedSats['L']}
 
         for plane in self.LEO:
             for sat in plane.sats:
@@ -2990,15 +3001,15 @@ class Earth:
                 GT.linkedSat = (None, None)
 
             # rotate constellation and satellites
-            for constellation in self.LEO:
-                constellation.rotate(ndeltas*deltaT)
+            for plane in self.LEO:
+                plane.rotate(ndeltas*deltaT)
 
             # relink satellites and GTs
             self.linkSats2GTs("Optimize")
 
             # create new graph and add references to all GTs for every rotation
-            graph = createGraph(self)
-            self.graph = graph
+            prevGraph = self.graph
+            graph = createGraph(self, matching=matching)
             for GT in self.gateways:
                 GT.graph = graph
 
@@ -3008,6 +3019,13 @@ class Earth:
                 self.updateSatelliteProcessesCorrect(graph)
 
             self.updateGTPaths()
+
+            print('Constellation moved! Saving ISLs map...')
+            self.nMovs += 1
+            islpath = outputPath + '/ISL_maps/'
+            os.makedirs(islpath, exist_ok=True) 
+            self.plotMap(plotGT = True, plotSat = True, edges=True, save = True, outputPath=islpath, n=self.nMovs)
+            plt.close()
 
     def testFlowConstraint1(self, graph):
         highestDist = (0,0)
@@ -3053,7 +3071,7 @@ class Earth:
 
         print("number of GT paths that cannot meet flow restraints: {}".format(totalFailed))
 
-    def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=False, arrow_gap=0.008, outputPath='', paths=None, fileName="map.png"):
+    def plotMap(self, plotGT = True, plotSat = True, path = None, bottleneck = None, save = False, ID=None, time=None, edges=False, arrow_gap=0.008, outputPath='', paths=None, fileName="map.png", n = None):
         if paths is None:
             plt.figure()
         else:
@@ -3094,7 +3112,10 @@ class Earth:
 
         # Code for plotting edges with arrow gap
         if edges:
-            fileName = outputPath + "ISLs_map.png"
+            if n is not None:
+                fileName = outputPath + f"ISLs_map_{n}.png"
+            else:
+                fileName = outputPath + "ISLs_map.png"
             for plane in self.LEO:
                 for sat in plane.sats:
                     orig_start_x = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
@@ -3437,6 +3458,7 @@ class QLearning:
         # 1. check if the destination is the linked gateway. The value of this action becomes 10. # ANCHOR plots route of delivered package Q-Learning
         if sat.linkedGT and block.destination.name == sat.linkedGT.name:
             prevSat.QLearning.qTable[block.oldState][block.oldAction] = ArriveReward
+            earth.rewards.append([ArriveReward, sat.env.now])
             if drawDeliver:
                 if int(block.ID[len(block.ID)-1]) == 0: # Draws 1/10 arrivals
                     os.makedirs(earth.outputPath + '/pictures/', exist_ok=True) # drawing delivered
@@ -3957,6 +3979,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
     earth.linkCells2GTs(distance)
     earth.linkSats2GTs("Optimize")
     graph = createGraph(earth, matching=matching)
+    earth.graph = graph
     
     for gt in earth.gateways:
         gt.graph = graph
@@ -5946,7 +5969,9 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         earth1.outputPath = outputPath
         
         print('Saving ISLs map...')
-        earth1.plotMap(plotGT = True, plotSat = True, edges=True, save = True, outputPath=outputPath)
+        islpath = outputPath + '/ISL_maps/'
+        os.makedirs(islpath, exist_ok=True) 
+        earth1.plotMap(plotGT = True, plotSat = True, edges=True, save = True, outputPath=islpath, n=earth1.nMovs)
         plt.close()
         print('----------------------------')
 
