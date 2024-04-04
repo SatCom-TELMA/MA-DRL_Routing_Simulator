@@ -96,8 +96,8 @@ drawDeliver = True     # create pictures of the path every 1/10 times a data blo
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = False      # If True, makes random actions eventually, if false only exploitation
-importQVals = True     # imports either QTables or NN from a certain path
+explore     = True      # If True, makes random actions eventually, if false only exploitation
+importQVals = False     # imports either QTables or NN from a certain path
 onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
@@ -112,7 +112,7 @@ notAvail    = 0     # this value is set in the state space when the satellite ne
 
 w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
-w3          = 10        # Normalization for the distance reward, for the traveled distance factor  
+w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
@@ -176,6 +176,7 @@ epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
 # drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
+plotSatID   = True     # If True, plots the ID of each satellite
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
 winSize     = 20       # window size for the representation in the plots
 markerSize  = 50        # Size of the markers in the plots
@@ -191,7 +192,7 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 # ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 # w1          = 1         # rewards the getting to empty queues
 # w2          = 20        # rewards getting closes phisically     
-againPenalty= -0.5      # Penalty if the satellite sends the block to a hop where it has already been
+againPenalty= -5        # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
 biggestDist= -1         # Normalization factor for the distance reward. This is updated in the creation of the graph.
 
@@ -646,7 +647,7 @@ class Satellite:
                     os.makedirs(self.orbPlane.earth.outputPath + '/pictures/', exist_ok=True) # create output path
                     outputPath = self.orbPlane.earth.outputPath + '/pictures/' + block.ID + '_' + str(len(block.QPath)) + '_'
                     # plotShortestPath(self.orbPlane.earth, pathPlot, outputPath)
-                    plotShortestPath(sat.orbPlane.earth, pathPlot, outputPath, ID=block.ID, time = block.creationTime)
+                    plotShortestPath(self.orbPlane.earth, pathPlot, outputPath, ID=block.ID, time = block.creationTime)
             #################################################################
 
             path = block.QPath  # if there is Q-Learning the path will be repalced with the QPath
@@ -2483,7 +2484,7 @@ class Earth:
                                                                     sat.orbPlane.earth.gateways[0].graph,
                                                                     sat.orbPlane.earth, prevSat=(
                                         findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
-                            elif sat.DDQNA:
+                            elif sat.DDQNA is not None:
                                 nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
                                                                                    sat.orbPlane.earth.gateways[
                                                                                        0].graph,
@@ -2503,7 +2504,7 @@ class Earth:
                                 nextHop = sat.QLearning.makeAction(block, sat,
                                                                     sat.orbPlane.earth.gateways[0].graph,
                                                                     sat.orbPlane.earth)
-                            elif sat.DDQNA:
+                            elif sat.DDQNA is not None:
                                 nextHop = sat.DDQNA.makeDeepAction(block, sat,
                                                                     sat.orbPlane.earth.gateways[
                                                                         0].graph,
@@ -2551,7 +2552,7 @@ class Earth:
                                                                    sat.orbPlane.earth.gateways[0].graph,
                                                                    sat.orbPlane.earth, prevSat=(
                                         findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
-                            elif sat.DDQNA:
+                            elif sat.DDQNA is not None:
                                 nextHop = sat.DDQNA.makeDeepAction(block, sat,
                                                                                   sat.orbPlane.earth.gateways[
                                                                                       0].graph,
@@ -2568,7 +2569,7 @@ class Earth:
                                 nextHop = sat.QLearning.makeAction(block, sat,
                                                                    sat.orbPlane.earth.gateways[0].graph,
                                                                    sat.orbPlane.earth)
-                            elif sat.DDQNA:
+                            elif sat.DDQNA is not None:
                                 nextHop = sat.DDQNA.makeDeepAction(block, sat,
                                                                                   sat.orbPlane.earth.gateways[
                                                                                       0].graph,
@@ -2613,7 +2614,7 @@ class Earth:
                                                                sat.orbPlane.earth.gateways[0].graph,
                                                                sat.orbPlane.earth, prevSat=(
                                     findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
-                        elif sat.DDQNA:
+                        elif sat.DDQNA is not None:
                             nextHop = sat.DDQNA.makeDeepAction(block, sat,
                                                                               sat.orbPlane.earth.gateways[
                                                                                   0].graph,
@@ -2630,7 +2631,7 @@ class Earth:
                             nextHop = sat.QLearning.makeAction(block, sat,
                                                                sat.orbPlane.earth.gateways[0].graph,
                                                                sat.orbPlane.earth)
-                        elif sat.DDQNA:
+                        elif sat.DDQNA is not None:
                             nextHop = sat.DDQNA.makeDeepAction(block, sat,
                                                                               sat.orbPlane.earth.gateways[
                                                                                   0].graph,
@@ -3165,7 +3166,8 @@ class Earth:
                     gridSatX = int((0.5 + math.degrees(sat.longitude) / 360) * 1440)
                     gridSatY = int((0.5 - math.degrees(sat.latitude) / 180) * 720) #GT.totalY)
                     scat2 = plt.scatter(gridSatX, gridSatY, marker='o', s=18, linewidth=0.5, edgecolors='black', color=c, label=sat.ID)
-                    # plt.text(gridSatX + 10, gridSatY - 10, sat.ID, fontsize=6, ha='left', va='center')    # ANCHOR plots the text of the ID of the satellites
+                    if plotSatID:
+                        plt.text(gridSatX + 10, gridSatY - 10, sat.ID, fontsize=6, ha='left', va='center')    # ANCHOR plots the text of the ID of the satellites
 
         if plotGT:
             for GT in self.gateways:
@@ -3740,7 +3742,9 @@ class DDQNAgent:
         # 2. Check if the destination is the linked gateway. The reward is ArriveReward here and goes to the previous satellite. # ANCHOR plot delivered deep NN
         if sat.linkedGT and (block.destination.ID == sat.linkedGT.ID):    # Compare IDs
             if distanceRew == 4:
-                distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2, self.w3)
+                satDest = block.destination.linkedSat[1]
+                distanceReward  = getDistanceRewardV4(prevSat, sat, satDest, self.w2, self.w3)
+                # distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2, self.w3)
                 queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
                 reward          = distanceReward + queueReward + ArriveReward
                 self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, True)
@@ -3784,7 +3788,9 @@ class DDQNAgent:
                 prevLinkedSats  = getDeepLinkedSats(prevSat, g, earth)
                 distanceReward  = getDistanceRewardV3(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
             elif distanceRew == 4:
-                distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2, self.w3)
+                satDest = block.destination.linkedSat[1]
+                distanceReward  = getDistanceRewardV4(prevSat, sat, satDest, self.w2, self.w3)
+                # distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2, self.w3)
             elif distanceRew == 5:
                 distanceReward  = getDistanceRewardV5(prevSat, sat, self.w2)
 
@@ -5496,8 +5502,8 @@ def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
     return w2*SLr/max(SLrs)
     
 
-def getDistanceRewardV4(sat, nextSat, destination, w2, w3):
-    SLr = getSlantRange(sat, destination) - getSlantRange(nextSat, destination)
+def getDistanceRewardV4(sat, nextSat, satDest, w2, w3):
+    SLr = getSlantRange(sat, satDest) - getSlantRange(nextSat, satDest)
     TravelDistance = getSlantRange(sat, nextSat)
     return w2*(SLr-TravelDistance/w3)/biggestDist
     # return w2*(SLr/biggestDist)

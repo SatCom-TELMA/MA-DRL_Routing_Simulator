@@ -1,9 +1,9 @@
-Constellation: Kepler
+Constellation: Starlink
 Import QTables: False
 printPath: False
-Test length: 1.0
+Test length: 2.0
 Alpha: 0.25
-Gamma: 0.6
+Gamma: 0.99
 Epsilon: 0.1
 Max epsilon: 0.99
 Min epsilon: 0.001
