@@ -2489,12 +2489,15 @@ class Earth:
                                                                                        0].graph,
                                                                                    sat.orbPlane.earth, prevSat=(
                                         findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
-                            else:
-                                nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
+                            elif self.DDQNA:
+                                # nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
+                                nextHop = self.DDQNA.makeDeepAction(block, sat,
                                                                                    sat.orbPlane.earth.gateways[
                                                                                        0].graph,
                                                                                    sat.orbPlane.earth, prevSat=(
                                         findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
+                            else:
+                                print(f'No learning model for sat: {sat.ID}')
                         else:
                             if sat.QLearning:
                                 nextHop = sat.QLearning.makeAction(block, sat,
@@ -2505,11 +2508,14 @@ class Earth:
                                                                     sat.orbPlane.earth.gateways[
                                                                         0].graph,
                                                                     sat.orbPlane.earth)
-                            else:
-                                nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
+                            elif self.DDQNA:
+                                # nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
+                                nextHop = self.DDQNA.makeDeepAction(block, sat,
                                                                                    sat.orbPlane.earth.gateways[
                                                                                        0].graph,
                                                                                    sat.orbPlane.earth)
+                            else:
+                                print(f'No learning model for sat: {sat.ID}')
 
                         if nextHop != 0:
                             block.QPath[-2] = nextHop
