@@ -89,16 +89,16 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
 rotateFirst = False
-movementTime= 0.25#2896.21 # Halg orbital period# 10 * 3600 
+movementTime= 2500#2896.21 # Halg orbital period# 10 * 3600 
 ndeltas     = 2896.21/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
-drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = True      # If True, makes random actions eventually, if false only exploitation
 importQVals = False     # imports either QTables or NN from a certain path
-onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -108,7 +108,6 @@ nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
 nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_ 2GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
-notAvail    = 0     # this value is set in the state space when the satellite neighbour is not available
 
 w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
@@ -117,7 +116,7 @@ ArriveReward= 50        # Reward given to the system in case it sends the data b
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
 
-GTs = [2]               # number of gateways to be tested
+GTs = [8]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
@@ -165,6 +164,7 @@ latBias     = 90#/coordGran  # This value is added to the latitude of each posit
 lonBias     = 180#/coordGran # Same but with longitude
 diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
+notAvail    = 0             # this value is set in the state space when the satellite neighbour is not available
 
 # Deep & Q Learning
 ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
