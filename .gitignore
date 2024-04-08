@@ -7,7 +7,7 @@ SatNEx
 SatNExV2
 .venv
 **/.DS_Store
-**.npy
+# **.npy
 # **/pre_trained_NNs/**
 SimulationRL_Old.py
 **/Transactions/**.csv
