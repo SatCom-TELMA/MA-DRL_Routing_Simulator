@@ -89,16 +89,16 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
 rotateFirst = False
-movementTime= 2500#2896.21 # Halg orbital period# 10 * 3600 
-ndeltas     = 2896.21/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
-
+movementTime= 0.25#2902,72#Kepler # Half orbital period# 10 * 3600 
+ndeltas     = 5805.44/16#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+# in 2 seconds it moves t_o/2
 drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = False      # If True, makes random actions eventually, if false only exploitation
+importQVals = True     # imports either QTables or NN from a certain path
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -116,7 +116,7 @@ ArriveReward= 50        # Reward given to the system in case it sends the data b
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
 
-GTs = [8]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
@@ -171,14 +171,14 @@ ddqn        = True      # Activates DDQN, where now there are two DNNs, a target
 # importQVals = False     # imports either QTables or NN from a certain path
 printPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
-# gamma       = 0.99       # greedy factor. Smaller -> Greedy
+# gamma       = 0.99      # greedy factor. Smaller -> Greedy
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
 # drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 plotSatID   = True     # If True, plots the ID of each satellite
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
-winSize     = 20       # window size for the representation in the plots
+winSize     = 20        # window size for the representation in the plots
 markerSize  = 50        # Size of the markers in the plots
 nTrain      = 2         # The DNN will train every nTrain steps
 
@@ -811,7 +811,8 @@ class Satellite:
                     sendBuffer[0].pop(0)
                     sendBuffer[1].pop(0)
             except simpy.Interrupt:
-                print(f'Simpy interrupt at sending block at satellite {self.ID} to {destination[1].ID}')
+                # print(f'Simpy interrupt at sending block at satellite {self.ID} to {destination[1].ID}')
+                self.orbPlane.earth.lostBlocks+=1
                 break
 
     def adjustDownRate(self):
@@ -864,6 +865,30 @@ class Satellite:
         else:
             self.lower = earth.LEO[self.in_plane].sats[0]                       # last satellite of the plane
 
+    def findInterNeighbours(self, earth):
+        '''
+        Sets the inter plane neighbors for each satellite that will be used for DRL
+        '''
+        g = earth.graph
+        self.right = None
+        self.left  = None
+        # Find inter-plane neighbours (right and left)
+        for edge in list(g.edges(self.ID)):
+            if edge[1][0].isdigit():
+                satB = findByID(earth, edge[1])
+                dir = getDirection(self, satB)
+                if(dir == 3):                                         # Found Satellite at East
+                    if self.right is not None:
+                        print(f"{self.ID} east satellite duplicated! Replacing {self.right.ID} with {satB.ID}")
+                    self.right  = satB
+
+                elif(dir == 4):                                       # Found Satellite at West
+                    if self.left is not None:
+                        print(f"{self.ID} west satellite duplicated! Replacing {self.left.ID} with {satB.ID}")
+                    self.left  = satB
+            else:
+                pass
+        
     def rotate(self, delta_t, longitude, period):
         """
         Rotates the satellite by re-calculating the sperical coordinates, Cartesian coordinates, and longitude and
@@ -2459,12 +2484,18 @@ class Earth:
         for plane in self.LEO:
             for sat in plane.sats:
                 sats.append(sat)
-                if self.pathParam == 'Q-Learning': # self.pathParam == 'Deep Q-Learning' or 
+                if self.pathParam == 'Q-Learning':
+                    # Update ISL
                     linkedSats   = getLinkedSats(sat, graph, self)
                     sat.QLearning.linkedSats =  {'U': linkedSats['U'],
                                     'D': linkedSats['D'],
                                     'R': linkedSats['R'],
                                     'L': linkedSats['L']}
+                elif self.pathParam == 'Deep Q-Learning':
+                    # update ISL. Intra-plane should not change
+                    sat.findIntraNeighbours(self)
+                    sat.findInterNeighbours(self)
+
 
         for plane in self.LEO:
             for sat in plane.sats:
@@ -2484,10 +2515,9 @@ class Earth:
                                                                     sat.orbPlane.earth.gateways[0].graph,
                                                                     sat.orbPlane.earth, prevSat=(
                                         findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
-                            elif sat.DDQNA is not None:
+                            elif sat.orbPlane.earth.DDQNA is not None:
                                 nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
-                                                                                   sat.orbPlane.earth.gateways[
-                                                                                       0].graph,
+                                                                                   sat.orbPlane.earth.gateways[0].graph,
                                                                                    sat.orbPlane.earth, prevSat=(
                                         findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
                             elif self.DDQNA:
@@ -2877,7 +2907,10 @@ class Earth:
                             index = i
 
                     # check if next step in path is GT (last step in path)
-                    if index == len(block[1].QPath) - 2:
+                    if index is None:
+                        print(f'Satellite {sat.ID} not found in the QPath: {block[1].QPath}') # FIXME This should not happen. Debugging I realized when this happens the previous satellite is twice in last positions of QPath, instead of prevSat and currentSat. The current sat was the linked to the gateways bu after the movement it is not anymore.
+                        self.lostBlocks += 1
+                    elif index == len(block[1].QPath) - 2:
                         # add block to GT send-buffer
                         if not sat.sendBufferGT[0][0].triggered:
                             sat.sendBufferGT[0][0].succeed()
@@ -3021,8 +3054,9 @@ class Earth:
             self.linkSats2GTs("Optimize")
 
             # create new graph and add references to all GTs for every rotation
-            prevGraph = self.graph
+            # prevGraph = self.graph
             graph = createGraph(self, matching=matching)
+            self.graph = graph
             for GT in self.gateways:
                 GT.graph = graph
 
@@ -3998,7 +4032,7 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
     earth.linkSats2GTs("Optimize")
     graph = createGraph(earth, matching=matching)
     earth.graph = graph
-    
+
     for gt in earth.gateways:
         gt.graph = graph
 
@@ -4018,6 +4052,8 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
     for plane in earth.LEO:
         for sat in plane.sats:
             sats.append(sat)
+            # Catalogues the inter-plane ISL as east or west (Right or left)
+            sat.findInterNeighbours(earth)
 
     fiveNeighbors = ([0],[])
     pathNames = [name[0] for name in path]
@@ -4587,9 +4623,9 @@ def deleteDuplicatedLinks(satA, g, earth):
 
             if(dir == 3):                                         # Found Satellite at East
                 if linkedSats['R'] is not None:
-                    print(f"{satA.ID} east satellite duplicated: {linkedSats['R'].ID}, {satB.ID}")
+                    # print(f"{satA.ID} east satellite duplicated: {linkedSats['R'].ID}, {satB.ID}")
                     most_horizontal, less_horizontal = getMostHorizontal(satA, linkedSats['R'], satB)
-                    print(f'Keeping most horizontal link: {most_horizontal.ID}')
+                    # print(f'Keeping most horizontal link: {most_horizontal.ID}')
                     linkedSats['R']  = most_horizontal
                     # remove pair from G
                     g.remove_edge(satA.ID, less_horizontal.ID)
@@ -4598,85 +4634,15 @@ def deleteDuplicatedLinks(satA, g, earth):
 
             elif(dir == 4):                                         # Found Satellite at West
                 if linkedSats['L'] is not None:
-                    print(f"{satA.ID} West satellite duplicated: {linkedSats['L'].ID}, {satB.ID}")
+                    # print(f"{satA.ID} West satellite duplicated: {linkedSats['L'].ID}, {satB.ID}")
                     most_horizontal, less_horizontal = getMostHorizontal(satA, linkedSats['L'], satB)
-                    print(f'Keeping most horizontal link: {most_horizontal.ID}')
+                    # print(f'Keeping most horizontal link: {most_horizontal.ID}')
                     linkedSats['L']  = most_horizontal
                     # remove pair from G
                     g.remove_edge(satA.ID, less_horizontal.ID)
                 else:
                     linkedSats['L']  = satB
 
-
-"""
-def deleteDuplicatedLinksV20(satA, g, earth):
-    '''
-    Given a satellite, searches for its east and west neighbor. If the east or west link is duplicated,
-    it will remove the link with a higher latitude difference, keeping the horizontal links.
-    Now considers the 180° meridian crossing links and does not delete them mistakenly.
-    '''
-
-    def normalize_longitude(longitude):
-        # Normalize a longitude to the range [-180, 180]
-        return ((longitude + 180) % 360) - 180
-
-    def longitude_difference(lon1, lon2):
-        # Calculate the smallest difference between two longitudes considering the 180° meridian
-        diff = normalize_longitude(lon1) - normalize_longitude(lon2)
-        if diff > 180:
-            diff -= 360
-        elif diff < -180:
-            diff += 360
-        return diff
-
-    def getMostHorizontal(currentSat, satA, satB):
-        # Chooses the satellite with the closest latitude to currentSat
-        lat_diff_a = abs(normalize_longitude(satA.latitude) - normalize_longitude(currentSat.latitude))
-        lat_diff_b = abs(normalize_longitude(satB.latitude) - normalize_longitude(currentSat.latitude))
-        return (satA, satB) if lat_diff_a < lat_diff_b else (satB, satA)
-
-    linkedSats = {'U': None, 'D': None, 'R': None, 'L': None}
-    for edge in list(g.edges(satA.ID)):
-        if edge[1][0].isdigit():
-            satB = findByID(earth, edge[1])
-            dir = getDirection(satA, satB)
-            # Change: Calculate longitude difference considering 180° meridian
-            lon_diff = longitude_difference(satA.longitude, satB.longitude)
-
-            # Handling East or crossing 180° meridian from West to East
-            if dir == 3 or (dir == 4 and lon_diff > 0):
-                if linkedSats['R'] is not None:
-                    # Change: Check for crossing the 180° meridian condition
-                    existing_lon_diff = longitude_difference(satA.longitude, linkedSats['R'].longitude)
-                    if abs(existing_lon_diff) > 90 and abs(lon_diff) > 90:
-                        # If both satellites are on opposite sides of the 180° meridian, keep both links
-                        print(f"180° meridian crossing detected, keeping link between {satA.ID} and {satB.ID}")
-                        continue
-                    most_horizontal, less_horizontal = getMostHorizontal(satA, linkedSats['R'], satB)
-                    linkedSats['R'] = most_horizontal
-                    print(f"{satA.ID} east satellite duplicated: {linkedSats['R'].ID}, {satB.ID}")
-                    print(f'Keeping most horizontal link: {most_horizontal.ID}, removing {less_horizontal.ID}')
-                    g.remove_edge(satA.ID, less_horizontal.ID)
-                else:
-                    linkedSats['R'] = satB
-
-            # Handling West or crossing 180° meridian from East to West
-            elif dir == 4 or (dir == 3 and lon_diff < 0):
-                if linkedSats['L'] is not None:
-                    # Change: Check for crossing the 180° meridian condition
-                    existing_lon_diff = longitude_difference(satA.longitude, linkedSats['L'].longitude)
-                    if abs(existing_lon_diff) > 90 and abs(lon_diff) > 90:
-                        # If both satellites are on opposite sides of the 180° meridian, keep both links
-                        print(f"180° meridian crossing detected, keeping link between {satA.ID} and {satB.ID}")
-                        continue
-                    most_horizontal, less_horizontal = getMostHorizontal(satA, linkedSats['L'], satB)
-                    linkedSats['L'] = most_horizontal
-                    print(f"{satA.ID} west satellite duplicated: {linkedSats['L'].ID}, {satB.ID}")
-                    print(f'Keeping most horizontal link: {most_horizontal.ID}, removing {less_horizontal.ID}')
-                    g.remove_edge(satA.ID, less_horizontal.ID)
-                else:
-                    linkedSats['L'] = satB
-"""
 
 def createGraph(earth, matching='Greedy'):
     '''
@@ -4733,7 +4699,6 @@ def createGraph(earth, matching='Greedy'):
         for sat in plane.sats:
             deleteDuplicatedLinks(sat, g, earth)
     print(f'Biggest slant range between satellites: {biggestDist/1000:.2f} km')
-
     print('----------------------------------')
 
     return g
@@ -5103,23 +5068,25 @@ def getDeepLinkedSats(satA, g, earth):
     # satA.findIntraNeighbours(earth)
     linkedSats['U'] = satA.upper
     linkedSats['D'] = satA.lower
+    linkedSats['R'] = satA.right
+    linkedSats['L'] = satA.left
 
-    # Find inter-plane neighbours (right and left)
-    for edge in list(g.edges(satA.ID)):
-        if edge[1][0].isdigit():
-            satB = findByID(earth, edge[1])
-            dir = getDirection(satA, satB)
-            if(dir == 3):                                         # Found Satellite at East
-                if linkedSats['R'] is not None:
-                    print(f"{satA.ID} east satellite duplicated! Replacing {linkedSats['R'].ID} with {satB.ID}")
-                linkedSats['R']  = satB
+    # # Find inter-plane neighbours (right and left)
+    # for edge in list(g.edges(satA.ID)):
+    #     if edge[1][0].isdigit():
+    #         satB = findByID(earth, edge[1])
+    #         dir = getDirection(satA, satB)
+    #         if(dir == 3):                                         # Found Satellite at East
+    #             if linkedSats['R'] is not None:
+    #                 print(f"{satA.ID} east satellite duplicated! Replacing {linkedSats['R'].ID} with {satB.ID}")
+    #             linkedSats['R']  = satB
 
-            elif(dir == 4):                                       # Found Satellite at West
-                if linkedSats['L'] is not None:
-                    print(f"{satA.ID} west satellite duplicated! Replacing {linkedSats['L'].ID} with {satB.ID}")
-                linkedSats['L']  = satB
-        else:
-            pass
+    #         elif(dir == 4):                                       # Found Satellite at West
+    #             if linkedSats['L'] is not None:
+    #                 print(f"{satA.ID} west satellite duplicated! Replacing {linkedSats['L'].ID} with {satB.ID}")
+    #             linkedSats['L']  = satB
+    #     else:
+    #         pass
 
     return linkedSats
 
