@@ -2508,6 +2508,7 @@ class Earth:
                     index = 0
                     while index < len(buffer[1]):
                         block = buffer[1][index]
+                        nextHop = None
 
                         if len(block.QPath) > 4:  # the block does not come from a gateway
                             if sat.QLearning:
@@ -2548,7 +2549,10 @@ class Earth:
                             else:
                                 print(f'No learning model for sat: {sat.ID}')
 
-                        if nextHop != 0:
+                        if nextHop is None:
+                            print(f'Something wrong with block: {block}')
+                        
+                        elif nextHop != 0:
                             block.QPath[-2] = nextHop
                             pathPlot = block.QPath.copy()
                             pathPlot.pop()
