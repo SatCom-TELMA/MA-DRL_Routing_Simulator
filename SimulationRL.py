@@ -90,7 +90,7 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
 
 rotateFirst = False
 movementTime= 0.25#2902,72#Kepler # Half orbital period# 10 * 3600 
-ndeltas     = 5805.44/16#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+ndeltas     = 5805.44/8#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 # in 2 seconds it moves t_o/2
 drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
@@ -109,7 +109,7 @@ nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_ 2GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 20        # rewards the getting to empty queues
+w1          = 21        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
