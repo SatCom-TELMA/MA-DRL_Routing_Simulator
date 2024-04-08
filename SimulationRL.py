@@ -92,7 +92,7 @@ rotateFirst = False
 movementTime= 0.25#2902,72#Kepler # Half orbital period# 10 * 3600 
 ndeltas     = 5805.44/16#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 # in 2 seconds it moves t_o/2
-drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+drawDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
