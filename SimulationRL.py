@@ -85,14 +85,14 @@ pathing     = pathings[5]# dataRateOG is the original datarate. If we want to ma
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
-                         # 4: Distance reward normalized by 1.000 km
+                         # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
 rotateFirst = False
 movementTime= 0.1#2902,72#Kepler # Half orbital period# 10 * 3600 
 ndeltas     = 5805.44/8#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 # in 2 seconds it moves t_o/2
-drawDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
@@ -169,13 +169,13 @@ notAvail    = 0             # this value is set in the state space when the sate
 # Deep & Q Learning
 ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 # importQVals = False     # imports either QTables or NN from a certain path
-printPath   = False     # plots the map with the path after every decision
+plotPath   = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
 # gamma       = 0.99      # greedy factor. Smaller -> Greedy
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
-# drawDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
+# plotDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
 plotSatID   = True     # If True, plots the ID of each satellite
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
 winSize     = 20        # window size for the representation in the plots
@@ -640,9 +640,9 @@ class Satellite:
             else:
                 pathPlot = block.QPath.copy()
             
-            # If printPath plots an image for every action taken. Plots 1/10 of blocks. # ANCHOR plot action satellite
+            # If plotPath plots an image for every action taken. Plots 1/10 of blocks. # ANCHOR plot action satellite
             #################################################################
-            if self.orbPlane.earth.printPaths:
+            if self.orbPlane.earth.plotPaths:
                 if int(block.ID[len(block.ID)-1]) == 0:
                     os.makedirs(self.orbPlane.earth.outputPath + '/pictures/', exist_ok=True) # create output path
                     outputPath = self.orbPlane.earth.outputPath + '/pictures/' + block.ID + '_' + str(len(block.QPath)) + '_'
@@ -811,7 +811,7 @@ class Satellite:
                     sendBuffer[0].pop(0)
                     sendBuffer[1].pop(0)
             except simpy.Interrupt:
-                # print(f'Simpy interrupt at sending block at satellite {self.ID} to {destination[1].ID}')
+                # print(f'Simpy interrupt at sending block at satellite {self.ID} to {destination[1].ID}') # FIXME Are they really lost blocks?
                 self.orbPlane.earth.lostBlocks+=1
                 break
 
@@ -1647,7 +1647,7 @@ class Earth:
         # Input the population count data
         # img_path = 'Population Map/gpw_v4_population_count_rev11_2020_15_min.tif'
         self.outputPath = outputPath
-        self.printPaths = printPath
+        self.plotPaths = plotPath
         self.lostBlocks = 0
         self.queues = []
         self.loss   = []
@@ -2559,9 +2559,9 @@ class Earth:
                         else:
                             pathPlot = block.QPath.copy()
 
-                        # If printPath plots an image for every action taken. Prints 1/10 of blocks. # ANCHOR plot action earth 1
+                        # If plotPath plots an image for every action taken. Prints 1/10 of blocks. # ANCHOR plot action earth 1
                         #################################################################
-                        if sat.orbPlane.earth.printPaths:
+                        if sat.orbPlane.earth.plotPaths:
                             if int(block.ID[len(block.ID) - 1]) == 0:
                                 os.makedirs(sat.orbPlane.earth.outputPath + '/pictures/',
                                             exist_ok=True)  # create output path
@@ -2622,9 +2622,9 @@ class Earth:
                         else:
                             pathPlot = block.QPath.copy()
 
-                        # If printPath plots an image for every action taken. Prints 1/10 of blocks. # ANCHOR plot action earth 2
+                        # If plotPath plots an image for every action taken. Prints 1/10 of blocks. # ANCHOR plot action earth 2
                         #################################################################
-                        if sat.orbPlane.earth.printPaths:
+                        if sat.orbPlane.earth.plotPaths:
                             if int(block.ID[len(block.ID) - 1]) == 0:
                                 os.makedirs(sat.orbPlane.earth.outputPath + '/pictures/',
                                             exist_ok=True)  # create output path
@@ -2683,9 +2683,9 @@ class Earth:
                     else:
                         pathPlot = block.QPath.copy()
 
-                    # If printPath plots an image for every action taken. Prints 1/10 of blocks. # ANCHOR plot action earth 3
+                    # If plotPath plots an image for every action taken. Prints 1/10 of blocks. # ANCHOR plot action earth 3
                     #################################################################
-                    if sat.orbPlane.earth.printPaths:
+                    if sat.orbPlane.earth.plotPaths:
                         if int(block.ID[len(block.ID) - 1]) == 0:
                             os.makedirs(sat.orbPlane.earth.outputPath + '/pictures/',
                                         exist_ok=True)  # create output path
@@ -3428,7 +3428,7 @@ class hyperparam:
         self.MAX_EPSILON= MAX_EPSILON
         self.MIN_EPSILON= MIN_EPSILON
         self.LAMBDA     = LAMBDA
-        self.printPath  = printPath
+        self.plotPath  = plotPath
         self.coordGran  = coordGran
         self.ddqn       = ddqn
         self.latBias    = latBias
@@ -3511,7 +3511,7 @@ class QLearning:
         if sat.linkedGT and block.destination.name == sat.linkedGT.name:
             prevSat.QLearning.qTable[block.oldState][block.oldAction] = ArriveReward
             earth.rewards.append([ArriveReward, sat.env.now])
-            if drawDeliver:
+            if plotDeliver:
                 if int(block.ID[len(block.ID)-1]) == 0: # Draws 1/10 arrivals
                     os.makedirs(earth.outputPath + '/pictures/', exist_ok=True) # drawing delivered
                     outputPath = earth.outputPath + '/pictures/' + block.ID + '_' + str(len(block.QPath)) + '_'
@@ -3798,7 +3798,7 @@ class DDQNAgent:
                 self.earth.rewards.append([ArriveReward, sat.env.now])
 
             if TrainThis: self.train(sat) # FIXME why here a train?? should not be here. Make a test without this when the model is stable
-            if drawDeliver:
+            if plotDeliver:
                 if int(block.ID[len(block.ID)-1]) == 0: # Draws 1/10 arrivals
                     os.makedirs(earth.outputPath + '/pictures/', exist_ok=True) # drawing delivered
                     outputPath = earth.outputPath + '/pictures/' + block.ID + '_' + str(len(block.QPath)) + '_'
@@ -5490,7 +5490,7 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
     print('Saving hyperparams at: ' + str(outputPath))
     hyperparams = ['Constellation: ' + str(inputParams['Constellation'][0]),
                 'Import QTables: ' + str(hyperparams.importQ),
-                'printPath: ' + str(hyperparams.printPath),
+                'plotPath: ' + str(hyperparams.plotPath),
                 'Test length: ' + str(inputParams['Test length'][0]),
                 'Alpha: ' + str(hyperparams.alpha),
                 'Gamma: ' + str(hyperparams.gamma),
