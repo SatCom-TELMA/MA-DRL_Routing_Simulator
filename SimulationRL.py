@@ -90,7 +90,7 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
  
 rotateFirst = False
 movementTime= 0.1#2902,72#Kepler # Half orbital period# 10 * 3600 
-ndeltas     = 5805.44/8#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+ndeltas     = 5805.44/16#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 # in 2 seconds it moves t_o/2
 plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
