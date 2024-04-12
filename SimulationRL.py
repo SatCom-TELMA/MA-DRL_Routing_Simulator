@@ -96,17 +96,19 @@ plotDeliver = False     # create pictures of the path every 1/10 times a data bl
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = False      # If True, makes random actions eventually, if false only exploitation
+importQVals = True     # imports either QTables or NN from a certain path
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
-nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
-tablesPath  = './pre_trained_NNs/qTablesExport_ 2GTs/'
+nnpath      = './pre_trained_NNs/qNetwork_2GTs_movement.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_2GTs_movement.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
+tablesPath  = './pre_trained_NNs/qTablesExport_ 2GTs_movement/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
 w1          = 20        # rewards the getting to empty queues
@@ -195,6 +197,7 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 againPenalty= -5        # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
 biggestDist= -1         # Normalization factor for the distance reward. This is updated in the creation of the graph.
+firstMove  = False      # The biggest slant range is only computed the first time in order to avoid this value to be variable
 
 # Deep Learning
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
@@ -4325,29 +4328,6 @@ def get_slant_range_optimized(Positions, N):
     slant_range += np.transpose(slant_range)
     return slant_range
 
-# @numba.jit
-# def get_slant_range_optimized(Positions, N):
-#     '''
-#     Returns a matrix with all the distances between the satellites, considering the wrap-around effect near the 180-degree meridian.
-#     '''
-#     slant_range = np.zeros((N,N))
-#     for i in range(N):
-#         slant_range[i,i] = math.inf
-#         for j in range(i+1,N):
-#             # Calculate the difference in longitude, accounting for wrap-around
-#             delta_longitude = abs(Positions[j,0] - Positions[i,0])
-#             if delta_longitude > 180:
-#                 delta_longitude = 360 - delta_longitude
-            
-#             # Adjust positions to include wrap-around effect for distance calculation
-#             adjusted_positions_i = np.array([delta_longitude, Positions[i,1], Positions[i,2]])
-#             adjusted_positions_j = np.array([0, Positions[j,1], Positions[j,2]])
-
-#             # Calculate the Euclidean distance considering the adjusted longitudes
-#             slant_range[i,j] = np.linalg.norm(adjusted_positions_i - adjusted_positions_j)
-#     slant_range += np.transpose(slant_range)
-#     return slant_range
-
 
 @numba.jit  # Using this decorator you can mark a function for optimization by Numba's JIT compiler
 def los_slant_range(_slant_range, _meta, _max, _Positions):
@@ -4685,6 +4665,7 @@ def createGraph(earth, matching='Greedy'):
     print('----------------------------------')
 
     global biggestDist
+    global firstMove
     biggestDist = -1
     for markovEdge in markovEdges:
         g.add_edge(markovEdge.i, markovEdge.j,  # source and destination IDs
@@ -4694,7 +4675,7 @@ def createGraph(earth, matching='Greedy'):
         hop = 1,                                # in case we just want to count hops
         dij = markovEdge.dij,
         dji = markovEdge.dji)
-        if markovEdge.slant_range > biggestDist:  # keep the biggest possible distance for the normalization of the rewards
+        if firstMove and markovEdge.slant_range > biggestDist:  # keep the biggest possible distance for the normalization of the rewards
             biggestDist = markovEdge.slant_range
 
     # remove duplicated links and keep the most horizontal ones
@@ -4702,7 +4683,9 @@ def createGraph(earth, matching='Greedy'):
     for plane in earth.LEO:
         for sat in plane.sats:
             deleteDuplicatedLinks(sat, g, earth)
-    print(f'Biggest slant range between satellites: {biggestDist/1000:.2f} km')
+    if firstMove:
+        print(f'Biggest slant range between satellites: {biggestDist/1000:.2f} km')
+        firstMove = False
     print('----------------------------------')
 
     return g
