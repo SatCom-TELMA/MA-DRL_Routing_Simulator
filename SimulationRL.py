@@ -89,10 +89,10 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
 rotateFirst = False
-movementTime= 0.1#2902,72#Kepler # Half orbital period# 10 * 3600 
-ndeltas     = 5805.44/16#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+movementTime= 0.25#2902,72#Kepler # Half orbital period# 10 * 3600 
+ndeltas     = 5805.44/8#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 # in 2 seconds it moves t_o/2
-plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
@@ -104,14 +104,16 @@ if onlinePhase:         # Just in case
     importQVals = True
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
-nnpath      = './pre_trained_NNs/qNetwork_2GTs_movement.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_2GTs_movement.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_2GTs_movement.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_movement.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
+nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_8GTs_4secs_nocon.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_ 2GTs_movement/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 20        # rewards the getting to empty queues
+w1          = 23        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
@@ -178,7 +180,7 @@ epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
 # plotDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
-plotSatID   = False     # If True, plots the ID of each satellite
+plotSatID   = True     # If True, plots the ID of each satellite
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
 winSize     = 20        # window size for the representation in the plots
 markerSize  = 50        # Size of the markers in the plots
@@ -621,7 +623,7 @@ class Satellite:
         # we let the (Deep) Q-model choose the next hop and it will be added to the block.QPath as mentioned
         # if the next hop is the linked gateway it will simply not add anything and will let the model work normally
         if ((self.QLearning) or (self.orbPlane.earth.DDQNA is not None) or (self.DDQNA is not None)):
-            if len(block.QPath) > 3: # the block does not come from a gateway
+            if len(block.QPath) > 4: # the block does not come from a gateway
                 if self.QLearning:
                     nextHop = self.QLearning.makeAction(block, self, self.orbPlane.earth.gateways[0].graph, self.orbPlane.earth, prevSat = (findByID(self.orbPlane.earth, block.QPath[len(block.QPath)-3][0])))
                 elif self.DDQNA:
@@ -2514,17 +2516,17 @@ class Earth:
                         nextHop = None
 
                         if len(block.QPath) > 4:  # the block does not come from a gateway
-                            if sat.QLearning:
+                            if sat.QLearning is not None:   # Q-Learning
                                 nextHop = sat.QLearning.makeAction(block, sat,
                                                                     sat.orbPlane.earth.gateways[0].graph,
                                                                     sat.orbPlane.earth, prevSat=(
                                         findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
-                            elif sat.orbPlane.earth.DDQNA is not None:
-                                nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
+                            elif sat.DDQNA is not None:     # Deep Q-Learning-Online phase
+                                nextHop = sat.DDQNA.makeDeepAction(block, sat,
                                                                                    sat.orbPlane.earth.gateways[0].graph,
                                                                                    sat.orbPlane.earth, prevSat=(
                                         findByID(sat.orbPlane.earth, block.QPath[len(block.QPath) - 3][0])))
-                            elif self.DDQNA:
+                            elif self.DDQNA is not None:    # Deep Q-Learning-Offline phase
                                 # nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
                                 nextHop = self.DDQNA.makeDeepAction(block, sat,
                                                                                    sat.orbPlane.earth.gateways[
@@ -2534,16 +2536,16 @@ class Earth:
                             else:
                                 print(f'No learning model for sat: {sat.ID}')
                         else:
-                            if sat.QLearning:
+                            if sat.QLearning is not None:   # Q-Learning
                                 nextHop = sat.QLearning.makeAction(block, sat,
                                                                     sat.orbPlane.earth.gateways[0].graph,
                                                                     sat.orbPlane.earth)
-                            elif sat.DDQNA is not None:
+                            elif sat.DDQNA is not None:     # Deep Q-Learning-Offline phase
                                 nextHop = sat.DDQNA.makeDeepAction(block, sat,
                                                                     sat.orbPlane.earth.gateways[
                                                                         0].graph,
                                                                     sat.orbPlane.earth)
-                            elif self.DDQNA:
+                            elif self.DDQNA is not None:    # Deep Q-Learning-Offline phase
                                 # nextHop = sat.orbPlane.earth.DDQNA.makeDeepAction(block, sat,
                                 nextHop = self.DDQNA.makeDeepAction(block, sat,
                                                                                    sat.orbPlane.earth.gateways[
