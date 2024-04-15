@@ -88,10 +88,10 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
-movementTime= 25#2902,72#Kepler # Half orbital period# 10 * 3600 
+movementTime= 10#2902,72#Kepler # Half orbital period# 10 * 3600 
 ndeltas     = 5805.44/8#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
-coordGran   = 1 #20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+coordGran   = 1            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 
 plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 
@@ -104,8 +104,8 @@ if onlinePhase:         # Just in case
     importQVals = True
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
-nnpath      = './pre_trained_NNs/qNetwork_2GTs_mac.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac.h5'
+nnpath      = './pre_trained_NNs/qNetwork_2GTs_mac_noGran.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac_noGran.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_movement.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_movement.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
@@ -115,7 +115,7 @@ nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 20        # rewards the getting to empty queues
+w1          = 21        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
@@ -170,7 +170,7 @@ rotateFirst = False     # If True, the constellation starts shifted by 1 movemen
 # coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 latBias     = 90#/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180#/coordGran # Same but with longitude
-diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+diff        = False          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
 notAvail    = 0             # this value is set in the state space when the satellite neighbour is not available
 
@@ -616,7 +616,7 @@ class Satellite:
 
         try: # ANCHOR Save Queue time csv
             block.queueTime.append((block.checkPointsSend[len(block.checkPointsSend)-1]- block.checkPoints[len(block.checkPoints)-1]))
-        except IndexError:
+        except IndexError:  # Either it is the first satellite for the datablock or the datablock has no checkpoints appendeds
             # print('Index error')
             pass
 
@@ -895,7 +895,11 @@ class Satellite:
                     if self.left is not None:
                         print(f"{self.ID} west satellite duplicated! Replacing {self.left.ID} with {satB.ID}")
                     self.left  = satB
-            else:
+                elif(dir==1 or dir==2):
+                    pass
+                else:
+                    print(f'Sat: {satB.ID} direction not found with respect to {self.ID}')
+            else:   # it is a GT
                 pass
         
     def rotate(self, delta_t, longitude, period):
@@ -3847,7 +3851,7 @@ class DDQNAgent:
             try:
                 queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
             except IndexError:
-                queueReward = 0 # FIXME
+                queueReward = 0 # FIXME In some hop the queue time was not appended to block.queueTime, line 620
             reward          = distanceReward + again + queueReward
 
         # 5. Store the experience of previous Node (Agent, satellite) if it was not a gateway  
@@ -5067,25 +5071,25 @@ def getDeepLinkedSats(satA, g, earth):
     # satA.findIntraNeighbours(earth)
     linkedSats['U'] = satA.upper
     linkedSats['D'] = satA.lower
-    # linkedSats['R'] = satA.right
-    # linkedSats['L'] = satA.left
+    linkedSats['R'] = satA.right
+    linkedSats['L'] = satA.left
 
-    # Find inter-plane neighbours (right and left)
-    for edge in list(g.edges(satA.ID)):
-        if edge[1][0].isdigit():
-            satB = findByID(earth, edge[1])
-            dir = getDirection(satA, satB)
-            if(dir == 3):                                         # Found Satellite at East
-                if linkedSats['R'] is not None:
-                    print(f"{satA.ID} east satellite duplicated! Replacing {linkedSats['R'].ID} with {satB.ID}")
-                linkedSats['R']  = satB
+    # # Find inter-plane neighbours (right and left)
+    # for edge in list(g.edges(satA.ID)):
+    #     if edge[1][0].isdigit():
+    #         satB = findByID(earth, edge[1])
+    #         dir = getDirection(satA, satB)
+    #         if(dir == 3):                                         # Found Satellite at East
+    #             if linkedSats['R'] is not None:
+    #                 print(f"{satA.ID} east satellite duplicated! Replacing {linkedSats['R'].ID} with {satB.ID}")
+    #             linkedSats['R']  = satB
 
-            elif(dir == 4):                                       # Found Satellite at West
-                if linkedSats['L'] is not None:
-                    print(f"{satA.ID} west satellite duplicated! Replacing {linkedSats['L'].ID} with {satB.ID}")
-                linkedSats['L']  = satB
-        else:
-            pass
+    #         elif(dir == 4):                                       # Found Satellite at West
+    #             if linkedSats['L'] is not None:
+    #                 print(f"{satA.ID} west satellite duplicated! Replacing {linkedSats['L'].ID} with {satB.ID}")
+    #             linkedSats['L']  = satB
+    #     else:
+    #         pass
 
     return linkedSats
 
