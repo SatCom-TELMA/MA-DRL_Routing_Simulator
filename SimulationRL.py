@@ -88,39 +88,41 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
-rotateFirst = False
-movementTime= 0.25#2902,72#Kepler # Half orbital period# 10 * 3600 
+movementTime= 25#2902,72#Kepler # Half orbital period# 10 * 3600 
 ndeltas     = 5805.44/8#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
-# in 2 seconds it moves t_o/2
-plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
-mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
+
+coordGran   = 1 #20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+
+plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = False      # If True, makes random actions eventually, if false only exploitation
-importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = True      # If True, makes random actions eventually, if false only exploitation
+importQVals = False     # imports either QTables or NN from a certain path
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
+nnpath      = './pre_trained_NNs/qNetwork_2GTs_mac.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_movement.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_movement.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
-nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_8GTs_4secs_nocon.h5'
-tablesPath  = './pre_trained_NNs/qTablesExport_ 2GTs_movement/'
+# nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon_v2.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_4secs_nocon_v2.h5'
+tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 23        # rewards the getting to empty queues
+w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
 
-GTs = [2]               # number of gateways to be tested
+GTs = [8]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
@@ -161,9 +163,11 @@ blockSize   = 64800
 # ndeltas     = 25        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 matching    = 'Greedy'  # ['Markovian', 'Greedy']
 minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
+mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
+rotateFirst = False     # If True, the constellation starts shifted by 1 movement defined by ndeltas
 
 # State pre-processing
-coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+# coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 latBias     = 90#/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180#/coordGran # Same but with longitude
 diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
@@ -199,7 +203,7 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 againPenalty= -5        # Penalty if the satellite sends the block to a hop where it has already been
 unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
 biggestDist= -1         # Normalization factor for the distance reward. This is updated in the creation of the graph.
-firstMove  = False      # The biggest slant range is only computed the first time in order to avoid this value to be variable
+firstMove  = True      # The biggest slant range is only computed the first time in order to avoid this value to be variable
 
 # Deep Learning
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
@@ -623,7 +627,7 @@ class Satellite:
         # we let the (Deep) Q-model choose the next hop and it will be added to the block.QPath as mentioned
         # if the next hop is the linked gateway it will simply not add anything and will let the model work normally
         if ((self.QLearning) or (self.orbPlane.earth.DDQNA is not None) or (self.DDQNA is not None)):
-            if len(block.QPath) > 4: # the block does not come from a gateway
+            if len(block.QPath) > 3: # the block does not come from a gateway
                 if self.QLearning:
                     nextHop = self.QLearning.makeAction(block, self, self.orbPlane.earth.gateways[0].graph, self.orbPlane.earth, prevSat = (findByID(self.orbPlane.earth, block.QPath[len(block.QPath)-3][0])))
                 elif self.DDQNA:
@@ -2515,7 +2519,7 @@ class Earth:
                         block = buffer[1][index]
                         nextHop = None
 
-                        if len(block.QPath) > 4:  # the block does not come from a gateway
+                        if len(block.QPath) > 3:  # the block does not come from a gateway
                             if sat.QLearning is not None:   # Q-Learning
                                 nextHop = sat.QLearning.makeAction(block, sat,
                                                                     sat.orbPlane.earth.gateways[0].graph,
@@ -2585,7 +2589,7 @@ class Earth:
                     while index < len(buffer[1]):
                         block = buffer[1][index]
 
-                        if len(block.QPath) > 4:  # the block does not come from a gateway
+                        if len(block.QPath) > 3:  # the block does not come from a gateway
                             if sat.QLearning:
                                 nextHop = sat.QLearning.makeAction(block, sat,
                                                                    sat.orbPlane.earth.gateways[0].graph,
@@ -2647,7 +2651,7 @@ class Earth:
                 while index < len(sat.sendBufferGT[1]):
                     block = sat.sendBufferGT[1][index]
 
-                    if len(block.QPath) > 4:  # the block does not come from a gateway
+                    if len(block.QPath) > 3:  # the block does not come from a gateway
                         if sat.QLearning:
                             nextHop = sat.QLearning.makeAction(block, sat,
                                                                sat.orbPlane.earth.gateways[0].graph,
@@ -3555,7 +3559,10 @@ class QLearning:
                 reward = againPenalty
             else:
                 distanceReward = getDistanceReward(prevSat, sat, block.destination, self.w2)
-                queueReward    = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
+                try:
+                    queueReward    = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
+                except IndexError:
+                    queueReward = 0 # FIXME
                 reward = distanceReward + queueReward
             
             earth.rewards.append([reward, sat.env.now])
@@ -3837,7 +3844,10 @@ class DDQNAgent:
             elif distanceRew == 5:
                 distanceReward  = getDistanceRewardV5(prevSat, sat, self.w2)
 
-            queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
+            try:
+                queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
+            except IndexError:
+                queueReward = 0 # FIXME
             reward          = distanceReward + again + queueReward
 
         # 5. Store the experience of previous Node (Agent, satellite) if it was not a gateway  
@@ -4664,11 +4674,11 @@ def createGraph(earth, matching='Greedy'):
     elif matching=='Greedy':
         markovEdges = greedyMatching(earth)
     print(f'Matching: {matching}')
-    print('----------------------------------')
+    # print('----------------------------------')
 
     global biggestDist
     global firstMove
-    biggestDist = -1
+    # biggestDist = -1
     for markovEdge in markovEdges:
         g.add_edge(markovEdge.i, markovEdge.j,  # source and destination IDs
         slant_range = markovEdge.slant_range,   # slant range
@@ -5057,25 +5067,25 @@ def getDeepLinkedSats(satA, g, earth):
     # satA.findIntraNeighbours(earth)
     linkedSats['U'] = satA.upper
     linkedSats['D'] = satA.lower
-    linkedSats['R'] = satA.right
-    linkedSats['L'] = satA.left
+    # linkedSats['R'] = satA.right
+    # linkedSats['L'] = satA.left
 
-    # # Find inter-plane neighbours (right and left)
-    # for edge in list(g.edges(satA.ID)):
-    #     if edge[1][0].isdigit():
-    #         satB = findByID(earth, edge[1])
-    #         dir = getDirection(satA, satB)
-    #         if(dir == 3):                                         # Found Satellite at East
-    #             if linkedSats['R'] is not None:
-    #                 print(f"{satA.ID} east satellite duplicated! Replacing {linkedSats['R'].ID} with {satB.ID}")
-    #             linkedSats['R']  = satB
+    # Find inter-plane neighbours (right and left)
+    for edge in list(g.edges(satA.ID)):
+        if edge[1][0].isdigit():
+            satB = findByID(earth, edge[1])
+            dir = getDirection(satA, satB)
+            if(dir == 3):                                         # Found Satellite at East
+                if linkedSats['R'] is not None:
+                    print(f"{satA.ID} east satellite duplicated! Replacing {linkedSats['R'].ID} with {satB.ID}")
+                linkedSats['R']  = satB
 
-    #         elif(dir == 4):                                       # Found Satellite at West
-    #             if linkedSats['L'] is not None:
-    #                 print(f"{satA.ID} west satellite duplicated! Replacing {linkedSats['L'].ID} with {satB.ID}")
-    #             linkedSats['L']  = satB
-    #     else:
-    #         pass
+            elif(dir == 4):                                       # Found Satellite at West
+                if linkedSats['L'] is not None:
+                    print(f"{satA.ID} west satellite duplicated! Replacing {linkedSats['L'].ID} with {satB.ID}")
+                linkedSats['L']  = satB
+        else:
+            pass
 
     return linkedSats
 
@@ -5459,6 +5469,7 @@ def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
     
 
 def getDistanceRewardV4(sat, nextSat, satDest, w2, w3):
+    global biggestDist
     SLr = getSlantRange(sat, satDest) - getSlantRange(nextSat, satDest)
     TravelDistance = getSlantRange(sat, nextSat)
     return w2*(SLr-TravelDistance/w3)/biggestDist
@@ -5508,7 +5519,7 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
 def saveQTables(outputPath, earth):
     print('Saving Q-Tables at: ' + outputPath)
     # create output path if it does not exist
-    path = outputPath + 'qTablesExport_ ' + str(len(earth.gateways)) + 'GTs/'
+    path = outputPath + 'qTablesExport_' + str(len(earth.gateways)) + 'GTs/'
     os.makedirs(path, exist_ok=True) 
 
     # save Q-Tables
