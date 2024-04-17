@@ -91,10 +91,10 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
 movementTime= 0.1#2902,72#Kepler # Half orbital period# 10 * 3600 
 ndeltas     = 5805.44/16#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
-coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
-diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+coordGran   = 1            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+diff        = False          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
-plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
+plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = True      # If True, makes random actions eventually, if false only exploitation
@@ -116,7 +116,7 @@ nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mov.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 20        # rewards the getting to empty queues
+w1          = 21        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
