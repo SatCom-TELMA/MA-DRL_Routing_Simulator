@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{1024}_{8}_no_diff
+#SBATCH -J DQL_{256}_{2}_4 secs
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
 
 # Amount of RAM needed for this job:
-#SBATCH --mem=1024gb
+#SBATCH --mem=256gb
 
 # The time the job will be running:
 #SBATCH --time=100:00:00

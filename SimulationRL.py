@@ -88,12 +88,13 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
-movementTime= 10#2902,72#Kepler # Half orbital period# 10 * 3600 
-ndeltas     = 5805.44/8#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+movementTime= 0.1#2902,72#Kepler # Half orbital period# 10 * 3600 
+ndeltas     = 5805.44/16#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
-coordGran   = 1            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 
-plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = True      # If True, makes random actions eventually, if false only exploitation
@@ -104,10 +105,10 @@ if onlinePhase:         # Just in case
     importQVals = True
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
-nnpath      = './pre_trained_NNs/qNetwork_2GTs_mac_noGran.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac_noGran.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_2GTs_movement.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_movement.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_2GTs_mac_noGran.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac_noGran.h5'
+nnpath      = './pre_trained_NNs/qNetwork_2GTs_mov.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mov.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon_v2.h5'
@@ -115,14 +116,14 @@ nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac_noGran.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 21        # rewards the getting to empty queues
+w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
 
-GTs = [8]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
@@ -170,7 +171,7 @@ rotateFirst = False     # If True, the constellation starts shifted by 1 movemen
 # coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 latBias     = 90#/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180#/coordGran # Same but with longitude
-diff        = False          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+# diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
 notAvail    = 0             # this value is set in the state space when the satellite neighbour is not available
 
@@ -201,7 +202,7 @@ queueVals   = 10        # Values that the observed Queue can have, being 0 the b
 # w1          = 1         # rewards the getting to empty queues
 # w2          = 20        # rewards getting closes phisically     
 againPenalty= -5        # Penalty if the satellite sends the block to a hop where it has already been
-unavPenalty = -0.5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
+unavPenalty = -5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
 biggestDist= -1         # Normalization factor for the distance reward. This is updated in the creation of the graph.
 firstMove  = True      # The biggest slant range is only computed the first time in order to avoid this value to be variable
 
@@ -3718,7 +3719,7 @@ class DDQNAgent:
                 print(f"Wrong Neural Network path")
                 print('----------------------------------')
         
-    def getNextHop(self, newState, linkedSats, sat):
+    def getNextHop(self, newState, linkedSats, sat, block):
         '''
         Given a new observed state and the linkied satellites, it will return the next hop
         '''
@@ -3738,9 +3739,20 @@ class DDQNAgent:
             actIndex = np.argmax(qValues)
             action   = self.actions[actIndex]
             while(linkedSats[action] == None):              # the chosen action has no linked satellite. NEGATIVE REWARD and store it, motherfucker.
+            
+            # target_sat = [linkedSats[action].ID, math.degrees(linkedSats[action].longitude), math.degrees(linkedSats[action].latitude)]
+            # sub_path = block.QPath[:len(block.QPath)-2]  # Extract the relevant part of the path
+            # while(linkedSats[action] == None or [linkedSats[action].ID, math.degrees(linkedSats[action].longitude), math.degrees(linkedSats[action].latitude)] in block.QPath[:len(block.QPath)-2]):              # the chosen action has no linked satellite or the chosen satellite has been visited twice.
+            
+            # while (linkedSats[action] is None or        # the chosen action has no linked satellite or the chosen satellite has been visited twice.
+            # block.QPath[:len(block.QPath)-2].count([linkedSats[action].ID, math.degrees(linkedSats[action].longitude), math.degrees(linkedSats[action].latitude)]) > 1):
+    
                 self.experienceReplay.store(newState, actIndex, unavPenalty, newState, False) # from state to the same state, reward -1, not terminated
                 self.earth.rewards.append([unavPenalty, sat.env.now])
                 qValues[0][actIndex] = -np.inf              # it will not be chosen again (as the model has still not trained with that)
+                # if np.all(qValues == -np.inf):              # all the neighbors have been visited twice
+                #     print(f'WARNING: All neighbors have been visited at least twice. A loop is going on in {sat.ID} with block: {block.ID}')
+                #     break
                 actIndex = np.argmax(qValues)               # find again for the highest value
                 action   = self.actions[actIndex]  
 
@@ -3822,7 +3834,7 @@ class DDQNAgent:
             return 0
 
         # 3. Choose an action (the direction of the next hop)
-        nextHop, actIndex = self.getNextHop(newState, linkedSats, sat)
+        nextHop, actIndex = self.getNextHop(newState, linkedSats, sat, block)
         
         # 4. Computes reward/penalty for the previous action
         if prevSat is not None:
@@ -4686,7 +4698,7 @@ def createGraph(earth, matching='Greedy'):
     for markovEdge in markovEdges:
         g.add_edge(markovEdge.i, markovEdge.j,  # source and destination IDs
         slant_range = markovEdge.slant_range,   # slant range
-        dataRate = 1/markovEdge.shannonRate,    # Inverse of dataRate
+        dataRate = 1/markovEdge.shannonRate,    # Inverse of dataRate # FIXME sometimes markovEdge.shannonRate is 0
         dataRateOG = markovEdge.shannonRate,    # Original shannon datRate
         hop = 1,                                # in case we just want to count hops
         dij = markovEdge.dij,
