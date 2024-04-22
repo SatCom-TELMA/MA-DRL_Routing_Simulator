@@ -128,7 +128,7 @@ GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,19)] # 19.
 
 # Other
-CurrentGTnumber = -1    # This number will be updating as the number of Gateways change. In the simulation it will iterate the GTs list
+CurrentGTnumber = -1    # Number of active gateways. This number will be updated every time a gateway is added. In the simulation it will iterate the GTs list
 
 # Physical constants
 rKM = 500               # radio in km of the coverage of each gateway
