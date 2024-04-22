@@ -95,7 +95,7 @@ coordGran   = 20            # Granularity of the coordinates that will be the in
 diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 noPingPong  = True
 
-plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
+plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
