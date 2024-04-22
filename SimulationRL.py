@@ -88,17 +88,18 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
-movementTime= 0.1#2902,72#Kepler # Half orbital period# 10 * 3600 
-ndeltas     = 5805.44/16#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+movementTime= 0.05#2902,72#Kepler # Half orbital period# 10 * 3600 
+ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
-coordGran   = 1            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
-diff        = False          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+noPingPong  = True
 
-plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
+explore     = False      # If True, makes random actions eventually, if false only exploitation
+importQVals = True     # imports either QTables or NN from a certain path
 onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
@@ -107,16 +108,16 @@ if onlinePhase:         # Just in case
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_mac_noGran.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac_noGran.h5'
-nnpath      = './pre_trained_NNs/qNetwork_2GTs_mov.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mov.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_2GTs_mov.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mov.h5'
+nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon_v2.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_8GTs_4secs_nocon_v2.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 21        # rewards the getting to empty queues
+w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
@@ -185,7 +186,7 @@ epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
 # plotDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
-plotSatID   = True     # If True, plots the ID of each satellite
+plotSatID   = False     # If True, plots the ID of each satellite
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
 winSize     = 20        # window size for the representation in the plots
 markerSize  = 50        # Size of the markers in the plots
@@ -3734,6 +3735,26 @@ class DDQNAgent:
 
         # highest value (Exploitation)
         else:
+            if noPingPong: # No PING PONG: if one of the neighbours is the connected satellite then choose that one
+                
+                # Mapping from state indices to direction decisions
+                decision_map = {
+                    (4, 5): 0,    # Up
+                    (10, 11): 1,  # Down
+                    (16, 17): 2,  # Right
+                    (22, 23): 3   # Left
+                }
+                    # Current satellite's destination position
+                dest_lat = newState[0, 26]
+                dest_lon = newState[0, 27]
+
+                # Iterate through the decision map and compare
+                for (lat_idx, lon_idx), actIndex in decision_map.items():
+                    if np.isclose(dest_lat, newState[0, lat_idx]) and np.isclose(dest_lon, newState[0, lon_idx]):
+                        action   = self.actions[actIndex]
+                        destination = linkedSats[action]
+                        return [destination.ID, math.degrees(destination.longitude), math.degrees(destination.latitude)], actIndex
+
             # Predict 
             qValues = self.qNetwork.predict(newState, verbose = 0)               # NOTE NN.predict. Gets next hop. state structure in debugging
             actIndex = np.argmax(qValues)
