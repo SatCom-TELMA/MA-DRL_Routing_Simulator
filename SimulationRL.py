@@ -88,14 +88,14 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
-movementTime= 0.05#2902,72#Kepler # Half orbital period# 10 * 3600 
+movementTime= 5#2902,72#Kepler # Half orbital period# 10 * 3600 
 ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
 coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 noPingPong  = True
 
-plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
@@ -117,7 +117,7 @@ nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 21        # rewards the getting to empty queues
+w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
@@ -1669,9 +1669,10 @@ class Earth:
         self.lossAv = []
         self.DDQNA  = None
         self.step   = 0
-        self.nMovs  = 0 # number of total movements done by the constellation
-        self.epsilon=[]
-        self.rewards=[]
+        self.nMovs  = 0     # number of total movements done by the constellation
+        self.epsilon= []    # set of epsilon values
+        self.rewards= []    # set of rewards
+        self.trains = []    # Set of times when a fit to any dnn has happened
         self.graph  = None
 
         pop_count_data = Image.open(img_path)
@@ -3846,7 +3847,7 @@ class DDQNAgent:
                 self.experienceReplay.store(block.oldState, block.oldAction, ArriveReward, newState, True)
                 self.earth.rewards.append([ArriveReward, sat.env.now])
 
-            if TrainThis: self.train(sat) # FIXME why here a train?? should not be here. Make a test without this when the model is stable
+            if TrainThis: self.train(sat, earth) # FIXME why here a train?? should not be here. Make a test without this when the model is stable
             if plotDeliver:
                 if int(block.ID[len(block.ID)-1]) == 0: # Draws 1/10 arrivals
                     os.makedirs(earth.outputPath + '/pictures/', exist_ok=True) # drawing delivered
@@ -3893,7 +3894,7 @@ class DDQNAgent:
 
         # 6. Learning, train the Q-Network at every time we store experience
             if TrainThis and self.step % nTrain == 0:
-                self.train(sat)
+                self.train(sat, earth)
 
         else:
             # prev node was a gateway, no need to compute the reward
@@ -3961,7 +3962,7 @@ class DDQNAgent:
         # model.compile(loss='mse', optimizer=optimizer)
         return model
 
-    def train(self, sat):
+    def train(self, sat, earth):
         if self.experienceReplay.buffeSize < self.batchS*3:
             return -1
 
@@ -4000,6 +4001,7 @@ class DDQNAgent:
         # 5. fit the model and save the loss
         loss = self.qNetwork.fit(states, acts * expectedRewards[:, None], batch_size=self.batchS, epochs=1, verbose=0) # NOTE qNetwork fit
         sat.orbPlane.earth.loss.append([loss.history['loss'][0], sat.env.now])
+        earth.trains.append([sat.env.now]) # counts the number of trainings
         
 
 # @profile
@@ -5648,13 +5650,13 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
 
     # Plotting
     plt.figure(figsize=(10, 5))
-    plt.plot(data['Time'], data['Rewards'], label='Original Rewards', alpha=0.3, color='grey')
-    plt.plot(data['Time'], data['Smoothed Rewards'], color='blue', linewidth=2, label='Smoothed Rewards')
-    plt.plot(data['Time'], data['Top 10% Avg Rewards'], color='green', linewidth=2, linestyle='--', label='Top 10% Avg Rewards')
-    plt.plot(data['Time'], data['Bottom 10% Avg Rewards'], color='red', linewidth=2, linestyle='-.', label='Bottom 10% Avg Rewards')
+    # plt.plot(data['Time'], data['Rewards'], label='Original Rewards', alpha=0.3, color='grey')
+    plt.plot(data['Time'], data['Smoothed Rewards'], color='blue', linewidth=2, label='Rewards')
+    plt.plot(data['Time'], data['Top 10% Avg Rewards'], color='green', linewidth=2, linestyle='--', label='Top 10%')
+    plt.plot(data['Time'], data['Bottom 10% Avg Rewards'], color='red', linewidth=2, linestyle='-.', label='Bottom 10%')
     plt.title("Rewards over Time", fontsize=20)  # Increase title font size
-    plt.xlabel("Time (s)", fontsize=20)
-    plt.ylabel("Rewards", fontsize=20)
+    # plt.xlabel("Time (s)", fontsize=20)
+    # plt.ylabel("Rewards", fontsize=20)
     plt.legend(fontsize=15)
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
@@ -5695,6 +5697,35 @@ def save_epsilons(outputPath, eps, GTnumber):
 
     return df
     
+
+def save_training_counts(outputPath, train_times, GTnumber):
+    # Extract times
+    times = [x[0]*1000 for x in train_times]
+
+    # Calculate cumulative trainings over time
+    training_counts = list(range(1, len(times) + 1))
+
+    # Plotting the cumulative number of trainings
+    plt.plot(times, training_counts)
+    plt.title("Cumulative trainings over time")
+    plt.xlabel("Time (ms)")
+    plt.ylabel("Number of Trainings")
+
+    # Create output path and save the figure
+    os.makedirs(outputPath + '/trainings/', exist_ok=True)
+    plt.savefig(outputPath + '/trainings/' + "trainings_{}_gateways.png".format(GTnumber))
+    plt.close()
+
+    # Prepare data for saving
+    data = {'time': times, 'trainings': training_counts}
+    df = pd.DataFrame(data)
+
+    # Create CSV output path and save data
+    os.makedirs(outputPath + '/csv/', exist_ok=True)
+    df.to_csv(outputPath + '/csv/' + "trainings_{}_gateways.csv".format(GTnumber), index=False)
+
+    # return df
+
 
 def save_losses(outputPath, earth1, GTnumber):
     losses = [x[0] for x in earth1.loss]
@@ -6020,6 +6051,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
                 # save epsilons
                 if Train:
                     epsDF = save_epsilons(outputPath, eps, GTnumber)
+                    save_training_counts(outputPath, earth1.trains, GTnumber)
                 else:
                     epsDF = None
 
