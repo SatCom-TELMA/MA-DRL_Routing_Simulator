@@ -88,14 +88,16 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
-movementTime= 0.05#2902,72#Kepler # Half orbital period# 10 * 3600 
-ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+movementTime= 0.1#2902,72#Kepler # Half orbital period# 10 * 3600 
+ndeltas     = 5805.44/20#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+# ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
 coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 noPingPong  = True
 
 plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
+saveISLs    = True     # save ISLs map
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
@@ -889,13 +891,13 @@ class Satellite:
                 satB = findByID(earth, edge[1])
                 dir = getDirection(self, satB)
                 if(dir == 3):                                         # Found Satellite at East
-                    if self.right is not None:
-                        print(f"{self.ID} east satellite duplicated! Replacing {self.right.ID} with {satB.ID}")
+                    # if self.right is not None:
+                    #     print(f"{self.ID} east satellite duplicated! Replacing {self.right.ID} with {satB.ID}.")
                     self.right  = satB
 
                 elif(dir == 4):                                       # Found Satellite at West
-                    if self.left is not None:
-                        print(f"{self.ID} west satellite duplicated! Replacing {self.left.ID} with {satB.ID}")
+                    # if self.left is not None:
+                    #     print(f"{self.ID} west satellite duplicated! Replacing {self.left.ID} with {satB.ID}.")
                     self.left  = satB
                 elif(dir==1 or dir==2):
                     pass
@@ -3086,13 +3088,13 @@ class Earth:
                 self.updateSatelliteProcessesCorrect(graph)
 
             self.updateGTPaths()
-
-            print('Constellation moved! Saving ISLs map...')
             self.nMovs += 1
-            islpath = outputPath + '/ISL_maps/'
-            os.makedirs(islpath, exist_ok=True) 
-            self.plotMap(plotGT = True, plotSat = True, edges=True, save = True, outputPath=islpath, n=self.nMovs)
-            plt.close()
+            if saveISLs:
+                print('Constellation moved! Saving ISLs map...')
+                islpath = outputPath + '/ISL_maps/'
+                os.makedirs(islpath, exist_ok=True) 
+                self.plotMap(plotGT = True, plotSat = True, edges=True, save = True, outputPath=islpath, n=self.nMovs)
+                plt.close()
 
     def testFlowConstraint1(self, graph):
         highestDist = (0,0)
@@ -3737,37 +3739,52 @@ class DDQNAgent:
         # highest value (Exploitation)
         else:
             if noPingPong: # No PING PONG: if one of the neighbours is the connected satellite then choose that one
-                
-                # Mapping from state indices to direction decisions
-                decision_map = {
-                    (4, 5): 0,    # Up
-                    (10, 11): 1,  # Down
-                    (16, 17): 2,  # Right
-                    (22, 23): 3   # Left
-                }
-                    # Current satellite's destination position
-                dest_lat = newState[0, 26]
-                dest_lon = newState[0, 27]
+                actIndex = -1
+                if sat.upper == block.destination.linkedSat[1]:
+                    actIndex = 0
+                elif sat.lower == block.destination.linkedSat[1]:
+                    actIndex = 1
+                elif sat.right == block.destination.linkedSat[1]:
+                    actIndex = 2
+                elif sat.left == block.destination.linkedSat[1]:
+                    actIndex = 3
 
-                # Iterate through the decision map and compare
-                for (lat_idx, lon_idx), actIndex in decision_map.items():
-                    if np.isclose(dest_lat, newState[0, lat_idx]) and np.isclose(dest_lon, newState[0, lon_idx]):
-                        action   = self.actions[actIndex]
-                        destination = linkedSats[action]
-                        return [destination.ID, math.degrees(destination.longitude), math.degrees(destination.latitude)], actIndex
+                if actIndex>-1:
+                    action      = self.actions[actIndex]
+                    destination = linkedSats[action]
+                    return [destination.ID, math.degrees(destination.longitude), math.degrees(destination.latitude)], actIndex
+                
+                # # Mapping from state indices to direction decisions
+                # decision_map = {
+                #     (4, 5): 0,    # Up
+                #     (10, 11): 1,  # Down
+                #     (16, 17): 2,  # Right
+                #     (22, 23): 3   # Left
+                # }
+                #     # Current satellite's destination position
+                # dest_lat = newState[0, 26]
+                # dest_lon = newState[0, 27]
+
+                # # Iterate through the decision map and compare
+                # for (lat_idx, lon_idx), actIndex in decision_map.items():
+                #     if np.isclose(dest_lat, newState[0, lat_idx]) and np.isclose(dest_lon, newState[0, lon_idx]):
+                #         action      = self.actions[actIndex]
+                #         destination = linkedSats[action]
+                #         return [destination.ID, math.degrees(destination.longitude), math.degrees(destination.latitude)], actIndex
 
             # Predict 
             qValues = self.qNetwork.predict(newState, verbose = 0)               # NOTE NN.predict. Gets next hop. state structure in debugging
             actIndex = np.argmax(qValues)
             action   = self.actions[actIndex]
-            while(linkedSats[action] == None):              # the chosen action has no linked satellite. NEGATIVE REWARD and store it, motherfucker.
+            # while(linkedSats[action] == None):              # the chosen action has no linked satellite. NEGATIVE REWARD and store it, motherfucker.
             
             # target_sat = [linkedSats[action].ID, math.degrees(linkedSats[action].longitude), math.degrees(linkedSats[action].latitude)]
             # sub_path = block.QPath[:len(block.QPath)-2]  # Extract the relevant part of the path
             # while(linkedSats[action] == None or [linkedSats[action].ID, math.degrees(linkedSats[action].longitude), math.degrees(linkedSats[action].latitude)] in block.QPath[:len(block.QPath)-2]):              # the chosen action has no linked satellite or the chosen satellite has been visited twice.
             
-            # while (linkedSats[action] is None or        # the chosen action has no linked satellite or the chosen satellite has been visited twice.
-            # block.QPath[:len(block.QPath)-2].count([linkedSats[action].ID, math.degrees(linkedSats[action].longitude), math.degrees(linkedSats[action].latitude)]) > 1):
+            while (linkedSats[action] is None or        # the chosen action has no linked satellite or the chosen satellite has been visited twice.
+            sum(linkedSats[action].ID == path[0] for path in block.QPath[:-1]) > 1):
+            # block.QPath[:len(block.QPath)-1].count([linkedSats[action].ID, math.degrees(linkedSats[action].longitude), math.degrees(linkedSats[action].latitude)]) > 1):
     
                 self.experienceReplay.store(newState, actIndex, unavPenalty, newState, False) # from state to the same state, reward -1, not terminated
                 self.earth.rewards.append([unavPenalty, sat.env.now])
@@ -4573,7 +4590,7 @@ def greedyMatching(earth):
    # max slant range for each orbit
     ###########################################################
     M = len(earth.LEO)              # Number of planes in LEO
-    Max_slnt_rng = np.zeros((M,M))  # All ISL slant ranges must me lowe than 'Max_slnt_rng[i, j]'
+    Max_slnt_rng = np.zeros((M,M))  # All ISL slant ranges must be lowe than 'Max_slnt_rng[i, j]'
 
     Orb_heights  = []
     for plane in earth.LEO:
@@ -4679,6 +4696,83 @@ def deleteDuplicatedLinks(satA, g, earth):
                     linkedSats['L']  = satB
 
 
+def establishRemainingISLs(earth, g):
+    Satellites = []
+
+    # Collect all satellites from each plane
+    for plane in earth.LEO:
+        for sat in plane.sats:
+            Satellites.append(sat)
+
+    # Gather positions and other parameters
+    Positions, meta = get_pos_vectors_omni(Satellites)
+    direction = get_direction(Satellites)
+    slant_range = get_slant_range_optimized(Positions, len(Satellites))
+
+    # Prepare link parameters
+    interISL = RFlink(
+        frequency=f,
+        bandwidth=B,
+        maxPtx=maxPtx,
+        aDiameterTx=Adtx,
+        aDiameterRx=Adrx,
+        pointingLoss=pL,
+        noiseFigure=Nf,
+        noiseTemperature=Tn,
+        min_rate=min_rate
+    )
+
+    # Calculate maximum slant range
+    Max_slnt_rng = np.zeros((len(earth.LEO), len(earth.LEO)))
+    Orb_heights = [plane.h for plane in earth.LEO]
+    for i in range(len(earth.LEO)):
+        for j in range(len(earth.LEO)):
+            Max_slnt_rng[i, j] = (np.sqrt((Orb_heights[i] + Re)**2 - Re**2) +
+                                  np.sqrt((Orb_heights[j] + Re)**2 - Re**2))
+
+    # Define slant range and data rate matrices
+    slant_range_los = los_slant_range(slant_range, meta, Max_slnt_rng, Positions)
+    shannonRate = get_data_rate(slant_range_los, interISL)
+
+    # Identify satellites with specific missing neighbors
+    satellites_with_no_right = {sat: Positions[idx] for idx, sat in enumerate(Satellites) if sat.right is None}
+    satellites_with_no_left = {sat: Positions[idx] for idx, sat in enumerate(Satellites) if sat.left is None}
+
+    # Calculate potential matches sorted by horizontal alignment
+    potential_links = []
+    for sat_r in satellites_with_no_right:
+        for sat_l in satellites_with_no_left:
+            if sat_r.in_plane != sat_l.in_plane:
+                idx_r = Satellites.index(sat_r)
+                idx_l = Satellites.index(sat_l)
+                if slant_range_los[idx_r, idx_l] < math.inf:
+                    # Handle longitude wrapping correctly
+                    longitude_difference = (satellites_with_no_left[sat_l][0] - satellites_with_no_right[sat_r][0] + 360) % 360
+                    if longitude_difference > 0 and longitude_difference < 180:
+                        # lat_diff = abs(satellites_with_no_right[sat_r][1] - satellites_with_no_left[sat_l][1])
+                        lat_diff = abs(sat_r.latitude-sat_l.latitude)
+                        potential_links.append((lat_diff, sat_r, sat_l, slant_range_los[idx_r, idx_l]))
+
+    # Sort by latitude difference to prioritize horizontal links
+    # potential_links.sort()
+    potential_links.sort(key=lambda x: x[0])  # Uses latitude difference as sort key
+
+
+    # Establish links from closest to farthest in terms of horizontal alignment
+    for lat_diff, sat_r, sat_l, distance in potential_links:
+        if sat_r.right is None and sat_l.left is None:
+            g.add_edge(sat_r.ID, sat_l.ID, slant_range=distance,
+                       dataRate=1/shannonRate[Satellites.index(sat_r), Satellites.index(sat_l)],
+                       dataRateOG=shannonRate[Satellites.index(sat_r), Satellites.index(sat_l)], hop=1)
+            sat_r.right = sat_l
+            sat_l.left = sat_r
+            # print(f"Established horizontal link between {sat_r.ID} (right) and {sat_l.ID} (left) with latitude difference {lat_diff:.2f} deg and distance: {distance/1000:.2F} km.")
+
+    return g
+
+# sat_r.ID == '0_2' or sat_l.ID == '0_2' or sat_r.ID == '6_16' or sat_l.ID == '6_16'
+
+
 def createGraph(earth, matching='Greedy'):
     '''
     Each satellite has two transceiver antennas that are connected to the closest satellite in east and west direction to a satellite
@@ -4734,6 +4828,19 @@ def createGraph(earth, matching='Greedy'):
     for plane in earth.LEO:
         for sat in plane.sats:
             deleteDuplicatedLinks(sat, g, earth)
+        
+    earth.graph = g
+    
+    # update the neighbors
+    for plane in earth.LEO:
+        for sat in plane.sats:
+            sat.findIntraNeighbours(earth)
+            sat.findInterNeighbours(earth)
+
+    print('Establishing remaining edges...')
+    g = establishRemainingISLs(earth, g)
+
+
     if firstMove:
         print(f'Biggest slant range between satellites: {biggestDist/1000:.2f} km')
         firstMove = False
