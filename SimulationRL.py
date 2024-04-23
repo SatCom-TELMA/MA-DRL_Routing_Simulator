@@ -88,14 +88,14 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
-movementTime= 5#2902,72#Kepler # Half orbital period# 10 * 3600 
+movementTime= 0.05#2902,72#Kepler # Half orbital period# 10 * 3600 
 ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
 coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 noPingPong  = True
 
-plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
@@ -186,7 +186,7 @@ epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
 # plotDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
-plotSatID   = False     # If True, plots the ID of each satellite
+plotSatID   = True     # If True, plots the ID of each satellite
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
 winSize     = 20        # window size for the representation in the plots
 markerSize  = 50        # Size of the markers in the plots
@@ -5511,6 +5511,8 @@ def getDistanceRewardV4(sat, nextSat, satDest, w2, w3):
     global biggestDist
     SLr = getSlantRange(sat, satDest) - getSlantRange(nextSat, satDest)
     TravelDistance = getSlantRange(sat, nextSat)
+    if TravelDistance > biggestDist:
+        print(f'Distance not feasible: {sat.ID}, {nextSat.ID}')
     return w2*(SLr-TravelDistance/w3)/biggestDist
     # return w2*(SLr/biggestDist)
     # return w2*SLr/1000000
