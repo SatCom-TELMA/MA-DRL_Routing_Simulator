@@ -81,7 +81,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -96,13 +96,13 @@ coordGran   = 20            # Granularity of the coordinates that will be the in
 diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 noPingPong  = True
 
-plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
-saveISLs    = True     # save ISLs map
+plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+saveISLs    = False     # save ISLs map
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
 importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -123,7 +123,7 @@ w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-gamma       = 0.99       # greedy factor. Smaller -> Greedy
+gamma       = 0.6       # greedy factor. Smaller -> Greedy
 
 
 GTs = [2]               # number of gateways to be tested
@@ -5187,13 +5187,13 @@ def getLinkedSats(satA, g, earth):
                     linkedSats['U'] = satB
 
             elif(dir == 3):                                         # Found Satellite at East
-                if linkedSats['R'] is not None:
-                    print(f"{satA.ID} east satellite duplicated! Replacing {linkedSats['R'].ID} with {satB.ID}")
+                # if linkedSats['R'] is not None:
+                #     print(f"{satA.ID} east satellite duplicated! Replacing {linkedSats['R'].ID} with {satB.ID}")
                 linkedSats['R']  = satB
 
             elif(dir == 4):                                         # Found Satellite at West
-                if linkedSats['L'] is not None:
-                    print(f"{satA.ID} west satellite duplicated! Replacing {linkedSats['L'].ID} with {satB.ID}")
+                # if linkedSats['L'] is not None:
+                #     print(f"{satA.ID} west satellite duplicated! Replacing {linkedSats['L'].ID} with {satB.ID}")
                 linkedSats['L']  = satB
 
         else:
