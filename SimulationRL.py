@@ -81,7 +81,7 @@ else:
 
 # HOT PARAMS
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 2: Distance reward normalized to average moving possibilities
                          # 3: Distance reward normalized to maximum close up
@@ -102,7 +102,7 @@ saveISLs    = False     # save ISLs map
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
 importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -119,11 +119,11 @@ nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 20        # rewards the getting to empty queues
+w1          = 21        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-gamma       = 0.6       # greedy factor. Smaller -> Greedy
+gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
 
 GTs = [2]               # number of gateways to be tested
@@ -210,8 +210,8 @@ biggestDist= -1         # Normalization factor for the distance reward. This is 
 firstMove  = True      # The biggest slant range is only computed the first time in order to avoid this value to be variable
 
 # Deep Learning
-MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
-MIN_EPSILON = 0.001     # Minimum value that the exploration parameter can have
+MAX_EPSILON = 0.11#0.99      # Maximum value that the exploration parameter can have
+MIN_EPSILON = 0.1#0.001     # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
