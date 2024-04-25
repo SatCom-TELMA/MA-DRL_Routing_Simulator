@@ -126,7 +126,7 @@ ArriveReward= 50        # Reward given to the system in case it sends the data b
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
 
-GTs = [8]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
