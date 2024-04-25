@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{1024}_{2}_20s_Starlink
+#SBATCH -J DQL_{1024}_{8}_2s_congestion
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
