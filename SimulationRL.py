@@ -94,7 +94,7 @@ ndeltas     = 5805.44/20#1        # This number will multiply deltaT. If bigger,
 # ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
 plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
-saveISLs    = False     # save ISLs map
+saveISLs    = True     # save ISLs map
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = True      # If True, makes random actions eventually, if false only exploitation
@@ -116,12 +116,12 @@ nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 21        # rewards the getting to empty queues
+w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
-alpha_dnn   = 0.01      # learning rate for the deep neural networks
+alpha_dnn   = 0.002      # learning rate for the deep neural networks
 
 
 GTs = [8]               # number of gateways to be tested
@@ -210,8 +210,8 @@ biggestDist= -1         # Normalization factor for the distance reward. This is 
 firstMove  = True      # The biggest slant range is only computed the first time in order to avoid this value to be variable
 
 # Deep Learning
-MAX_EPSILON = 0.11#0.99      # Maximum value that the exploration parameter can have
-MIN_EPSILON = 0.1#0.001     # Minimum value that the exploration parameter can have
+MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
+MIN_EPSILON = 0.001     # Minimum value that the exploration parameter can have
 LAMBDA      = 0.0005    # This value is used to decay the epsilon in the deep learning implementation
 decayRate   = 4         # sets the epsilon decay in the deep learning implementatio. If higher, the decay rate is slower. If lower, the decay is faster
 Clipnorm    = 1         # Maximum value to the nom of the gradients. Prevents the gradients of the model parameters with respect to the loss function becoming too large
@@ -3776,22 +3776,20 @@ class DDQNAgent:
             qValues = self.qNetwork.predict(newState, verbose = 0)               # NOTE NN.predict. Gets next hop. state structure in debugging
             actIndex = np.argmax(qValues)
             action   = self.actions[actIndex]
-            # while(linkedSats[action] == None):              # the chosen action has no linked satellite. NEGATIVE REWARD and store it, motherfucker.
+            while(linkedSats[action] == None):              # the chosen action has no linked satellite. NEGATIVE REWARD and store it, motherfucker.
             
-            # target_sat = [linkedSats[action].ID, math.degrees(linkedSats[action].longitude), math.degrees(linkedSats[action].latitude)]
-            # sub_path = block.QPath[:len(block.QPath)-2]  # Extract the relevant part of the path
-            # while(linkedSats[action] == None or [linkedSats[action].ID, math.degrees(linkedSats[action].longitude), math.degrees(linkedSats[action].latitude)] in block.QPath[:len(block.QPath)-2]):              # the chosen action has no linked satellite or the chosen satellite has been visited twice.
-            
-            while (linkedSats[action] is None or        # the chosen action has no linked satellite or the chosen satellite has been visited twice.
-            sum(linkedSats[action].ID == path[0] for path in block.QPath[:-1]) > 1):
-            # block.QPath[:len(block.QPath)-1].count([linkedSats[action].ID, math.degrees(linkedSats[action].longitude), math.degrees(linkedSats[action].latitude)]) > 1):
-    
-                self.experienceReplay.store(newState, actIndex, unavPenalty, newState, False) # from state to the same state, reward -1, not terminated
-                self.earth.rewards.append([unavPenalty, sat.env.now])
-                qValues[0][actIndex] = -np.inf              # it will not be chosen again (as the model has still not trained with that)
-                # if np.all(qValues == -np.inf):              # all the neighbors have been visited twice
-                #     print(f'WARNING: All neighbors have been visited at least twice. A loop is going on in {sat.ID} with block: {block.ID}')
-                #     break
+            # while (linkedSats[action] is None or        # the chosen action has no linked satellite or the chosen satellite has been visited twice.
+            # sum(linkedSats[action].ID == path[0] for path in block.QPath[:-1]) > 1):    
+            #     self.experienceReplay.store(newState, actIndex, unavPenalty, newState, False) # from state to the same state, reward -1, not terminated
+            #     self.earth.rewards.append([unavPenalty, sat.env.now])
+            #     qValues[0][actIndex] = -np.inf              # it will not be chosen again (as the model has still not trained with that)
+            #     if np.all(qValues == -np.inf):              # all the neighbors have been visited twice
+            #         print(f'WARNING: All neighbors have been visited at least twice. A loop is going on in {sat.ID} with block: {block.ID}')
+            #         while (linkedSats[action] is None): # if all options were either not available or visited twice, then choose randomly an action that is available
+            #             np.random.randint(4)
+            #             actIndex = np.argmax(qValues)               # find again for the highest value
+            #             action   = self.actions[actIndex]  
+            #         break
                 actIndex = np.argmax(qValues)               # find again for the highest value
                 action   = self.actions[actIndex]  
 
@@ -3799,7 +3797,11 @@ class DDQNAgent:
                                             # each satellite associated to its corresponding keyword
         
         # ACT -> [it is done outside, the next hop is added at sat.receiveBlock method to block.QPath]
-        return [destination.ID, math.degrees(destination.longitude), math.degrees(destination.latitude)], actIndex
+        try:
+            return [destination.ID, math.degrees(destination.longitude), math.degrees(destination.latitude)], actIndex
+        except:
+            return -1
+
 
     def makeDeepAction(self, block, sat, g, earth, prevSat=None):
         '''
