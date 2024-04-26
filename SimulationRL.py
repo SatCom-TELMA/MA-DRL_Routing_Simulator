@@ -60,8 +60,9 @@ class Logger(object):
 
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import Model, Sequential, losses
-from tensorflow.keras.layers import Dense, Embedding, Reshape, Input, Conv2D, Flatten
+from keras import Model, Sequential, losses
+from keras.optimizers import Adam
+from keras.layers import Dense, Embedding, Reshape, Input, Conv2D, Flatten
 # from tensorflow.keras.optimizers import Adam
 # from tensorflow.keras.optimizers.legacy import Adam  # Optimized for mac M1-M2
 from collections import deque
@@ -88,21 +89,17 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
-movementTime= 0.1#2902,72#Kepler # Half orbital period# 10 * 3600 
+movementTime= 10#2902,72#Kepler # Half orbital period# 10 * 3600 
 ndeltas     = 5805.44/20#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 # ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
-
-coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
-diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
-noPingPong  = True
 
 plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 saveISLs    = False     # save ISLs map
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = False      # If True, makes random actions eventually, if false only exploitation
-importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = True      # If True, makes random actions eventually, if false only exploitation
+importQVals = False     # imports either QTables or NN from a certain path
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -119,14 +116,15 @@ nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 26        # rewards the getting to empty queues
+w1          = 21        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
+alpha_dnn   = 0.01      # learning rate for the deep neural networks
 
 
-GTs = [2]               # number of gateways to be tested
+GTs = [8]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
@@ -171,18 +169,19 @@ mixLocs     = False     # If true, every time we make a new simulation the locat
 rotateFirst = False     # If True, the constellation starts shifted by 1 movement defined by ndeltas
 
 # State pre-processing
-# coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
+coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 latBias     = 90#/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
 lonBias     = 180#/coordGran # Same but with longitude
-# diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
 notAvail    = 0             # this value is set in the state space when the satellite neighbour is not available
 
 # Deep & Q Learning
 ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 # importQVals = False     # imports either QTables or NN from a certain path
-plotPath   = False     # plots the map with the path after every decision
+plotPath    = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
+# alpha_dnn   = 0.01      # learning rate for the deep neural networks
 # gamma       = 0.99      # greedy factor. Smaller -> Greedy
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
@@ -193,6 +192,7 @@ GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to b
 winSize     = 20        # window size for the representation in the plots
 markerSize  = 50        # Size of the markers in the plots
 nTrain      = 2         # The DNN will train every nTrain steps
+noPingPong  = True      # when a neighbour is the destination satellite, send there directly without going through the dnn (Change policy)
 
 # Queues & State
 infQueue    = 5000      # Upper boundary from where a queue is considered as infinite when obserbing the state
@@ -3974,9 +3974,9 @@ class DDQNAgent:
         model.add(Dense(32, activation='relu', input_shape=(self.stateSize,), kernel_initializer='random_uniform'))
         model.add(Dense(32, activation='relu', kernel_initializer='random_uniform'))
         model.add(Dense(self.actionSize, activation='linear'))
-        model.compile(loss='mse', optimizer='adam')
-        # optimizer = Adam(learning_rate=learningRate)  # You can adjust the learning rate as needed
-        # model.compile(loss='mse', optimizer=optimizer)
+        optimizer = Adam(learning_rate=alpha_dnn)
+        model.compile(loss='mse', optimizer=optimizer)
+        # model.compile(loss='mse', optimizer='adam')
         return model
 
     def train(self, sat, earth):

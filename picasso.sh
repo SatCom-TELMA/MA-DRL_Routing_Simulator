@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{1500}_{2}_20s_OneWeb
+#SBATCH -J DQL_{512}_{8}_1s
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
 
 # Amount of RAM needed for this job:
-#SBATCH --mem=1500gb
+#SBATCH --mem=512gb
 
 # The time the job will be running:
 #SBATCH --time=100:00:00
