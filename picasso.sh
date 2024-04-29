@@ -11,7 +11,7 @@
 #SBATCH --mem=1024gb
 
 # The time the job will be running:
-#SBATCH --time=200:00:00
+#SBATCH --time=100:00:00
 
 #############################################
 # To use GPUs you have to request them:
