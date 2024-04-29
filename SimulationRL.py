@@ -97,9 +97,9 @@ plotDeliver = False     # create pictures of the path every 1/10 times a data bl
 saveISLs    = True     # save ISLs map
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = False      # If True, makes random actions eventually, if false only exploitation
+importQVals = True     # imports either QTables or NN from a certain path
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -109,14 +109,16 @@ if onlinePhase:         # Just in case
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac_noGran.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_2GTs_mov.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mov.h5'
-nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
+nnpath      = './pre_trained_NNs/qNetwork_8GTs_new2.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_8GTs_new2.h5'
 # nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon_v2.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_8GTs_4secs_nocon_v2.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 21        # rewards the getting to empty queues
+w1          = 22        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
