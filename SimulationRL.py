@@ -97,9 +97,9 @@ plotDeliver = False     # create pictures of the path every 1/10 times a data bl
 saveISLs    = True     # save ISLs map
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = False      # If True, makes random actions eventually, if false only exploitation
-importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = True      # If True, makes random actions eventually, if false only exploitation
+importQVals = False     # imports either QTables or NN from a certain path
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -116,12 +116,12 @@ nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 # tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
-w1          = 21        # rewards the getting to empty queues
+w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally  
 w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
-alpha_dnn   = 0.002      # learning rate for the deep neural networks
+alpha_dnn   = 0.001      # learning rate for the deep neural networks
 
 
 GTs = [8]               # number of gateways to be tested
@@ -3773,16 +3773,18 @@ class DDQNAgent:
                 #         return [destination.ID, math.degrees(destination.longitude), math.degrees(destination.latitude)], actIndex
 
             # Predict 
-            qValues = self.qNetwork.predict(newState, verbose = 0)               # NOTE NN.predict. Gets next hop. state structure in debugging
+            qValues = self.qNetwork(newState).numpy()               # NOTE NN. Gets next hop. state structure in debugging
             actIndex = np.argmax(qValues)
             action   = self.actions[actIndex]
             while(linkedSats[action] == None):              # the chosen action has no linked satellite. NEGATIVE REWARD and store it, motherfucker.
             
             # while (linkedSats[action] is None or        # the chosen action has no linked satellite or the chosen satellite has been visited twice.
             # sum(linkedSats[action].ID == path[0] for path in block.QPath[:-1]) > 1):    
-            #     self.experienceReplay.store(newState, actIndex, unavPenalty, newState, False) # from state to the same state, reward -1, not terminated
-            #     self.earth.rewards.append([unavPenalty, sat.env.now])
-            #     qValues[0][actIndex] = -np.inf              # it will not be chosen again (as the model has still not trained with that)
+
+                self.experienceReplay.store(newState, actIndex, unavPenalty, newState, False) # from state to the same state, reward -1, not terminated
+                self.earth.rewards.append([unavPenalty, sat.env.now])
+                qValues[0][actIndex] = -np.inf              # it will not be chosen again (as the model has still not trained with that)
+            
             #     if np.all(qValues == -np.inf):              # all the neighbors have been visited twice
             #         print(f'WARNING: All neighbors have been visited at least twice. A loop is going on in {sat.ID} with block: {block.ID}')
             #         while (linkedSats[action] is None): # if all options were either not available or visited twice, then choose randomly an action that is available
@@ -3993,9 +3995,9 @@ class DDQNAgent:
          
         # 2. Compute expected reward
         if ddqn:
-            futureRewards = self.qTarget.predict(nextStates, verbose = 0)           # NOTE NN.predict. Gets future rewards
+            futureRewards = self.qTarget(nextStates)           # NOTE NN. Gets future rewards
         else:
-            futureRewards = self.qNetwork.predict(nextStates, verbose = 0)          # NOTE NN.predict. Gets future rewards
+            futureRewards = self.qNetwork(nextStates)          # NOTE NN. Gets future rewards
         expectedRewards = rewards + self.gamma*np.max(futureRewards, axis=1)
 
         # 3. Mask for the actions
