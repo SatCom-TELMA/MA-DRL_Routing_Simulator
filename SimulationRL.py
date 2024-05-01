@@ -5642,7 +5642,7 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
                 'Import QTables: ' + str(hyperparams.importQ),
                 'plotPath: ' + str(hyperparams.plotPath),
                 'Test length: ' + str(inputParams['Test length'][0]),
-                'Alpha: ' + str(hyperparams.alpha),
+                'Alphas: ' + str(hyperparams.alpha) + ', ' + str(alpha_dnn),
                 'Gamma: ' + str(hyperparams.gamma),
                 'Epsilon: ' + str(hyperparams.epsilon), 
                 'Max epsilon: ' + str(hyperparams.MAX_EPSILON), 
