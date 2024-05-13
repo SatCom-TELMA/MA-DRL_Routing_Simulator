@@ -124,7 +124,7 @@ w3          = 5         # Normalization for the distance reward, for the travele
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
-GTs = [8]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
@@ -3148,7 +3148,7 @@ class Earth:
 
         legend_properties = {'size': 10, 'weight': 'bold'}
         markerscale = 1.5
-        usage_threshold = 200   # This is used in the paths part
+        usage_threshold = 10   # In percentage
 
         # Compute the link usage
         def calculate_link_usage(paths):
@@ -3276,21 +3276,22 @@ class Earth:
             except ValueError:
                 print("Error: No data available for plotting congestion map.")
                 print('Link usage values:\n')
-                print(link_usage.values())  # FIXME why does this break whe few values?
+                print(link_usage.values())  # FIXME why does this break when few values?
                 return  -1 # If this is within a function, it will exit. If not, remove or adjust this line.
 
             # Find the most used link
             most_used_link = max(link_usage.items(), key=lambda x: x[1]['count'])
             print(f"Most used link: {most_used_link[0]}, Packets: {most_used_link[1]['count']}")
 
-            norm = Normalize(vmin=10, vmax=100)
+            norm = Normalize(vmin=usage_threshold, vmax=100)
             # cmap = cm.get_cmap('RdYlGn_r')  # Use a red-yellow-green reversed colormap
-            cmap = cm.get_cmap('inferno_r')  # Use a darker colormap
+            # cmap = cm.get_cmap('inferno_r')  # Use a darker colormap
+            cmap = cm.get_cmap('cool')  # Use a darker colormap
 
             for link_str, info in link_usage.items():
                 usage = info['count']
-                # Convert usage to a percentage of the maximum, with a floor of 10%
-                usage_percentage = max(10, (usage / max_usage) * 100)  # Ensure minimum of 10%
+                # Convert usage to a percentage of the maximum, with a floor of usage_threshold%
+                usage_percentage = max(usage_threshold, (usage / max_usage) * 100)  # Ensure minimum of usage_threshold%
                 # Adjust width based on usage_percentage instead of raw usage
                 width = 0.5 + (usage_percentage / 100) * 2  # Use usage_percentage for scaling
                 
@@ -3323,7 +3324,8 @@ class Earth:
             sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
             sm.set_array([])
             ticks = [10] + list(np.linspace(10, 100, num=5))  # Ticks from 10% to 100%
-            plt.colorbar(sm, orientation='vertical', label='Relative Traffic Load (%)', fraction=0.02, pad=0.04, ticks=ticks) 
+            plt.colorbar(sm, orientation='vertical', label='Relative Traffic Load (%)', fraction=0.02, pad=0.04, ticks=[int(tick) for tick in ticks]) 
+            # plt.colorbar(sm, orientation='vertical', fraction=0.02, pad=0.04, ticks=[int(tick) for tick in ticks]) 
             # plt.colorbar(sm, orientation='vertical', label='Number of packets', fraction=0.02, pad=0.04)
 
             plt.xticks([])
@@ -5762,18 +5764,18 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
     data['Bottom 10% Avg Rewards'] = data['Rewards'].rolling(window=window_size).apply(lambda x: np.mean(np.partition(x, int(len(x)*0.1))[:int(len(x)*0.1)]), raw=True)
 
     # Plotting
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(8, 6))
     # plt.plot(data['Time'], data['Rewards'], label='Original Rewards', alpha=0.3, color='grey')
     plt.plot(data['Time'], data['Smoothed Rewards'], color='blue', linewidth=2, label='Rewards')
     plt.plot(data['Time'], data['Top 10% Avg Rewards'], color='green', linewidth=2, linestyle='--', label='Top 10%')
     plt.plot(data['Time'], data['Bottom 10% Avg Rewards'], color='red', linewidth=2, linestyle='-.', label='Bottom 10%')
-    plt.title("Rewards over Time", fontsize=20)  # Increase title font size
+    # plt.title("Rewards over Time", fontsize=20)  # Increase title font size
     # plt.xlabel("Time (s)", fontsize=20)
     # plt.ylabel("Rewards", fontsize=20)
-    plt.legend(fontsize=15)
+    plt.legend(fontsize=15, loc='upper right')
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
-    plt.xlabel("Time (ms)")
+    plt.xlabel("Time [ms]")
     plt.ylabel("Rewards")
     plt.grid(True)
     plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
