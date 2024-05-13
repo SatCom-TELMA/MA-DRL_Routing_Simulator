@@ -5753,7 +5753,7 @@ def extract_block_index(block_id):
 
 def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
     rewards = [x[0] for x in reward]
-    times   = [x[1]*1000 for x in reward]
+    times   = [x[1] for x in reward]
     data    = pd.DataFrame({'Rewards': rewards, 'Time': times})
 
     # Smoothed Rewards
@@ -5772,11 +5772,11 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
     # plt.title("Rewards over Time", fontsize=20)  # Increase title font size
     # plt.xlabel("Time (s)", fontsize=20)
     # plt.ylabel("Rewards", fontsize=20)
-    plt.legend(fontsize=15, loc='upper right')
+    plt.legend(fontsize=15)
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
-    plt.xlabel("Time [ms]")
-    plt.ylabel("Rewards")
+    plt.xlabel("Time [ms]", fontsize=15)
+    plt.ylabel("Average rewards", fontsize=15)
     plt.grid(True)
     plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
 
