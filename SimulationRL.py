@@ -89,7 +89,7 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
-movementTime= 5#2902,72#Kepler # Half orbital period# 10 * 3600 
+movementTime= 0.05#2902,72#Kepler # Half orbital period# 10 * 3600 
 ndeltas     = 5805.44/20#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 # ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
@@ -97,9 +97,9 @@ plotDeliver = False     # create pictures of the path every 1/10 times a data bl
 saveISLs    = False     # save ISLs map
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = False      # If True, makes random actions eventually, if false only exploitation
+importQVals = True     # imports either QTables or NN from a certain path
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -3980,9 +3980,9 @@ class DDQNAgent:
         model.add(Dense(32, activation='relu', input_shape=(self.stateSize,), kernel_initializer='random_uniform'))
         model.add(Dense(32, activation='relu', kernel_initializer='random_uniform'))
         model.add(Dense(self.actionSize, activation='linear'))
-        optimizer = Adam(learning_rate=alpha_dnn)
-        model.compile(loss='mse', optimizer=optimizer)
-        # model.compile(loss='mse', optimizer='adam')
+        # optimizer = Adam(learning_rate=alpha_dnn)
+        # model.compile(loss='mse', optimizer=optimizer)
+        model.compile(loss='mse', optimizer='adam')
         return model
 
     def train(self, sat, earth):
