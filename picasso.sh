@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{512}_{2}_20s_Starlink
+#SBATCH -J DQL_{128}_{2}_20s_Kepler
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
 
 # Amount of RAM needed for this job:
-#SBATCH --mem=512gb
+#SBATCH --mem=128gb
 
 # The time the job will be running:
 #SBATCH --time=100:00:00
