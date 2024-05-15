@@ -89,7 +89,7 @@ distanceRew = 4          # 1: Distance reward normalized to total distance.
                          # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
                          # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
  
-movementTime= 5#2902,72 # Half orbital period# 10 * 3600 
+movementTime= 0.05#2902,72 # Half orbital period# 10 * 3600 
 ndeltas     = 5805.44/20#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 # ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
@@ -99,7 +99,7 @@ saveISLs    = False     # save ISLs map
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
 importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -124,7 +124,7 @@ w3          = 5         # Normalization for the distance reward, for the travele
 ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
 gamma       = 0.99       # greedy factor. Smaller -> Greedy
 
-GTs = [8]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
 
@@ -5625,7 +5625,7 @@ def getDistanceRewardV4(sat, nextSat, satDest, w2, w3):
     SLr = getSlantRange(sat, satDest) - getSlantRange(nextSat, satDest)
     TravelDistance = getSlantRange(sat, nextSat)
     if TravelDistance > biggestDist:
-        print(f'Distance not feasible: {sat.ID}, {nextSat.ID}')
+        print(f'Very big distance: {sat.ID}, {nextSat.ID}')
     return w2*(SLr-TravelDistance/w3)/biggestDist
     # return w2*(SLr/biggestDist)
     # return w2*SLr/1000000
