@@ -93,13 +93,13 @@ movementTime= 0.05#2902,72 # Half orbital period# 10 * 3600
 ndeltas     = 5805.44/20#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 # ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
-plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
-saveISLs    = False     # save ISLs map
+plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
+saveISLs    = True     # save ISLs map
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = False      # If True, makes random actions eventually, if false only exploitation
-importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = True      # If True, makes random actions eventually, if false only exploitation
+importQVals = False     # imports either QTables or NN from a certain path
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
