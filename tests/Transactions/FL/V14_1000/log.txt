@@ -1,0 +1,13 @@
+Average CKA - Original: 0.8004
+Average CKA - Model Anticipation: 0.8754 (9.38% improvement)
+Average CKA - Federated by Plane: 0.9818 (22.68% improvement)
+Average CKA - FedAvg Constellation: 1.0000 (24.94% improvement)
+Percentile 50 CKA Improvement - Model Anticipation: 2.42%
+Percentile 50 CKA Improvement - Federated by Plane:  8.50%
+Percentile 50 CKA Improvement - FedAvg Constellation:  10.08%
+Percentile 90 CKA Improvement - Model Anticipation: -0.02%
+Percentile 90 CKA Improvement - Federated by Plane:  0.00%
+Percentile 90 CKA Improvement - FedAvg Constellation:  0.00%
+Percentile 95 CKA Improvement - Model Anticipation: -0.01%
+Percentile 95 CKA Improvement - Federated by Plane:  0.00%
+Percentile 95 CKA Improvement - FedAvg Constellation:  0.00%
