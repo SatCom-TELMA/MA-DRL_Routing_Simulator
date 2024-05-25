@@ -63,73 +63,50 @@ from tensorflow import keras
 from keras import Model, Sequential, losses
 from keras.optimizers import Adam
 from keras.layers import Dense, Embedding, Reshape, Input, Conv2D, Flatten
-# from tensorflow.keras.optimizers import Adam
-# from tensorflow.keras.optimizers.legacy import Adam  # Optimized for mac M1-M2
 from collections import deque
 
-# Forcing TensorFlow to use GPU
-physical_devices = tf.config.list_physical_devices('GPU')
-if len(physical_devices) > 0:
-    # tf.config.experimental.set_memory_growth(physical_devices[0], True)
-    print('GPU(s) available:')
-    print(physical_devices)
-else:
-    print('No GPU available')
+# Forcing TensorFlow to use GPU - No worth using GPU for reinforcement learning in this case 
+#                                 since the training is done every step with small buffers
+# physical_devices = tf.config.list_physical_devices('GPU')
+# if len(physical_devices) > 0:
+#     tf.config.experimental.set_memory_growth(physical_devices[0], True)
+#     print('GPU(s) available:')
+#     print(physical_devices)
+# else:
+#     print('No GPU available')
 
 ###############################################################################
 ###############################    Constants    ###############################
 ###############################################################################
 
-# HOT PARAMS
+# HOT PARAMS - This parameters should be revised before every simulation
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
-distanceRew = 4          # 1: Distance reward normalized to total distance.
-                         # 2: Distance reward normalized to average moving possibilities
-                         # 3: Distance reward normalized to maximum close up
-                         # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation
-                         # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
- 
-movementTime= 0.05#2902,72 # Half orbital period# 10 * 3600 
-ndeltas     = 5805.44/20#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
-# ndeltas     = 5805.44/32#1        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
 
-plotDeliver = True     # create pictures of the path every 1/10 times a data block gets its destination
-saveISLs    = True     # save ISLs map
+plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+saveISLs    = False     # save ISLs map
+
+movementTime= 0.05      # Every movementTime seconds, the satellites positions are updated and the graph is built again
+                        # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
+ndeltas     = 5805.44/20#1 Movement speedup factor. This number will multiply deltaT. If bigger, will make the rotation distance bigger
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = True      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = False      # If True, makes random actions eventually, if false only exploitation
+importQVals = True     # imports either QTables or NN from a certain path
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
-# nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_2GTs_mac_noGran.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac_noGran.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_2GTs_mov.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mov.h5'
-nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_8GTs_new2.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_new2.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon_v2.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_4secs_nocon_v2.h5'
-tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
-# tablesPath  = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
 
 w1          = 20        # rewards the getting to empty queues
-w2          = 20        # rewards getting closes phisycally  
-w3          = 5         # Normalization for the distance reward, for the traveled distance factor  
-ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-gamma       = 0.99       # greedy factor. Smaller -> Greedy
+w2          = 20        # rewards getting closes phisycally   
+w4          = 5         # Normalization for the distance reward, for the traveled distance factor 
+
+gamma       = 0.99       # greedy factor. Smaller -> Greedy. Optimized params: 0.6 for Q-Learning, 0.99 for Deep Q-Learning
 
 GTs = [2]               # number of gateways to be tested
 # GTs = [i for i in range(2,9)] # 19.
 # GTs = [i for i in range(2,19)] # 19.
-
-# Other
-CurrentGTnumber = -1    # Number of active gateways. This number will be updated every time a gateway is added. In the simulation it will iterate the GTs list
 
 # Physical constants
 rKM = 500               # radio in km of the coverage of each gateway
@@ -161,28 +138,27 @@ avUserLoad  = 8593 * 8      # average traffic usage per second in bits
 blockSize   = 64800
 
 # Movement and structure
-# movementTime= 10 * 3600 # should be in the order of 10's of hours. If the test is not 'Rates', the movement time is still kept large to avoid the constellation moving
-# ndeltas     = 25        # This number will multiply deltaT. If bigger, will make the roatiorotation distance bigger
+# movementTime= 0.05      # Every movementTime seconds, the satellites positions are updated and the graph is built again
+#                         # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
+# ndeltas     = 5805.44/20#1 Movement speedup factor. This number will multiply deltaT. If bigger, will make the rotation distance bigger
 matching    = 'Greedy'  # ['Markovian', 'Greedy']
 minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
-rotateFirst = False     # If True, the constellation starts shifted by 1 movement defined by ndeltas
+rotateFirst = False     # If True, the constellation starts rotated by 1 movement defined by ndeltas
 
 # State pre-processing
 coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
-latBias     = 90#/coordGran  # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
-lonBias     = 180#/coordGran # Same but with longitude
 diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
 reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
 notAvail    = 0             # this value is set in the state space when the satellite neighbour is not available
 
-# Deep & Q Learning
+# Learning Hyperparameters
 ddqn        = True      # Activates DDQN, where now there are two DNNs, a target-network and a q-network
 # importQVals = False     # imports either QTables or NN from a certain path
 plotPath    = False     # plots the map with the path after every decision
 alpha       = 0.25      # learning rate for Q-Tables
 alpha_dnn   = 0.01      # learning rate for the deep neural networks
-# gamma       = 0.99      # greedy factor. Smaller -> Greedy
+# gamma       = 0.99       # greedy factor. Smaller -> Greedy. Optimized params: 0.6 for Q-Learning, 0.99 for Deep Q-Learning
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
@@ -197,17 +173,23 @@ noPingPong  = True      # when a neighbour is the destination satellite, send th
 # Queues & State
 infQueue    = 5000      # Upper boundary from where a queue is considered as infinite when obserbing the state
 queueVals   = 10        # Values that the observed Queue can have, being 0 the best (Queue of 0) and max the worst (Huge queue or inexistent link).
-# latBias     = 90        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
-# lonBias     = 180       # Same but with longitude
+latBias     = 90        # This value is added to the latitude of each position in the state space. This can be done to avoid negative numbers
+lonBias     = 180       # Same but with longitude
 
 # rewards
-# ArriveReward= 10        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
-# w1          = 1         # rewards the getting to empty queues
-# w2          = 20        # rewards getting closes phisically     
+ArriveReward= 50        # Reward given to the system in case it sends the data block to the satellite linked to the destination gateway
+# w1          = 20        # rewards the getting to empty queues
+# w2          = 20        # rewards getting closes phisycally   
+# w4          = 5         # Normalization for the distance reward, for the traveled distance factor  
 againPenalty= -5        # Penalty if the satellite sends the block to a hop where it has already been
-unavPenalty = -5      # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
-biggestDist= -1         # Normalization factor for the distance reward. This is updated in the creation of the graph.
-firstMove  = True      # The biggest slant range is only computed the first time in order to avoid this value to be variable
+unavPenalty = -5        # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
+biggestDist = -1        # Normalization factor for the distance reward. This is updated in the creation of the graph.
+firstMove   = True      # The biggest slant range is only computed the first time in order to avoid this value to be variable
+distanceRew = 4          # 1: Distance reward normalized to total distance.
+                         # 2: Distance reward normalized to average moving possibilities
+                         # 3: Distance reward normalized to maximum close up
+                         # 4: Distance reward normalized by max isl distance ~3.700 km for Kepler constellation. This is the one used in the papers.
+                         # 5: Only negative rewards proportional to traveled distance normalized by 1.000 km
 
 # Deep Learning
 MAX_EPSILON = 0.99      # Maximum value that the exploration parameter can have
@@ -228,14 +210,26 @@ lThreshold  = 0.5       # If the mean of the last nLosses are lower than lossThr
 TrainThis   = Train     # Local for a single scenario with a certain number of GTs. If the stop loss is activated, this will be set to False and the scenario will not train anymore. 
                         # When another scenario is about to run, TrainThis will be set to Train again
 
+# Other
+CurrentGTnumber = -1    # Number of active gateways. This number will be updated every time a gateway is added. In the simulation it will iterate the GTs list
 
 ###############################################################################
 ###############################      Paths      ###############################
 ###############################################################################
 
-# nnpath = f'./Results/latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
-# nnpath = f'./latency Test/Deep Q-Learning/qNetwork_{self.destinations}GTs.h5'
-# nnpath          = './pre_trained_NNs/qNetwork_10GTs.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_2GTs_mac_noGran.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac_noGran.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_2GTs_mov.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mov.h5'
+nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_new2.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon_v2.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_4secs_nocon_v2.h5'
+tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
+
 if __name__ == '__main__':
     # nnpath          = f'./pre_trained_NNs/qNetwork_8GTs.h5'
     outputPath      = './Results/{}_{}s_[{}]_Del_[{}]_w1_[{}]_w2_{}_GTs/'.format(pathing, float(pd.read_csv("inputRL.csv")['Test length'][0]), ArriveReward, w1, w2, GTs)
@@ -3437,7 +3431,7 @@ class hyperparam:
         self.ArriveR    = ArriveReward
         self.w1         = w1
         self.w2         = w2
-        self.w3         = w3
+        self.w4         = w4
         self.pathing    = pathing
         self.tau        = tau
         self.updateF    = updateF
@@ -3651,7 +3645,7 @@ class DDQNAgent:
         self.minEps = hyperparams.MIN_EPSILON
         self.w1     = hyperparams.w1
         self.w2     = hyperparams.w2
-        self.w3     = hyperparams.w3
+        self.w4     = hyperparams.w4
         self.tau    = hyperparams.tau
         self.updateF= hyperparams.updateF
         self.batchS = hyperparams.batchSize
@@ -3854,8 +3848,8 @@ class DDQNAgent:
         if sat.linkedGT and (block.destination.ID == sat.linkedGT.ID):    # Compare IDs
             if distanceRew == 4:
                 satDest = block.destination.linkedSat[1]
-                distanceReward  = getDistanceRewardV4(prevSat, sat, satDest, self.w2, self.w3)
-                # distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2, self.w3)
+                distanceReward  = getDistanceRewardV4(prevSat, sat, satDest, self.w2, self.w4)
+                # distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2, self.w4)
                 queueReward     = getQueueReward   (block.queueTime[len(block.queueTime)-1], self.w1)
                 reward          = distanceReward + queueReward + ArriveReward
                 self.experienceReplay.store(block.oldState, block.oldAction, reward, newState, True)
@@ -3900,8 +3894,8 @@ class DDQNAgent:
                 distanceReward  = getDistanceRewardV3(prevSat, sat, prevLinkedSats['U'], prevLinkedSats['D'], prevLinkedSats['R'], prevLinkedSats['L'], block.destination, self.w2)
             elif distanceRew == 4:
                 satDest = block.destination.linkedSat[1]
-                distanceReward  = getDistanceRewardV4(prevSat, sat, satDest, self.w2, self.w3)
-                # distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2, self.w3)
+                distanceReward  = getDistanceRewardV4(prevSat, sat, satDest, self.w2, self.w4)
+                # distanceReward  = getDistanceRewardV4(prevSat, sat, block.destination, self.w2, self.w4)
             elif distanceRew == 5:
                 distanceReward  = getDistanceRewardV5(prevSat, sat, self.w2)
 
@@ -4776,8 +4770,6 @@ def establishRemainingISLs(earth, g):
 
     return g
 
-# sat_r.ID == '0_2' or sat_l.ID == '0_2' or sat_r.ID == '6_16' or sat_l.ID == '6_16'
-
 
 def createGraph(earth, matching='Greedy'):
     '''
@@ -5620,13 +5612,14 @@ def getDistanceRewardV3(sat, nextSat, satU, satD, satR, satL, destination, w2):
     return w2*SLr/max(SLrs)
     
 
-def getDistanceRewardV4(sat, nextSat, satDest, w2, w3):
+def getDistanceRewardV4(sat, nextSat, satDest, w2, w4):
     global biggestDist
     SLr = getSlantRange(sat, satDest) - getSlantRange(nextSat, satDest)
     TravelDistance = getSlantRange(sat, nextSat)
     if TravelDistance > biggestDist:
-        print(f'Very big distance: {sat.ID}, {nextSat.ID}')
-    return w2*(SLr-TravelDistance/w3)/biggestDist
+        # print(f'Very big distance: {sat.ID}, {nextSat.ID}')
+        pass
+    return w2*(SLr-TravelDistance/w4)/biggestDist
     # return w2*(SLr/biggestDist)
     # return w2*SLr/1000000
 
@@ -5650,7 +5643,7 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
                 'Arrive Reward: ' + str(hyperparams.ArriveR), 
                 'w1: ' + str(hyperparams.w1), 
                 'w2: ' + str(hyperparams.w2),
-                'w3: ' + str(hyperparams.w3),
+                'w4: ' + str(hyperparams.w4),
                 'Coords granularity: ' + str(hyperparams.coordGran),
                 'Update freq: ' + str(hyperparams.updateF),
                 'Batch Size: ' + str(hyperparams.batchSize),
@@ -5980,8 +5973,8 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotat
             handles, labels = axes[i, 0].get_legend_handles_labels()
             axes[i, 0].legend(handles, labels, loc='upper right')
 
-        axes[i, 0].legend().set_visible(False)  # REVIEW latency figure legend disabled
-        axes[i, 1].legend().set_visible(False)  # REVIEW latency figure legend disabled
+        # axes[i, 0].legend().set_visible(False)  # ANCHOR latency figure legend disabled
+        # axes[i, 1].legend().set_visible(False)  # ANCHOR latency figure legend disabled
         
     # Adjust the layout
     plt.tight_layout()
@@ -6201,25 +6194,25 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         # percentages['Propagation time'] .append(results.meanPropLatency)
         # percentages['Transmission time'].append(results.meanTransLatency)
         # percentages['GTnumber']         .append(GTnumber)
-        '''
 
-        # save congestion test data
-        # print('Saving congestion test data...')
-        # blocks = []
-        # for block in receivedDataBlocks:
-        #     blocks.append(BlocksForPickle(block))
-        # blockPath = outputPath + f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
-        # os.makedirs(blockPath, exist_ok=True)
-        # try:
-        #     np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
-        # except pickle.PicklingError:
-        #     print('Error with pickle and profiling')
+        save congestion test data
+        print('Saving congestion test data...')
+        blocks = []
+        for block in receivedDataBlocks:
+            blocks.append(BlocksForPickle(block))
+        blockPath = outputPath + f"./Results/Congestion_Test/{pathing} {float(pd.read_csv('inputRL.csv')['Test length'][0])}/"
+        os.makedirs(blockPath, exist_ok=True)
+        try:
+            np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
+        except pickle.PicklingError:
+            print('Error with pickle and profiling')
 
         # save learnt values
         if pathing == 'Q-Learning':
             saveQTables(outputPath, earth1)
         elif pathing == 'Deep Q-Learning':
             saveDeepNetworks(outputPath + '/NNs/', earth1)
+        '''
 
         # percentages.clear()
         receivedDataBlocks  .clear()

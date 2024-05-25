@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # The name to show in queue lists for this job:
-#SBATCH -J DQL_{1024}_{2}_20s_Starlink
+#SBATCH -J DQL_{1500}_{2}_20s_Starlink
 
 # Number of desired cpus:
 #SBATCH --cpus-per-task=1
 
 # Amount of RAM needed for this job:
-#SBATCH --mem=1024gb
+#SBATCH --mem=1500gb
 
 # The time the job will be running:
 #SBATCH --time=100:00:00
@@ -17,9 +17,9 @@
 # To use GPUs you have to request them:
 ##SBATCH --gres=gpu:1
 ##SBATCH --constraint=dgx 
-## SBATCH --constraint=cal 
+# SBATCH --constraint=cal 
 ## SBATCH --constraint=bl
-#SBATCH --constraint=bl
+## SBATCH --constraint=bl
 #############################################
 
 # Set output and error files
