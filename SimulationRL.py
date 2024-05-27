@@ -91,9 +91,9 @@ movementTime= 0.05      # Every movementTime seconds, the satellites positions a
 ndeltas     = 5805.44/20#1 Movement speedup factor. This number will multiply deltaT. If bigger, will make the rotation distance bigger
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = False      # If True, makes random actions eventually, if false only exploitation
-importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+explore     = True      # If True, makes random actions eventually, if false only exploitation
+importQVals = False     # imports either QTables or NN from a certain path
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -5757,7 +5757,7 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
     data['Bottom 10% Avg Rewards'] = data['Rewards'].rolling(window=window_size).apply(lambda x: np.mean(np.partition(x, int(len(x)*0.1))[:int(len(x)*0.1)]), raw=True)
 
     # Plotting
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(8, 4))
     # plt.plot(data['Time'], data['Rewards'], label='Original Rewards', alpha=0.3, color='grey')
     plt.plot(data['Time'], data['Smoothed Rewards'], color='blue', linewidth=2, label='Rewards')
     plt.plot(data['Time'], data['Top 10% Avg Rewards'], color='green', linewidth=2, linestyle='--', label='Top 10%')
