@@ -1,3 +1,13 @@
+'''
+Execute this file in the source folder of the results. This will change the name of the files so a video can be made using ffmpeg:
+ffmpeg -framerate 20 -i %d.png video.avi
+-
+-
+-
+ffmpeg -framerate 20 -i %04d.png -qscale:v 0 video.avi
+ffmpeg -framerate 10 -i ./%d.png -c:v libx264 -r 30 -pix_fmt yuv420p ./video.mp4
+'''
+
 import os
 
 path = './pictures/'
@@ -22,17 +32,3 @@ for index, (_, _, filename) in enumerate(sorted_files):
     os.rename(os.path.join(path, filename), os.path.join(path, new_name))
 
 print("Files have been renamed in order.")
-
-
-# import os
-# path = './'#'./pictures'
-# files = os.listdir(path)
-
-# for index, file in enumerate(files):
-#     # os.rename(os.path.join(path, file), os.path.join(path, f'{index}.png'))
-#     os.rename(os.path.join(path, file), os.path.join(path, ''.join([str(index).zfill(4), '.png'])))
-
-
-# ffmpeg -framerate 20 -i %04d.png video.avi
-# ffmpeg -framerate 20 -i %04d.png -qscale:v 0 video.avi
-# ffmpeg -framerate 10 -i ./%d.png -c:v libx264 -r 30 -pix_fmt yuv420p ./video.mp4

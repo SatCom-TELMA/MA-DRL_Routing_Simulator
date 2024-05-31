@@ -1,4 +1,4 @@
-# SATNEXY2p6
+# Multi-Agent Deep Reinforcement Learning (MA-DRL) Routing Simulator for satellite networks
 
 Contained in this repository is the code used for simulating data transmissions through satellite constellations and evaluating the latency results through post-processing of the data generated in the simulations.
 
@@ -6,12 +6,12 @@ The simulations are built using the event based discrete time simulation framewo
 
 
 ## Requirements
-In order to run the simulators and the post-processing script, certain non-standard python libraries are required. For a full list of the necessary libraries, see "libraries.txt".
+In order to run the simulators and the post-processing script, certain non-standard python libraries are required. For a full list of the necessary libraries, see "requirements.txt".
 
 ## Description
 The simulator simulates individual data blocks propagating through a satellite constellation from a source gateway to destination gateway. 
 ### Data generation
-The data blocks are generated at the source gateways independently for each destination gateway. Based on the maximal generation rate of a gateway, each destination receives an equal fraction of the data generation. The fraction to each gateway is determined by the maximum amount of gateways there can be active (this is defined in the inputs.csv file). If the maximum amount of gateways is set to 18 but only 9 is active, then each gateway will receive 8/17 ((numberOfActive -1) / (totalNumber - 1)) of the maximal generation rate. 
+The data blocks are generated at the source gateways independently for each destination gateway. Based on the maximal generation rate of a gateway, each destination receives an equal fraction of the data generation. The fraction to each gateway is determined by the maximum amount of gateways there can be active (this is defined in the inputRL.csv file). If the maximum amount of gateways is set to 18 but only 9 is active, then each gateway will receive 8/17 ((numberOfActive -1) / (totalNumber - 1)) of the maximal generation rate. 
 ### Pathing
 For the non-RL simulations, the gateway adds the path of the data block when it is created. The path is found using a Dijkstra shortest path algorithm at the start of the simulation and everytime the constellation moves. For the RL versions, a path is not created with the data block. Instead, it is built as the block propagates through the network.
 ### Data propagation
@@ -19,6 +19,28 @@ The transmission of data blocks is handled through simpy process functions which
 ### Constellation movement
 The constellation movement is handled in discrete time steps. The constellation is assumed stationary for some amount of time (this time delta can be set in the simulator through the "movementTime" variable in the "main()" function) after which the constellation is moved according to the time delta. In the current setup of the simulation, neither the RL and non-RL versions move the constellation. The current simulation time of 1 second is not considered long enough to warrant movement of the constellation. Furthermore, in the RL-version, one of the required methods in the constellation movement process ("updateSatelliteProcessesRL()") is not working correctly and should be looked at before considering constellation movement with either Q-Learning or Deep Q-Learning.
 
+## Installation
+
+To set up the environment and install all required packages, follow these steps:
+
+1. **Clone the repository**:
+    ```sh
+    git clone https://github.com/YourUsername/YourRepositoryName.git
+    cd YourRepositoryName
+    ```
+
+2. **Create a virtual environment** (optional but recommended):
+    ```sh
+    python -m venv venv
+    source venv/bin/activate   # On Windows, use `venv\Scripts\activate`
+    ```
+
+3. **Install the required packages**:
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+Make sure you have `Python 3.9` installed. It is recommended to use version 3.9.12.
 
 
 ## Usage
@@ -51,7 +73,7 @@ There is a guide to get the data from the population maps at https://towardsdata
 
 ### Post-Processing
 
-
+Some post processing results can be found in the 
 
 
 ## Known Issues

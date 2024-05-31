@@ -14,3 +14,6 @@ SimulationRL_Old.py
 **/Transactions/**.csv
 blocks
 **/rewards**
+**.pyc
+picasso.sh
+__pychache__
