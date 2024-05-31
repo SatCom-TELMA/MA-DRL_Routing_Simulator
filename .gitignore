@@ -15,6 +15,7 @@ SimulationRL_Old.py
 blocks
 **/rewards**
 **.pyc
-./picasso.sh
+picasso.sh
 __pychache__
-/local_tests
+local_tests
+latRegression.py
