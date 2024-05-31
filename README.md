@@ -4,12 +4,9 @@ Contained in this repository is the code used for simulating data transmissions 
 
 ## Demo Video
 
-<p align="center">
-  <video width="600" controls>
-    <source src="Video/MA-DRL_Movement.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-</p>
+[![Demo Video](Video/MA-DRL_Movement_screenshot.png)](https://raw.githubusercontent.com/SatNEx-Malaga/MA-DRL_Routing_Simulator/main/Video/MA-DRL_Movement.mp4)
+
+> Click the image above to view the demo video.
 
 The simulations are built using the event based discrete time simulation framework Simpy.
 
