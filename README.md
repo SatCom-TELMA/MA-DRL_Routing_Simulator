@@ -2,6 +2,15 @@
 
 Contained in this repository is the code used for simulating data transmissions through satellite constellations and evaluating the latency results through post-processing of the data generated in the simulations.
 
+## Demo Video
+
+<p align="center">
+  <video width="600" controls>
+    <source src="Video/MA-DRL_Movement.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+</p>
+
 The simulations are built using the event based discrete time simulation framework Simpy.
 
 
@@ -73,7 +82,7 @@ There is a guide to get the data from the population maps at https://towardsdata
 
 ### Post-Processing
 
-Some post processing results can be found in the 
+Some post processing results can be found in `./Post-Processing/Post-Results.ipynb` notebook.
 
 
 ## Known Issues
