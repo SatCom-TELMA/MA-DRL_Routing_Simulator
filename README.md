@@ -2,12 +2,10 @@
 
 Contained in this repository is the code used for simulating data transmissions through satellite constellations and evaluating the latency results through post-processing of the data generated in the simulations.
 
-## Demo Video
+## MA-DRL routing demonstration in a moving Kepler constellation from Malaga, Spain to Los Angeles, USA
 
 <!-- [![Demo Video](Video/MA-DRL_Movement_screenshot.png)](https://raw.githubusercontent.com/SatNEx-Malaga/MA-DRL_Routing_Simulator/main/Video/MA-DRL_Movement.mp4) -->
-<a href="https://drive.google.com/file/d/1So7jtUwEdobJLzztXv6JmxP2B79PQDU0/preview" target="_blank">
-  <img src="Video/MA-DRL_Movement_screenshot.png" alt="Demo Video">
-</a>
+[![Demo Video](Video/MA-DRL_Movement_screenshot.png)](https://drive.google.com/file/d/1So7jtUwEdobJLzztXv6JmxP2B79PQDU0/preview)
 
 > Click the image above to view the demo video.
 
