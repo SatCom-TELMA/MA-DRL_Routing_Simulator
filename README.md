@@ -5,7 +5,9 @@ Contained in this repository is the code used for simulating data transmissions 
 ## Demo Video
 
 <!-- [![Demo Video](Video/MA-DRL_Movement_screenshot.png)](https://raw.githubusercontent.com/SatNEx-Malaga/MA-DRL_Routing_Simulator/main/Video/MA-DRL_Movement.mp4) -->
-[![Demo Video](Video/MA-DRL_Movement_screenshot.png)](https://drive.google.com/file/d/1So7jtUwEdobJLzztXv6JmxP2B79PQDU0/preview)
+<a href="https://drive.google.com/file/d/1So7jtUwEdobJLzztXv6JmxP2B79PQDU0/preview" target="_blank">
+  <img src="Video/MA-DRL_Movement_screenshot.png" alt="Demo Video">
+</a>
 
 > Click the image above to view the demo video.
 
