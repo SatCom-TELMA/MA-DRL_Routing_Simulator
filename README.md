@@ -87,3 +87,7 @@ Some post processing results can be found in `./Post-Processing/Post-Results.ipy
 The updateSatelliteProcessesRL() method in the SimulationRL.py file does not work correctly. It is supposed to remake the transmit processes on the satellite when the constellation moves, however, when the constellation movement necessitates that the satellites form new links, the processes are not remade correctly, and the code encounters an error.
 
 The data generation at the gateways was not handled correctly causing too few data blocks to be generated. Instead of sending ((numberOfActive - 1) / (totalNumber - 1)) to each destination, ((numberOfActive - 1) / (totalNumber)) was sent. The code has been changed to generate the correct amount of data, so to reproduce results from the report, this must be changed back. The specific code is found in the "timeToFullBlock()" method in the Gateway class. This line currently reads: flow = self.totalAvgFlow / (len(self.totalLocations) - 1) (which is the correct behaviour) and should be changed to: flow = self.totalAvgFlow / (len(self.totalLocations)).
+
+## Contact me
+If you encounter any issues with the reproducibility of this simulator or would like to learn more about my research, please feel free to visit my [Google Scholar profile](https://scholar.google.es/citations?user=6PZm2aYAAAAJ&hl=es&oi=ao) or contact me directly via email at flozano@ic.uma.es.
+
