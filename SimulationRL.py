@@ -5758,14 +5758,11 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
 
     # Plotting
     plt.figure(figsize=(8, 4))
-    # plt.plot(data['Time'], data['Rewards'], label='Original Rewards', alpha=0.3, color='grey')
-    plt.plot(data['Time'], data['Smoothed Rewards'], color='blue', linewidth=2, label='Rewards')
-    plt.plot(data['Time'], data['Top 10% Avg Rewards'], color='green', linewidth=2, linestyle='--', label='Top 10%')
-    plt.plot(data['Time'], data['Bottom 10% Avg Rewards'], color='red', linewidth=2, linestyle='-.', label='Bottom 10%')
-    # plt.title("Rewards over Time", fontsize=20)  # Increase title font size
-    # plt.xlabel("Time (s)", fontsize=20)
-    # plt.ylabel("Rewards", fontsize=20)
-    plt.legend(fontsize=15)
+    line1, = plt.plot(data['Time'], data['Top 10% Avg Rewards'], color='skyblue', linewidth=2, label='Top 10% reward')
+    line2, = plt.plot(data['Time'], data['Smoothed Rewards'], color='blue', linewidth=2, label='Average reward')
+    line3, = plt.plot(data['Time'], data['Bottom 10% Avg Rewards'], color='navy', linewidth=2, label='Bottom 10% reward')
+
+    plt.legend(handles=[line1, line2, line3], fontsize=15, loc='upper right')
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
     plt.xlabel("Time [ms]", fontsize=15)
@@ -5776,7 +5773,7 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
     # Save plot
     rewards_dir = os.path.join(outputPath, 'Rewards')
     os.makedirs(rewards_dir, exist_ok=True)  # create output path
-    plt.savefig(os.path.join(rewards_dir, "rewards_{}_gateways.png".format(GTnumber)))
+    plt.savefig(os.path.join(rewards_dir, "rewards_{}_gateways.png".format(GTnumber)), bbox_inches='tight')
     plt.close()
 
     # Save CSV

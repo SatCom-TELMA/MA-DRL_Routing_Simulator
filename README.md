@@ -5,9 +5,9 @@ Contained in this repository is the code used for simulating data transmissions 
 ## MA-DRL routing demonstration in a moving Kepler constellation from Malaga, Spain to Los Angeles, USA
 
 <!-- [![Demo Video](Video/MA-DRL_Movement_screenshot.png)](https://raw.githubusercontent.com/SatNEx-Malaga/MA-DRL_Routing_Simulator/main/Video/MA-DRL_Movement.mp4) -->
-[![Demo Video](Video/MA-DRL_Movement_screenshot.png)](https://drive.google.com/file/d/1So7jtUwEdobJLzztXv6JmxP2B79PQDU0/preview)
+[![Demo Video](Video/Demo.gif)](https://drive.google.com/file/d/1So7jtUwEdobJLzztXv6JmxP2B79PQDU0/preview)
 
-> Click the image above to download the demo video.
+> Click the image above to see the full demo video.
 
 The simulations are built using the event based discrete time simulation framework Simpy.
 
