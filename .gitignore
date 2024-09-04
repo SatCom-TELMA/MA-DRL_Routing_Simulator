@@ -3,8 +3,6 @@
 **/Congestion_Test_old
 **/Results/**
 output
-SatNEx
-SatNExV2
 SatNExV4
 .venv
 **/.DS_Store

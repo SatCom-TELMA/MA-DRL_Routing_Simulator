@@ -217,17 +217,8 @@ CurrentGTnumber = -1    # Number of active gateways. This number will be updated
 ###############################      Paths      ###############################
 ###############################################################################
 
-# nnpath      = './pre_trained_NNs/qNetwork_2GTs_AGP-LA.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_AGP-LA.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_2GTs_mac_noGran.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mac_noGran.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_2GTs_mov.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_mov.h5'
 nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
 nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_new2.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_8GTs_4secs_nocon_v2.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_4secs_nocon_v2.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 
 if __name__ == '__main__':
