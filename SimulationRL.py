@@ -86,7 +86,7 @@ pathing     = pathings[5]# dataRateOG is the original datarate. If we want to ma
 plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 saveISLs    = False     # save ISLs map
 
-movementTime= 0.05      # Every movementTime seconds, the satellites positions are updated and the graph is built again
+movementTime= 10#0.05   # Every movementTime seconds, the satellites positions are updated and the graph is built again
                         # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
 ndeltas     = 5805.44/20#1 Movement speedup factor. This number will multiply deltaT. If bigger, will make the rotation distance bigger
 
@@ -3041,6 +3041,7 @@ class Earth:
             intraRate.append(self.LEO[0].sats[0].intraSats[0][2])
 
         while True:
+            print('Moving constellation: Updating satellites position and links.')
             if getRates:
                 # get data rates for all inter plane ISLs and all GSLs (up and down) - used for testing
                 upDataRates, downDataRates = self.getGSLDataRates()

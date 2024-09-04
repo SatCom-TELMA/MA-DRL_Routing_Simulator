@@ -24,7 +24,7 @@ For the non-RL simulations, the gateway adds the path of the data block when it 
 ### Data propagation
 The transmission of data blocks is handled through simpy process functions which monitor transmission queues. Each gateway (which are connected to a satellite) has one FIFO transmit queue where generated data blocks are placed in. Each satellite has one FIFO transmission queue for each satellite link (usually 4, 2 inter plane satellite links and 2 intra plane links). A data block is transmitted by starting a reception process on the receiver. This process waits out the propagation time and determines which transmission queue the block should be in based on the next step in the path of the data block. For the RL version of the simulator, the next step of the path is determined in this process before the block is placed in a queue.
 ### Constellation movement
-The constellation movement is handled in discrete time steps. The constellation is assumed stationary for some amount of time (this time delta can be set in the simulator through the "movementTime" variable in the "main()" function) after which the constellation is moved according to the time delta. In the current setup of the simulation, neither the RL and non-RL versions move the constellation. The current simulation time of 1 second is not considered long enough to warrant movement of the constellation. Furthermore, in the RL-version, one of the required methods in the constellation movement process ("updateSatelliteProcessesRL()") is not working correctly and should be looked at before considering constellation movement with either Q-Learning or Deep Q-Learning.
+The constellation movement is handled in discrete time steps. The constellation is assumed stationary for some amount of time (this time delta can be set in the simulator through the "movementTime" variable in the "main()" function) after which the constellation is moved according to the time delta. In the current setup of the simulation, neither the RL and non-RL versions move the constellation. The current simulation time of 1 second is not considered long enough to warrant movement of the constellation. Furthermore, in the RL-version, one of the required methods in the constellation movement process ("updateSatelliteProcessesRL()") may not work correctly, please report any issue you might have.
 
 ## Installation
 
@@ -84,9 +84,14 @@ Some post processing results can be found in `./Post-Processing/Post-Results.ipy
 
 
 ## Known Issues
-The updateSatelliteProcessesRL() method in the SimulationRL.py file does not work correctly. It is supposed to remake the transmit processes on the satellite when the constellation moves, however, when the constellation movement necessitates that the satellites form new links, the processes are not remade correctly, and the code encounters an error.
+The updateSatelliteProcessesRL() method in the SimulationRL.py file may not work correctly and this message can appear eventually:
+`ERROR! Sat nSat_NPlane tried to send block to nSat_NPlane but did not have it in its linked satellite list`
+Meaning that a satellite is trying to send a data block to an old neighbor, where the link between them has disappeared after the update of the constellation. The data block will be dropped, but this event can be ignored as long as it occurs infrequently, as it will not significantly impact the overall outcome of the simulation.
 
 The data generation at the gateways was not handled correctly causing too few data blocks to be generated. Instead of sending ((numberOfActive - 1) / (totalNumber - 1)) to each destination, ((numberOfActive - 1) / (totalNumber)) was sent. The code has been changed to generate the correct amount of data, so to reproduce results from the report, this must be changed back. The specific code is found in the "timeToFullBlock()" method in the Gateway class. This line currently reads: flow = self.totalAvgFlow / (len(self.totalLocations) - 1) (which is the correct behaviour) and should be changed to: flow = self.totalAvgFlow / (len(self.totalLocations)).
+
+Please report any additional issue you might have.
+
 
 ## Contact me
 If you encounter any issues with the reproducibility of this simulator or would like to learn more about my research, please feel free to visit my [Google Scholar profile](https://scholar.google.es/citations?user=6PZm2aYAAAAJ&hl=es&oi=ao) or contact me directly via email at flozano@ic.uma.es.
