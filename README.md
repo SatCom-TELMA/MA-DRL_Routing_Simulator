@@ -30,9 +30,9 @@ The constellation movement is handled in discrete time steps. The constellation 
 
 To set up the environment and install all required packages, follow these steps:
 
-1. **Clone the repository**:
+1. **Clone the repository (Last 5 commits, since .git directory is big)**:
     ```sh
-    git clone https://github.com/YourUsername/YourRepositoryName.git
+    git clone --depth 5 https://github.com/SatCom-TELMA/MA-DRL_Routing_Simulator.git
     cd YourRepositoryName
     ```
 
