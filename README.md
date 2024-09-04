@@ -15,20 +15,6 @@ The simulations are built using the event based discrete time simulation framewo
 ## Requirements
 In order to run the simulators and the post-processing script, certain non-standard python libraries are required. For a full list of the necessary libraries, see "requirements.txt".
 
-<<<<<<< HEAD
-## Description
-The simulator simulates individual data blocks propagating through a satellite constellation from a source gateway to destination gateway. 
-### Data generation
-The data blocks are generated at the source gateways independently for each destination gateway. Based on the maximal generation rate of a gateway, each destination receives an equal fraction of the data generation. The fraction to each gateway is determined by the maximum amount of gateways there can be active (this is defined in the inputRL.csv file). If the maximum amount of gateways is set to 18 but only 9 is active, then each gateway will receive 8/17 ((numberOfActive -1) / (totalNumber - 1)) of the maximal generation rate. 
-### Pathing
-For the non-RL simulations, the gateway adds the path of the data block when it is created. The path is found using a Dijkstra shortest path algorithm at the start of the simulation and everytime the constellation moves. For the RL versions, a path is not created with the data block. Instead, it is built as the block propagates through the network.
-### Data propagation
-The transmission of data blocks is handled through simpy process functions which monitor transmission queues. Each gateway (which are connected to a satellite) has one FIFO transmit queue where generated data blocks are placed in. Each satellite has one FIFO transmission queue for each satellite link (usually 4, 2 inter plane satellite links and 2 intra plane links). A data block is transmitted by starting a reception process on the receiver. This process waits out the propagation time and determines which transmission queue the block should be in based on the next step in the path of the data block. For the RL version of the simulator, the next step of the path is determined in this process before the block is placed in a queue.
-### Constellation movement
-The constellation movement is handled in discrete time steps. The constellation is assumed stationary for some amount of time (this time delta can be set in the simulator through the "movementTime" variable in the "main()" function) after which the constellation is moved according to the time delta. In the current setup of the simulation, neither the RL and non-RL versions move the constellation. The current simulation time of 1 second is not considered long enough to warrant movement of the constellation. Furthermore, in the RL-version, one of the required methods in the constellation movement process ("updateSatelliteProcessesRL()") may not work correctly, please report any issue you might have.
-
-=======
->>>>>>> 4f3aaec05e461bc27f54be7b3da33eecb0c39b3d
 ## Installation
 
 To set up the environment and install all required packages, follow these steps:
@@ -62,7 +48,7 @@ For the non-RL simulations, the gateway adds the path of the data block when it 
 ### Data propagation
 The transmission of data blocks is handled through simpy process functions which monitor transmission queues. Each gateway (which are connected to a satellite) has one FIFO transmit queue where generated data blocks are placed in. Each satellite has one FIFO transmission queue for each satellite link (usually 4, 2 inter plane satellite links and 2 intra plane links). A data block is transmitted by starting a reception process on the receiver. This process waits out the propagation time and determines which transmission queue the block should be in based on the next step in the path of the data block. For the RL version of the simulator, the next step of the path is determined in this process before the block is placed in a queue.
 ### Constellation movement
-The constellation movement is handled in discrete time steps. The constellation is assumed stationary for some amount of time (this time delta can be set in the simulator through the "movementTime" variable in the "main()" function) after which the constellation is moved according to the time delta. In the current setup of the simulation, neither the RL and non-RL versions move the constellation. The current simulation time of 1 second is not considered long enough to warrant movement of the constellation. Furthermore, in the RL-version, one of the required methods in the constellation movement process ("updateSatelliteProcessesRL()") is not working correctly and should be looked at before considering constellation movement with either Q-Learning or Deep Q-Learning.
+The constellation movement is handled in discrete time steps. The constellation is assumed stationary for some amount of time (this time delta can be set in the simulator through the "movementTime" variable in the "main()" function) after which the constellation is moved according to the time delta. In the current setup of the simulation, neither the RL and non-RL versions move the constellation. The current simulation time (test length, set in input.csv, inputRL.csv) of 1-2 seconds is not considered long enough to warrant movement of the constellation. However, by setting movementTime to a value lower than the test length the constellation will be moved every movementTime seconds. The space satellites move after each update is controlled with ndeltas parameter. Every time the constellation moves, satellites positions are updated and all the links are created again, including Inter-Satellite and Ground-to-Satellite.
 
 
 ## Usage
@@ -109,5 +95,5 @@ Please report any additional issue you might have.
 
 
 ## Contact me
-If you encounter any issues with the reproducibility of this simulator or would like to learn more about my research, please feel free to visit my [Google Scholar profile](https://scholar.google.es/citations?user=6PZm2aYAAAAJ&hl=es&oi=ao) or contact me directly via email at flozano@ic.uma.es.
+If you encounter any issues with the reproducibility of this simulator or would like to learn more about my research, please feel free to visit my [Google Scholar profile](https://scholar.google.es/citations?user=6PZm2aYAAAAJ&hl=es&oi=ao), contact me directly via email at flozano@ic.uma.es or open a new issue directly.
 
