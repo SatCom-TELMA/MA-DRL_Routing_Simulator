@@ -95,5 +95,39 @@ Please report any additional issue you might have.
 
 
 ## Contact me
-If you encounter any issues with the reproducibility of this simulator or would like to learn more about my research, please feel free to visit my [Google Scholar profile](https://scholar.google.es/citations?user=6PZm2aYAAAAJ&hl=es&oi=ao), contact me directly via email at flozano@ic.uma.es or open a new issue directly.
+If you encounter any issues with the reproducibility of this simulator or would like to learn more about my research, please feel free to visit my [Google Scholar profile](https://scholar.google.es/citations?hl=es&user=6PZm2aYAAAAJ), contact me directly via email at flozano@ic.uma.es or open a new issue directly.
+
+## Citation
+
+If you use this work, please cite the following:
+
+### Simulator Paper ([Available here](https://zenodo.org/records/13885645))
+
+```
+@INPROCEEDINGS{2024sais.conf..420L,
+       author = {{Lozano-Cuadra}, Federico and {Thorsager}, Mathias and {Leyva-Mayorga}, Israel and {Soret}, Beatriz},
+        title = "{An open source Multi-Agent Deep Reinforcement Learning Routing Simulator for satellite networks}",
+     keywords = {Reinforcement Learning, Satellite communications, Simulator, Python, Keras, AI, Routing},
+    booktitle = {Proceedings of SPAICE2024: The First Joint European Space Agency / IAA Conference on AI in and for Space},
+         year = 2024,
+       editor = {{Dold}, Dominik and {Hadjiivanov}, Alexander and {Izzo}, Dario},
+        month = oct,
+        pages = {420-424},
+          doi = {10.5281/zenodo.13885645},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2024sais.conf..420L},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```
+
+### Full Paper ([Available here](https://arxiv.org/abs/2405.12308))
+
+```
+@article{lozano2024continual,
+  title={Continual Deep Reinforcement Learning for Decentralized Satellite Routing},
+  author={Lozano-Cuadra, Federico and Soret, Beatriz and Leyva-Mayorga, Israel and Popovski, Petar},
+  journal={arXiv preprint arXiv:2405.12308},
+  year={2024}
+}
+```
+
 
