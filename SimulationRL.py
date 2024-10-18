@@ -105,8 +105,8 @@ w4          = 5         # Normalization for the distance reward, for the travele
 gamma       = 0.99       # greedy factor. Smaller -> Greedy. Optimized params: 0.6 for Q-Learning, 0.99 for Deep Q-Learning
 
 GTs = [2]               # number of gateways to be tested
-# GTs = [i for i in range(2,9)] # 19.
-# GTs = [i for i in range(2,19)] # 19.
+# Gateways are taken from https://www.ksat.no/ground-network-services/the-ksat-global-ground-station-network/ (Except for Malaga and Aalborg)
+# GTs = [i for i in range(2,9)] # This is to make a sweep where scenarios with all the gateways in the range are considered
 
 # Physical constants
 rKM = 500               # radio in km of the coverage of each gateway
