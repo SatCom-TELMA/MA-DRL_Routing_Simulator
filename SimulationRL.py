@@ -3827,7 +3827,7 @@ class DDQNAgent:
         if reducedState:
             newState    = getDeepStateReduced(block, sat, linkedSats)
         elif diff:
-            newState    = getDeepStateDiff(block, sat, linkedSats)
+            newState    = getDeepStateDiff(block, sat, linkedSats) # This is the one being used by default
         else:
             newState    = getDeepState(block, sat, linkedSats)
 
@@ -5408,91 +5408,6 @@ def getDeepState(block, sat, linkedSats):
                     getBiasedLatitude(satDest),                                 # Destination Latitude
                     getBiasedLongitude(satDest)]).reshape(1,-1)                 # Destination Longitude
     
-
-# def getDeepStateGrid(block, sat, g):
-    '''
-    DEPRECATED. Use getGridPosition in getdeepstate
-
-    Given a dataBlock and the current satellite this function will return a list with the values of the 7 fields of the state space.
-    The model will have as many INPUT neurons as fields the state space has:
-    SatUp    Queue:     Will be the queue length of that satellite. If it has no link there, it will be -1.
-    SatDown  Queue:     Will be the queue length of that satellite. If it has no link there, it will be -1.
-    SatLeft  Queue:     Will be the queue length of that satellite. If it has no link there, it will be -1.
-    SatRight Queue:     Will be the queue length of that satellite. If it has no link there, it will be -1.
-    Grid Position:      Will be the position inside a global grid
-    Block Destination:  Will be the position of the satellite linked to the block destination Gateway among a list of all the satellites linked to a GT.
-    Linked Gateway:     Will be -1 if the satellite is not linked to any Gateway
-    '''
-    blockDestination = getDestination(block, g, sat = sat) 
-    gridPos = getGridPosition(GridSize, [tuple([math.degrees(sat.latitude), math.degrees(sat.longitude), sat.ID])], False, False)[0] 
-
-    return np.array([gridPos, blockDestination]).reshape(1,-1)
-
-
-# def getGridPosition(n: int, locations: List[Tuple([float, float, str])], draw = False, bigGrid = False):
-# def getGridPosition(n: int, locations, draw = False, bigGrid = False):
-    '''
-    Given:
-    n           -> the granularity of the grid. 2n will be the number of squares that the earh has per row.
-    locations   -> a list of [longitude, latitude] pairs to map
-    draw        -> a flag. If it is up it draws the map and saves it
-    bigGrid     -> a flag. If it is up it prints the draws the map grid. If it is down it just draws rectangles with the positions.
-    
-    Returns:
-    A list with all the positions of the provided [longitude, latitude] pairs
-    I the flags are up, a map with the pairs pointed on the map.
-    '''
-    # Calculate the size of each square
-    square_size = 180 / n
-    
-    # Create the map
-    m = folium.Map(location=[0, 0], zoom_start=2)
-    positions = []
-    
-    # Add the rectangles and markers for the specified locations to the map
-    for latitude, longitude, name in locations:
-        # Determine the position of the location in the grid
-        x_pos = int((longitude + 180) // square_size)
-        y_pos = int((latitude + 90) // square_size)
-        
-        # Calculate the position of the object in the grid
-        position = x_pos + (y_pos * (360//square_size))
-        positions.append(position)
-
-        # Add the rectangle to the map
-        if draw:
-            folium.Rectangle(
-                bounds=[[y_pos * square_size - 90, x_pos * square_size - 180], [(y_pos + 1) * square_size - 90, (x_pos + 1) * square_size - 180]],
-                color='red',
-                fill=True
-            ).add_to(m)
-
-            # Add the marker and pop-up to the map
-            folium.Marker(location=[latitude, longitude], popup=folium.Popup(f'Position: {position}')).add_to(m)
-            folium.map.Marker([latitude, longitude],
-            icon=folium.features.DivIcon(
-            icon_size=(250,36),
-            icon_anchor=(0,0),
-            html='<div style="font-size: 10pt; font-weight:bold; color: black;">[' + name + ': ' + str(position) +']</div>',
-            )).add_to(m)
-
-        # Add the grid to the map
-        if bigGrid:
-            for i in range(-90, 90):
-                for j in range(-180, 180):
-                    folium.Rectangle(
-                        bounds=[[i * square_size, j * square_size], [(i + 1) * square_size, (j + 1) * square_size]],
-                        color='red',
-                        fill=True
-                    ).add_to(m)
-    # Display the map
-    if(draw):
-        display(m)
-        m.save('map' + str(n) + '.html')
-
-    total_cells = (360//square_size) * (180//square_size)
-    return positions
-
 
 def createQTable(NGT):
     '''
