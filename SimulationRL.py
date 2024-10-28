@@ -6028,9 +6028,13 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotat
             handles, labels = axes[i, 0].get_legend_handles_labels()
             axes[i, 0].legend(handles, labels, loc='upper right')
 
-        if GTnumber <= GTnumber_Max:
-            axes[i, 0].legend().set_visible(False)  # ANCHOR latency figure legend disabled
-            axes[i, 1].legend().set_visible(False)
+        if GTnumber > GTnumber_Max:
+            # Disable legends on both subplots
+            if axes[i, 0].get_legend():
+                axes[i, 0].get_legend().set_visible(False)
+            if axes[i, 1].get_legend():
+                axes[i, 1].get_legend().set_visible(False)
+
         
     # Adjust the layout
     plt.tight_layout()
