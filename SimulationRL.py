@@ -82,11 +82,11 @@ from collections import deque
 
 # HOT PARAMS - This parameters should be revised before every simulation
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[1]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
 plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 saveISLs    = False     # save ISLs map
-plotAll     = True      # If True, it plots congestion maps and throughput plots for each single path between gateways. If False, it plots a single figure for overall congestion and Throughput
+plotAll     = False      # If True, it plots congestion maps and throughput plots for each single path between gateways. If False, it plots a single figure for overall congestion and Throughput
 
 movementTime= 10#0.05   # Every movementTime seconds, the satellites positions are updated and the graph is built again
                         # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
@@ -94,8 +94,8 @@ ndeltas     = 5805.44/20#1 Movement speedup factor. This number will multiply de
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
-importQVals = False     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+importQVals = True     # imports either QTables or NN from a certain path
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -5956,6 +5956,7 @@ def plot_throughput_cdf(data, outputPath, bins_num=100, save=False, plot_separat
 
 def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotate_min_latency=True):  
     # preprocess and setup
+    GTnumber_Max = 4 # max number of gts for displaying the legend. If the number of GTs is bigger than this, then no legend is displayed
     sns.set(font_scale=1.5)
     window_size = winSize
     marker_size = markerSize
@@ -6023,18 +6024,13 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotat
             if ax2.get_legend():
                 ax2.get_legend().remove()
         else:
-            # Handle legend visibility based on GTnumber
-            if GTnumber <= 4:
-                # Show legend if GTnumber is 5 or fewer
-                handles, labels = axes[i, 0].get_legend_handles_labels()
-                axes[i, 0].legend(handles, labels, loc='upper right')
-            else:
-                # Hide legends if GTnumber is over 5
-                axes[i, 0].get_legend().set_visible(False)
-                axes[i, 1].get_legend().set_visible(False)
+            # Handle legend for the case when epsDF is None
+            handles, labels = axes[i, 0].get_legend_handles_labels()
+            axes[i, 0].legend(handles, labels, loc='upper right')
 
-        # axes[i, 0].legend().set_visible(False)  # ANCHOR latency figure legend disabled
-        # axes[i, 1].legend().set_visible(False)  # ANCHOR latency figure legend disabled
+        if GTnumber <= GTnumber_Max:
+            axes[i, 0].legend().set_visible(False)  # ANCHOR latency figure legend disabled
+            axes[i, 1].legend().set_visible(False)
         
     # Adjust the layout
     plt.tight_layout()
