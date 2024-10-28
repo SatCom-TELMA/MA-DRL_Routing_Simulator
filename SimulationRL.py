@@ -18,6 +18,7 @@ from datetime import datetime
 import seaborn as sns
 import gc
 import cProfile
+from collections import defaultdict
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -81,17 +82,18 @@ from collections import deque
 
 # HOT PARAMS - This parameters should be revised before every simulation
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
-pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+pathing     = pathings[1]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
 plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 saveISLs    = False     # save ISLs map
+plotAll     = True      # If True, it plots congestion maps and throughput plots for each single path between gateways. If False, it plots a single figure for overall congestion and Throughput
 
 movementTime= 10#0.05   # Every movementTime seconds, the satellites positions are updated and the graph is built again
                         # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
 ndeltas     = 5805.44/20#1 Movement speedup factor. This number will multiply deltaT. If bigger, will make the rotation distance bigger
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
-explore     = True      # If True, makes random actions eventually, if false only exploitation
+explore     = False      # If True, makes random actions eventually, if false only exploitation
 importQVals = False     # imports either QTables or NN from a certain path
 onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
@@ -104,7 +106,7 @@ w4          = 5         # Normalization for the distance reward, for the travele
 
 gamma       = 0.99       # greedy factor. Smaller -> Greedy. Optimized params: 0.6 for Q-Learning, 0.99 for Deep Q-Learning
 
-GTs = [2]               # number of gateways to be tested
+GTs = [8]               # number of gateways to be tested
 # Gateways are taken from https://www.ksat.no/ground-network-services/the-ksat-global-ground-station-network/ (Except for Malaga and Aalborg)
 # GTs = [i for i in range(2,9)] # This is to make a sweep where scenarios with all the gateways in the range are considered
 
@@ -135,7 +137,7 @@ totalFlow   = 2*1000000000  # Total average flow per GT when the balanced traffc
 avUserLoad  = 8593 * 8      # average traffic usage per second in bits
 
 # Block
-blockSize   = 64800
+BLOCK_SIZE   = 64800
 
 # Movement and structure
 # movementTime= 0.05      # Every movementTime seconds, the satellites positions are updated and the graph is built again
@@ -259,9 +261,9 @@ def getBlockTransmissionStats(timeToSim, GTs, constellationType, earth):
     earth.pathParam
 
     for block in receivedDataBlocks:
-        blocks.append(BlocksForPickle(block))
         time = block.getTotalTransmissionTime()
         hops = len(block.checkPoints)
+        blocks.append(BlocksForPickle(block))
 
         if largestTransmissionTime[0] < time:
             largestTransmissionTime = (time, block)
@@ -357,7 +359,7 @@ class Results:
 
 class BlocksForPickle:
     def __init__(self, block):
-        self.size = blockSize  # size in bits
+        self.size = BLOCK_SIZE  # size in bits
         self.ID = block.ID  # a string which holds the source id, destination id, and index of the block, e.g. "1_2_12"
         self.timeAtFull = block.timeAtFull  # the simulation time at which the block was full and was ready to be sent.
         self.creationTime = block.creationTime  # the simulation time at which the block was created.
@@ -957,7 +959,7 @@ class DataBlock:
     """
 
     def __init__(self, source, destination, ID, creationTime):
-        self.size = blockSize  # size in bits
+        self.size = BLOCK_SIZE  # size in bits
         self.destination = destination
         self.source = source
         self.ID = ID            # a string which holds the source id, destination id, and index of the block, e.g. "1_2_12"
@@ -1176,7 +1178,7 @@ class Gateway:
 
             # calculate propagation time and transmission time
             propTime = self.timeToSend(self.linkedSat)
-            timeToSend = blockSize/self.dataRate
+            timeToSend = BLOCK_SIZE/self.dataRate
 
             self.sendBuffer[1][0].timeAtFirstTransmission = self.env.now
             yield self.env.timeout(timeToSend)
@@ -3032,7 +3034,7 @@ class Earth:
             intraRate.append(self.LEO[0].sats[0].intraSats[0][2])
 
         while True:
-            print('Moving constellation: Updating satellites position and links.')
+            print('Creating/Moving constellation: Updating satellites position and links.')
             if getRates:
                 # get data rates for all inter plane ISLs and all GSLs (up and down) - used for testing
                 upDataRates, downDataRates = self.getGSLDataRates()
@@ -5804,6 +5806,154 @@ def plotSavePathLatencies(outputPath, GTnumber, pathBlocks):
     # os.makedirs(outputPath + '/loss/', exist_ok=True) # create output path
 
 
+def plot_packet_latencies_and_uplink_downlink_throughput(data, outputPath, bins_num=30, save=False, plot_separately=True):
+    """
+    Generate either separate scatter plots of packet latencies for each path (source-destination),
+    or a single plot combining all paths. Overlay line plots of uplink and downlink throughput on 
+    a secondary y-axis, with a single legend for all items in the upper right.
+    """
+
+    save_dir = os.path.join(outputPath, 'Throughput')
+    os.makedirs(save_dir, exist_ok=True)
+
+    # Group blocks by (source, destination) paths
+    paths_data = defaultdict(list)
+    for block in data:
+        src = block.path[0][0]        # Source
+        dst = block.path[-1][0]       # Destination
+        paths_data[(src, dst)].append(block)
+
+    # Function to plot data for a single path or combined
+    def plot_path_data(blocks, src=None, dst=None):
+        fig, ax1 = plt.subplots(figsize=(8, 4))
+        
+        # Sort blocks by creation time
+        blocks = sorted(blocks, key=lambda b: b.creationTime)
+        
+        # Extract times and latencies (converted to ms)
+        creation_times = np.array([block.creationTime for block in blocks]) * 1000  # ms
+        arrival_times = np.array([block.creationTime + block.totLatency for block in blocks]) * 1000  # ms
+        latencies = np.array([block.totLatency * 1000 for block in blocks])  # ms
+
+        # Scatter plot for packet arrival times vs latency
+        arrival_scatter = ax1.scatter(arrival_times, latencies, color='#1E90FF', label='Packet Delivery', alpha=0.6, s=10)
+        
+        # Configure primary y-axis for latency
+        ax1.set_xlabel('Time [ms]', fontsize=16)
+        ax1.set_ylabel('Average E2E Latency [ms]', fontsize=16)
+        
+        # Create secondary y-axis for throughput
+        ax2 = ax1.twinx()
+        time_bins = np.linspace(min(creation_times), max(arrival_times), num=bins_num)
+        
+        # Calculate throughput
+        uplink_counts, _ = np.histogram(creation_times, bins=time_bins)
+        uplink_throughput = (uplink_counts * BLOCK_SIZE / 1e3) / np.diff(time_bins)  # Mbps
+        downlink_counts, _ = np.histogram(arrival_times, bins=time_bins)
+        downlink_throughput = (downlink_counts * BLOCK_SIZE / 1e3) / np.diff(time_bins)  # Mbps
+
+        # Plot throughput on secondary y-axis
+        uplink_line, = ax2.plot(time_bins[:-1], uplink_throughput, color='#00008B', lw=2, label='Uplink Throughput')
+        downlink_line, = ax2.plot(time_bins[:-1], downlink_throughput, color='#1E90FF', lw=2, label='Downlink Throughput')
+        
+        # Configure secondary y-axis for throughput
+        ax2.set_ylabel('Throughput [Mbps]', fontsize=16)
+        
+        # Combine legends
+        handles = [arrival_scatter, uplink_line, downlink_line]
+        labels = [handle.get_label() for handle in handles]
+        ax1.legend(handles, labels, loc='upper center', fontsize=12)
+
+        # Display grid and layout adjustments
+        ax1.grid(True)
+        ax2.grid(True, linestyle=':', linewidth=0.5)
+        plt.tight_layout()
+        
+        # Save or show plot
+        if save:
+            filename = f'{src}_{dst}_path_latency_throughput.png' if src and dst else 'combined_path_latency_throughput.png'
+            plt.savefig(os.path.join(save_dir, filename), dpi=300)
+        else:
+            plt.show()
+        plt.close()
+
+    # Plot all paths together or separately based on flag
+    if plot_separately:
+        for (src, dst), blocks in paths_data.items():
+            plot_path_data(blocks, src, dst)
+    else:
+        all_blocks = [block for blocks in paths_data.values() for block in blocks]
+        plot_path_data(all_blocks)
+
+
+def plot_throughput_cdf(data, outputPath, bins_num=100, save=False, plot_separately=True):
+    """
+    Generate and save a CDF plot of the throughput. Either plot each route separately or
+    combine all routes into a single plot based on the `plot_separately` flag.
+    """
+    save_dir = os.path.join(outputPath, 'Throughput')
+    os.makedirs(save_dir, exist_ok=True)
+
+    # Group blocks by (source, destination) paths
+    paths_data = defaultdict(list)
+    for block in data:
+        src = block.path[0][0]  # Source
+        dst = block.path[-1][0]  # Destination
+        paths_data[(src, dst)].append(block)
+
+    # Helper function to plot CDF for a given set of blocks
+    def plot_cdf_for_path(blocks, src=None, dst=None):
+        fig, ax = plt.subplots(figsize=(8, 4))
+        
+        # Sort blocks by creation time
+        blocks = sorted(blocks, key=lambda b: b.creationTime)
+        
+        # Extract creation times and arrival times
+        creation_times = np.array([block.creationTime for block in blocks])
+        arrival_times = np.array([block.creationTime + block.totLatency for block in blocks])
+        
+        # Define time bins and calculate throughput
+        time_bins = np.linspace(min(creation_times), max(arrival_times), num=bins_num)
+        uplink_counts, _ = np.histogram(creation_times, bins=time_bins)
+        uplink_throughput = (uplink_counts * BLOCK_SIZE / 1e6) / np.diff(time_bins)  # Mbps
+        downlink_counts, _ = np.histogram(arrival_times, bins=time_bins)
+        downlink_throughput = (downlink_counts * BLOCK_SIZE / 1e6) / np.diff(time_bins)  # Mbps
+        
+        # Sort and calculate CDF
+        uplink_throughput_sorted = np.sort(uplink_throughput)
+        downlink_throughput_sorted = np.sort(downlink_throughput)
+        uplink_cdf = np.arange(1, len(uplink_throughput_sorted) + 1) / len(uplink_throughput_sorted)
+        downlink_cdf = np.arange(1, len(downlink_throughput_sorted) + 1) / len(downlink_throughput_sorted)
+        
+        # Plot CDFs
+        ax.plot(uplink_throughput_sorted, uplink_cdf, label='Uplink Throughput', color='#00008B', lw=2)
+        ax.plot(downlink_throughput_sorted, downlink_cdf, label='Downlink Throughput', color='#1E90FF', lw=2)
+        
+        # Configure plot
+        ax.set_xlabel('Throughput [Mbps]', fontsize=16)
+        ax.set_ylabel('CDF', fontsize=16)
+        ax.legend(loc='lower right', fontsize=12)
+        ax.grid(True)
+        ax.tick_params(axis='both', which='major', labelsize=16)
+        
+        # Adjust layout, save plot, and close
+        plt.tight_layout()
+        if save:
+            filename = f'Throughput_CDF_{src}_to_{dst}.png' if src and dst else 'Throughput_CDF_All_Paths.png'
+            plt.savefig(os.path.join(save_dir, filename), dpi=300)
+        else:
+            plt.show()
+        plt.close()
+
+    # Plot each path separately or all paths combined based on flag
+    if plot_separately:
+        for (src, dst), blocks in paths_data.items():
+            plot_cdf_for_path(blocks, src, dst)
+    else:
+        all_blocks = [block for blocks in paths_data.values() for block in blocks]
+        plot_cdf_for_path(all_blocks)
+
+
 def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotate_min_latency=True):  
     # preprocess and setup
     sns.set(font_scale=1.5)
@@ -5873,9 +6023,15 @@ def plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF=None, annotat
             if ax2.get_legend():
                 ax2.get_legend().remove()
         else:
-            # Handle legend for the case when epsDF is None
-            handles, labels = axes[i, 0].get_legend_handles_labels()
-            axes[i, 0].legend(handles, labels, loc='upper right')
+            # Handle legend visibility based on GTnumber
+            if GTnumber <= 4:
+                # Show legend if GTnumber is 5 or fewer
+                handles, labels = axes[i, 0].get_legend_handles_labels()
+                axes[i, 0].legend(handles, labels, loc='upper right')
+            else:
+                # Hide legends if GTnumber is over 5
+                axes[i, 0].get_legend().set_visible(False)
+                axes[i, 1].get_legend().set_visible(False)
 
         # axes[i, 0].legend().set_visible(False)  # ANCHOR latency figure legend disabled
         # axes[i, 1].legend().set_visible(False)  # ANCHOR latency figure legend disabled
@@ -5916,7 +6072,7 @@ def plotRatesFigures():
     plt.close()
 
 
-def plotCongestionMap(self, paths, outPath, GTnumber):
+def plotCongestionMap(self, paths, outPath, GTnumber, plot_separately=True):
     def extract_gateways(path):
     # Assuming QPath's first and last elements contain gateway identifiers
         if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
@@ -5926,7 +6082,7 @@ def plotCongestionMap(self, paths, outPath, GTnumber):
         
     os.makedirs(outPath, exist_ok=True)
 
-    # Identify unique routes and filter by packet threshold (e.g., 500 packets)
+    # Identify unique routes and filter by packet threshold (100 packets)
     unique_routes = {}
     for block in paths:
         p = block.QPath if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning' else block.path
@@ -5937,7 +6093,7 @@ def plotCongestionMap(self, paths, outPath, GTnumber):
             else:
                 unique_routes[gateways] = 1
 
-    filtered_routes = {route: count for route, count in unique_routes.items() if count > 500}
+    filtered_routes = {route: count for route, count in unique_routes.items() if count > 100} # REVIEW Packet threshold for path visualization
 
     # Plot for all routes combined
     if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
@@ -5952,17 +6108,18 @@ def plotCongestionMap(self, paths, outPath, GTnumber):
         print('Congestion map for all routes not available')
 
     # Plot for each unique route above the threshold
-    for route, count in filtered_routes.items():
-        if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
-            route_paths = [block for block in paths if extract_gateways(block) == route and block.QPath]
-        else:
-            route_paths = [block for block in paths if extract_gateways(block) == route and block.path]
+    if plot_separately:
+        for route, count in filtered_routes.items():
+            if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
+                route_paths = [block for block in paths if extract_gateways(block) == route and block.QPath]
+            else:
+                route_paths = [block for block in paths if extract_gateways(block) == route and block.path]
 
-        done = self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(route_paths),
-                     fileName=os.path.join(outPath, f"CongestionMap_{route[0]}_to_{route[1]}_{GTnumber}GTs.png"))
-        plt.close()
-        if done == -1:
-            print(f'Congestion map for {route} not available')
+            done = self.plotMap(plotGT=True, plotSat=True, edges=False, save=True, paths=np.asarray(route_paths),
+                        fileName=os.path.join(outPath, f"CongestionMap_{route[0]}_to_{route[1]}_{GTnumber}GTs.png"))
+            plt.close()
+            if done == -1:
+                print(f'Congestion map for {route} not available')
     
 
 # @profile
@@ -6053,6 +6210,11 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             
             # save & plot ftirst 2 GTs path latencies
             plotSavePathLatencies(outputPath, GTnumber, pathBlocks)
+
+            # Throughput figures
+            print('Plotting Throughput...')
+            plot_packet_latencies_and_uplink_downlink_throughput(blocks, outputPath, bins_num=30, save = True, plot_separately = plotAll)
+            plot_throughput_cdf(blocks, outputPath, bins_num = 100, save = True, plot_separately = plotAll)
             
             if pathing == "Deep Q-Learning" or pathing == 'Q-Learning':
                 save_plot_rewards(outputPath, earth1.rewards, GTnumber)
@@ -6084,7 +6246,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             plotQueues(earth1.queues, outputPath, GTnumber)
 
         print('Plotting link congestion figures...')
-        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/', GTnumber)
+        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/', GTnumber, plot_separately=plotAll)
 
         print(f"number of gateways: {GTnumber}")
         print('Path:')
