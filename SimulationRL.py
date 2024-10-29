@@ -86,7 +86,9 @@ pathing     = pathings[5]# dataRateOG is the original datarate. If we want to ma
 
 plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
 saveISLs    = False     # save ISLs map
-plotAll     = False      # If True, it plots congestion maps and throughput plots for each single path between gateways. If False, it plots a single figure for overall congestion and Throughput
+plotAllThro = True      # If True, it plots throughput plots for each single path between gateways. If False, it plots a single figure for overall Throughput
+plotAllCon  = True      # If True, it plots congestion maps for each single path between gateways. If False, it plots a single figure for overall congestion
+
 
 movementTime= 10#0.05   # Every movementTime seconds, the satellites positions are updated and the graph is built again
                         # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
@@ -95,7 +97,7 @@ ndeltas     = 5805.44/20#1 Movement speedup factor. This number will multiply de
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
 importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -106,7 +108,7 @@ w4          = 5         # Normalization for the distance reward, for the travele
 
 gamma       = 0.99       # greedy factor. Smaller -> Greedy. Optimized params: 0.6 for Q-Learning, 0.99 for Deep Q-Learning
 
-GTs = [8]               # number of gateways to be tested
+GTs = [16]               # number of gateways to be tested
 # Gateways are taken from https://www.ksat.no/ground-network-services/the-ksat-global-ground-station-network/ (Except for Malaga and Aalborg)
 # GTs = [i for i in range(2,9)] # This is to make a sweep where scenarios with all the gateways in the range are considered
 
@@ -5588,6 +5590,7 @@ def saveQTables(outputPath, earth):
 
 def saveDeepNetworks(outputPath, earth):
     print('Saving Deep Neural networks at: ' + outputPath)
+    os.makedirs(outputPath, exist_ok=True) 
     if not onlinePhase:
         earth.DDQNA.qNetwork.save(outputPath + 'qNetwork_'+ str(len(earth.gateways)) + 'GTs' + '.h5')
         if ddqn:
@@ -6082,7 +6085,7 @@ def plotCongestionMap(self, paths, outPath, GTnumber, plot_separately=True):
         
     os.makedirs(outPath, exist_ok=True)
 
-    # Identify unique routes and filter by packet threshold (100 packets)
+    # Identify unique routes and filter by packet threshold (200 packets)
     unique_routes = {}
     for block in paths:
         p = block.QPath if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning' else block.path
@@ -6093,7 +6096,7 @@ def plotCongestionMap(self, paths, outPath, GTnumber, plot_separately=True):
             else:
                 unique_routes[gateways] = 1
 
-    filtered_routes = {route: count for route, count in unique_routes.items() if count > 100} # REVIEW Packet threshold for path visualization
+    filtered_routes = {route: count for route, count in unique_routes.items() if count > 200} # REVIEW Packet threshold for path visualization
 
     # Plot for all routes combined
     if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
@@ -6213,8 +6216,8 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
 
             # Throughput figures
             print('Plotting Throughput...')
-            plot_packet_latencies_and_uplink_downlink_throughput(blocks, outputPath, bins_num=30, save = True, plot_separately = plotAll)
-            plot_throughput_cdf(blocks, outputPath, bins_num = 100, save = True, plot_separately = plotAll)
+            plot_packet_latencies_and_uplink_downlink_throughput(blocks, outputPath, bins_num=30, save = True, plot_separately = plotAllThro)
+            plot_throughput_cdf(blocks, outputPath, bins_num = 100, save = True, plot_separately = plotAllThro)
             
             if pathing == "Deep Q-Learning" or pathing == 'Q-Learning':
                 save_plot_rewards(outputPath, earth1.rewards, GTnumber)
@@ -6246,7 +6249,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             plotQueues(earth1.queues, outputPath, GTnumber)
 
         print('Plotting link congestion figures...')
-        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/', GTnumber, plot_separately=plotAll)
+        plotCongestionMap(earth1, np.asarray(blocks), outputPath + '/Congestion_Test/', GTnumber, plot_separately=plotAllCon)
 
         print(f"number of gateways: {GTnumber}")
         print('Path:')
@@ -6272,13 +6275,13 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             np.save("{}blocks_{}".format(blockPath, GTnumber), np.asarray(blocks),allow_pickle=True)
         except pickle.PicklingError:
             print('Error with pickle and profiling')
+        '''
 
         # save learnt values
         if pathing == 'Q-Learning':
             saveQTables(outputPath, earth1)
         elif pathing == 'Deep Q-Learning':
             saveDeepNetworks(outputPath + '/NNs/', earth1)
-        '''
 
         # percentages.clear()
         receivedDataBlocks  .clear()
