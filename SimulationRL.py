@@ -19,6 +19,7 @@ import seaborn as sns
 import gc
 import cProfile
 from collections import defaultdict
+import glob
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -84,23 +85,25 @@ from collections import deque
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
-plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
-saveISLs    = False     # save ISLs map
+FL_Test     = True      # If True, it plots the model divergence the model divergence between agents
+saveISLs    = True     # save ISLs map
+plotSatID   = True     # If True, plots the ID of each satellite
 plotAllThro = True      # If True, it plots throughput plots for each single path between gateways. If False, it plots a single figure for overall Throughput
 plotAllCon  = True      # If True, it plots congestion maps for each single path between gateways. If False, it plots a single figure for overall congestion
 
-
-movementTime= 10#0.05   # Every movementTime seconds, the satellites positions are updated and the graph is built again
+movementTime= 0.20#0.05   # Every movementTime seconds, the satellites positions are updated and the graph is built again
                         # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
-ndeltas     = 5805.44/20#1 Movement speedup factor. This number will multiply deltaT. If bigger, will make the rotation distance bigger
+ndeltas     = 5805.44/20#1 Movement speedup factor. Every movementTime sats will move movementTime*ndeltas space. If bigger, will make the rotation distance bigger
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
 importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
+else:
+    FL_Test = False
 
 w1          = 20        # rewards the getting to empty queues
 w2          = 20        # rewards getting closes phisycally   
@@ -108,7 +111,7 @@ w4          = 5         # Normalization for the distance reward, for the travele
 
 gamma       = 0.99       # greedy factor. Smaller -> Greedy. Optimized params: 0.6 for Q-Learning, 0.99 for Deep Q-Learning
 
-GTs = [16]               # number of gateways to be tested
+GTs = [3]               # number of gateways to be tested
 # Gateways are taken from https://www.ksat.no/ground-network-services/the-ksat-global-ground-station-network/ (Except for Malaga and Aalborg)
 # GTs = [i for i in range(2,9)] # This is to make a sweep where scenarios with all the gateways in the range are considered
 
@@ -166,8 +169,8 @@ alpha_dnn   = 0.01      # learning rate for the deep neural networks
 epsilon     = 0.1       # exploration factor for Q-Learning ONLY
 tau         = 0.1       # rate of copying the weights from the Q-Network to the target network
 learningRate= 0.001     # Default learning rate for Adam optimizer
-# plotDeliver = True      # create pictures of the path every 1/10 times a data block gets its destination
-plotSatID   = False     # If True, plots the ID of each satellite
+plotDeliver = False     # create pictures of the path every 1/10 times a data block gets its destination
+# plotSatID   = False     # If True, plots the ID of each satellite
 GridSize    = 8         # Earth divided in GridSize rows for the grid. Used to be 15
 winSize     = 20        # window size for the representation in the plots
 markerSize  = 50        # Size of the markers in the plots
@@ -221,8 +224,12 @@ CurrentGTnumber = -1    # Number of active gateways. This number will be updated
 ###############################      Paths      ###############################
 ###############################################################################
 
-nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_3GTs.h5.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_3GTs.h5.h5'
+nnpath      = './pre_trained_NNs/qNetwork_2GTs.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_2GTs.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 
 if __name__ == '__main__':
@@ -337,6 +344,307 @@ def simProgress(simTimelimit, env):
         print("Simulation progress: {}% Estimated time remaining: {} seconds Current simulation time: {}".format(progress, int(estimatedTimeRemaining), env.now), end='\r')
         yield env.timeout(timeStepSize)
         progress += 1
+
+
+###############################################################################
+############################# Federated Learning ##############################
+###############################################################################
+
+FL_techs    = ['nothing', 'modelAnticipation', 'plane', 'full', 'combination']
+FL_tech     = FL_techs[0]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+
+if pathing != 'Deep Q-Learning':
+    FL_Test = False
+
+if FL_Test:
+    CKA_Values = []     # CKA matrix 
+    num_samples = 10   # number of random samples to test the divergence between models
+
+def generate_test_data(num_samples, include_not_avail=False):
+    data = []
+    queue_values = np.arange(0, 11)  # Possible queue values from 0 to 10
+    # Set probabilities: 0 at 35%, 10 at 20%, and 5% each for values 1-9
+    queue_probs = [0.35] + [0.05] * 9 + [0.20]
+
+    for _ in range(num_samples):
+        sample = []
+        # Queue Scores for each direction: Up, Down, Right, Left (4 scores each)
+        for _ in range(4):
+            # Queue scores biased towards 0 and 10
+            sample.extend(np.random.choice(queue_values, 4, p=queue_probs))
+            
+            # Relative positions for each direction: latitude and longitude
+            sample.append(np.random.uniform(-2, 2))  # Latitude relative position
+            sample.append(np.random.uniform(-2, 2))  # Longitude relative position
+        
+        # Absolute positions
+        sample.append(np.random.uniform(0, 9))  # Absolute latitude normalized
+        sample.append(np.random.uniform(0, 18))  # Absolute longitude normalized
+        
+        # Destination differential coordinates
+        sample.append(np.random.uniform(-2, 2))  # Destination differential latitude
+        sample.append(np.random.uniform(-2, 2))  # Destination differential longitude
+        
+        # Optionally include not available values
+        if include_not_avail and np.random.rand() < 0.1:  # 10% chance to introduce a -1 value
+            idx_to_replace = np.random.choice(len(sample), int(0.1 * len(sample)), replace=False)
+            sample[idx_to_replace] = -1
+        
+        data.append(sample)
+    
+    return np.array(data)
+
+def get_models(earth):
+    models = []
+    model_names = []
+    for plane in earth.LEO:
+        for sat in plane.sats:
+            models.append(sat.DDQNA.qNetwork)
+            model_names.append(sat.ID)
+    return models, model_names
+
+def average_model_weights(models):
+    """Average weights of multiple trained models."""
+    weights = [model.get_weights() for model in models]
+    new_weights = [np.mean(np.array(w), axis=0) for w in zip(*weights)]
+    return new_weights
+
+def full_federated_learning(models):
+    averaged_weights = average_model_weights(models)
+    for model in models:
+        model.set_weights(averaged_weights)
+
+def federate_by_plane(models, model_names):
+    """Perform Federated Averaging within each orbital plane."""
+    plane_dict = {}
+    for model, name in zip(models, model_names):
+        plane = name.split('_')[0]
+        if plane in plane_dict:
+            plane_dict[plane].append(model)
+        else:
+            plane_dict[plane] = [model]
+    for plane_models in plane_dict.values():
+        averaged_weights = average_model_weights(plane_models)
+        for model in plane_models:
+            model.set_weights(averaged_weights)
+
+def model_anticipation_federate(models, model_names):
+    """Perform Model Anticipation Federated Learning."""
+    plane_dict = {}
+    # Group models by orbital plane
+    for model, name in zip(models, model_names):
+        plane = name.split('_')[0]
+        if plane not in plane_dict:
+            plane_dict[plane] = []
+        plane_dict[plane].append((model, name))
+    
+    # Process each plane for model anticipation
+    for plane_models in plane_dict.values():
+        # Sort models by their identifiers within the plane
+        plane_models.sort(key=lambda x: int(x[1].split('_')[1]))
+        for i in range(1, len(plane_models)):
+            prev_model_weights = plane_models[i - 1][0].get_weights()
+            current_model = plane_models[i][0]
+            current_weights = current_model.get_weights()
+            # Average weights from the previous model
+            new_weights = [(w1 + w2) / 2 for w1, w2 in zip(current_weights, prev_model_weights)]
+            current_model.set_weights(new_weights)
+
+def update_sats_models(earth, models, model_names):
+    '''Update each satellite model for the updated one'''
+    print('Updating satellites models...')
+    for model, satID in zip(models, model_names):
+        sat = findByID(earth, satID)
+        sat.DDQNA.qNetwork = model
+        if ddqn:
+            sat.DDQNA.qTarget = model
+
+def compute_full_cka_matrix(models, data):
+    """Compute the full CKA matrix for a list of models."""
+    
+    def gram_matrix(X):
+        """Calculate the Gram matrix from layer activations."""
+        n = X.shape[0]
+        X = X - X.mean(axis=0)
+        return X @ X.T / n
+
+    def cka(G, H):
+        """Compute the CKA metric."""
+        return np.trace(G @ H) / np.sqrt(np.trace(G @ G) * np.trace(H @ H))
+
+    def compute_cka(model1, model2, data):
+        """Compute the CKA between layers of two models using data."""
+        intermediate_model1 = tf.keras.Model(inputs=model1.input, outputs=[layer.output for layer in model1.layers])
+        intermediate_model2 = tf.keras.Model(inputs=model2.input, outputs=[layer.output for layer in model2.layers])
+        activations1 = intermediate_model1(data)
+        activations2 = intermediate_model2(data)
+        return np.mean([cka(gram_matrix(np.array(act1)), gram_matrix(np.array(act2))) for act1, act2 in zip(activations1, activations2)])
+    
+    n = len(models)
+    cka_matrix = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i, n):
+            if i == j:
+                cka_matrix[i, j] = 1.0
+            else:
+                cka_matrix[i, j] = cka_matrix[j, i] = compute_cka(models[i], models[j], data)
+    return cka_matrix
+
+def compute_average_cka(cka_matrix):
+    """Compute the average CKA value from a CKA matrix."""
+    triu_indices = np.triu_indices_from(cka_matrix, k=1)
+    return np.mean(cka_matrix[triu_indices])
+
+def perform_FL(earth):#, outputPath):
+
+    # path = outputPath + 'FL' + str(len(earth.gateways)) + 'GTs/'
+    # os.makedirs(path, exist_ok=True) 
+    print('----------------------------------')
+    print(f'Federated Learning. Performing: {FL_tech}')
+
+    data = generate_test_data(num_samples, include_not_avail=False)
+    models, model_names = get_models(earth)
+
+    CKA_Values_before = compute_full_cka_matrix(models, data)
+
+    if FL_tech == 'nothing':
+        return CKA_Values_before, CKA_Values_before
+        
+    if FL_tech == 'modelAnticipation':
+        model_anticipation_federate(models, model_names)
+    elif FL_tech == 'plane':
+        federate_by_plane(models, model_names)
+    elif FL_tech == 'full':
+        full_federated_learning(models)
+    elif FL_tech == 'combination':
+        pass
+
+    CKA_Values_after = compute_full_cka_matrix(models, data)
+    update_sats_models(earth, models, model_names)
+
+    print('----------------------------------')
+    return CKA_Values_before, CKA_Values_after
+
+def plot_cka_over_time_v0(cka_data, outputPath, nGTs):
+    """
+    Plots each CKA value over time in milliseconds, connecting 'before' and 'after' points with a line
+    and using different colors for each type of dot.
+    
+    Parameters:
+    - cka_data: List of [CKA_before, CKA_after, timestamp] entries.
+    """
+    path = outputPath + 'FL/'
+    os.makedirs(path, exist_ok=True) # create output path
+
+    # Extract times and CKA values for before and after
+    times = [entry[2] * 1000 for entry in cka_data]  # Convert time to milliseconds
+    cka_before_values = [compute_average_cka(entry[0]) for entry in cka_data]
+    cka_after_values = [compute_average_cka(entry[1]) for entry in cka_data]
+
+    # Construct the sequence for line plot: interleave before and after values
+    line_times = [time for time in times for _ in (0, 1)]
+    line_values = [val for pair in zip(cka_before_values, cka_after_values) for val in pair]
+
+    # Plotting
+    plt.figure(figsize=(10, 6))
+
+    # Line connecting all CKA values
+    plt.plot(line_times, line_values, label='CKA Value Sequence', color='gray', linestyle='--', alpha=0.7)
+
+    # Dots for 'CKA Before FL' and 'CKA After FL'
+    plt.scatter(times, cka_before_values, label='CKA Before FL', color='blue', marker='o')
+    plt.scatter(times, cka_after_values, label='CKA After FL', color='green', marker='s')
+
+    # Labels and title
+    plt.xlabel('Time (ms)')
+    plt.ylabel('CKA Value')
+    plt.title('CKA Values Over Time (ms) with Sequential Connection and Dot Types')
+    plt.legend()
+    plt.grid(True)
+    # plt.show()
+    plt.tight_layout()
+    plt.savefig(path + f'CKA_over_time_{str(nGTs)}_GTs', dpi=300, bbox_inches='tight')   
+
+    # Save mean CKA values over time
+    mean_cka_values = np.column_stack((times, cka_before_values, cka_after_values))
+    np.savetxt(os.path.join(path, 'mean_cka_values.csv'), mean_cka_values, delimiter=',', 
+               header="Time_ms,CKA_Before,CKA_After", comments='')
+
+    # Save individual CKA matrices before and after FL for each timestamp
+    for i, entry in enumerate(cka_data):
+        np.savetxt(os.path.join(path, f'cka_matrix_before_{i}.csv'), entry[0], delimiter=',')
+        np.savetxt(os.path.join(path, f'cka_matrix_after_{i}.csv'), entry[1], delimiter=',')
+
+def plot_cka_over_time(cka_data, outputPath, nGTs):
+    """
+    Plots each CKA value over time in milliseconds, connecting 'before' and 'after' points with a dashed line
+    and using different colors for each type of dot, with quartile ranges represented by error bars.
+    
+    Parameters:
+    - cka_data: List of [CKA_before, CKA_after, timestamp] entries.
+    """
+    path = outputPath + 'FL/'
+    os.makedirs(path, exist_ok=True)  # create output path
+
+    # Extract times and calculate CKA values for before and after
+    times = [entry[2] * 1000 for entry in cka_data]  # Convert time to milliseconds
+    cka_before_values = [np.mean(entry[0]) for entry in cka_data]
+    cka_after_values = [np.mean(entry[1]) for entry in cka_data]
+
+    # Calculate quartile ranges for before and after values
+    cka_before_quartiles = [np.percentile(entry[0], [25, 75]) for entry in cka_data]
+    cka_after_quartiles = [np.percentile(entry[1], [25, 75]) for entry in cka_data]
+    cka_before_25th, cka_before_75th = zip(*cka_before_quartiles)
+    cka_after_25th, cka_after_75th = zip(*cka_after_quartiles)
+
+    # Construct the sequence for line plot: interleave before and after mean values
+    line_times = [time for time in times for _ in (0, 1)]
+    line_values = [val for pair in zip(cka_before_values, cka_after_values) for val in pair]
+
+    # Set y-axis limits with margin to avoid cutting T-caps and ensure the max is exactly 1
+    y_min = min(min(cka_before_25th), min(cka_after_25th)) * 0.95
+    y_max = 1
+
+    # Plotting
+    plt.figure(figsize=(10, 6))
+
+    # Line connecting mean CKA values
+    plt.plot(line_times, line_values, label='CKA Value Sequence', color='gray', linestyle='-.', alpha=0.7)
+
+    # Error bars for 'CKA Before FL' and 'CKA After FL' with T-caps
+    cka_before_yerr = [np.abs(np.subtract(cka_before_values, cka_before_25th)), 
+                       np.abs(np.subtract(cka_before_75th, cka_before_values))]
+    cka_after_yerr = [np.abs(np.subtract(cka_after_values, cka_after_25th)), 
+                      np.abs(np.subtract(cka_after_75th, cka_after_values))]
+
+    plt.errorbar(times, cka_before_values, yerr=cka_before_yerr, fmt='s', color='blue', 
+                 ecolor='blue', capsize=8, capthick=2, label='CKA Before FL Quartiles')
+    plt.errorbar(times, cka_after_values, yerr=cka_after_yerr, fmt='s', color='green', 
+                 ecolor='green', capsize=8, capthick=2, label='CKA After FL Quartiles')
+
+    # Set x-axis and y-axis limits with a dynamic y-axis minimum
+    plt.xlim(min(times) - 20, max(times) + 20)
+    plt.ylim(y_min, y_max)
+    plt.ticklabel_format(style='plain', axis='y')  # Disable scientific notation for y-axis
+
+    # Labels and title
+    plt.xlabel('Time (ms)')
+    plt.ylabel('CKA Value')
+    plt.title('CKA Values Over Time (ms)')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(os.path.join(path, f'CKA_over_time_{str(nGTs)}_GTs.png'), dpi=300, bbox_inches='tight')
+
+    # Save mean CKA values over time
+    mean_cka_values = np.column_stack((times, cka_before_values, cka_after_values))
+    np.savetxt(os.path.join(path, 'mean_cka_values.csv'), mean_cka_values, delimiter=',', 
+               header="Time_ms,CKA_Before,CKA_After", comments='')
+
+    # Save individual CKA matrices before and after FL for each timestamp
+    for i, entry in enumerate(cka_data):
+        np.savetxt(os.path.join(path, f'cka_matrix_before_{i}.csv'), entry[0], delimiter=',')
+        np.savetxt(os.path.join(path, f'cka_matrix_after_{i}.csv'), entry[1], delimiter=',')
 
 
 ###############################################################################
@@ -1665,6 +1973,7 @@ class Earth:
         self.rewards= []    # set of rewards
         self.trains = []    # Set of times when a fit to any dnn has happened
         self.graph  = None
+        self.CKA    = []
 
         pop_count_data = Image.open(img_path)
 
@@ -3086,6 +3395,11 @@ class Earth:
                 self.plotMap(plotGT = True, plotSat = True, edges=True, save = True, outputPath=islpath, n=self.nMovs)
                 plt.close()
 
+            # Perform Federated Learning
+            if FL_Test:
+                CKA_before, CKA_after = perform_FL(self)#, outputPath)
+                self.CKA.append([CKA_before, CKA_after, env.now])
+
     def testFlowConstraint1(self, graph):
         highestDist = (0,0)
         for GT in self.gateways:
@@ -3356,7 +3670,7 @@ class Earth:
         '''
         QTables initialization at each satellite
         '''
-        print('----------------------------')
+        print('----------------------------------')
 
         # path = './Results/Q-Learning/qTablesImport/qTablesExport/' + str(NGT) + 'GTs/'
         path = tablesPath
@@ -3381,7 +3695,7 @@ class Earth:
             print(str(i) + ' Q-Tables imported!')
         else:
             print(str(i) + ' Q-Tables created!')
-        print('----------------------------')
+        print('----------------------------------')
 
     def plot3D(self):
         fig = plt.figure()
@@ -6085,7 +6399,7 @@ def plotCongestionMap(self, paths, outPath, GTnumber, plot_separately=True):
         
     os.makedirs(outPath, exist_ok=True)
 
-    # Identify unique routes and filter by packet threshold (200 packets)
+    # Identify unique routes and filter by packet threshold (500 packets)
     unique_routes = {}
     for block in paths:
         p = block.QPath if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning' else block.path
@@ -6096,7 +6410,7 @@ def plotCongestionMap(self, paths, outPath, GTnumber, plot_separately=True):
             else:
                 unique_routes[gateways] = 1
 
-    filtered_routes = {route: count for route, count in unique_routes.items() if count > 200} # REVIEW Packet threshold for path visualization
+    filtered_routes = {route: count for route, count in unique_routes.items() if count > 500} # REVIEW Packet threshold for path visualization
 
     # Plot for all routes combined
     if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
@@ -6123,7 +6437,7 @@ def plotCongestionMap(self, paths, outPath, GTnumber, plot_separately=True):
             plt.close()
             if done == -1:
                 print(f'Congestion map for {route} not available')
-    
+
 
 # @profile
 def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
@@ -6155,6 +6469,8 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         global Train
         global TrainThis
         global nnpath
+        if FL_Test:
+            global CKA_Values
         if ddqn:
             global nnpathTarget
         TrainThis       = Train
@@ -6198,7 +6514,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
         os.makedirs(islpath, exist_ok=True) 
         earth1.plotMap(plotGT = True, plotSat = True, edges=True, save = True, outputPath=islpath, n=earth1.nMovs)
         plt.close()
-        print('----------------------------')
+        print('----------------------------------')
 
         progress = env.process(simProgress(simulationTimelimit, env))
         startTime = time.time()
@@ -6236,9 +6552,12 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
                 print('Plotting latencies...')
                 plotSaveAllLatencies(outputPath, GTnumber, allLatencies, epsDF)
             
-            elif pathing == "Deep Q-Learning":
+            if pathing == "Deep Q-Learning":
                 # save losses
                 save_losses(outputPath, earth1, GTnumber)
+                if FL_Test:
+                    print('Plotting CKA values...')
+                    plot_cka_over_time(earth1.CKA, outputPath, GTnumber)
                 
             else:
                 print('Plotting latencies...')
