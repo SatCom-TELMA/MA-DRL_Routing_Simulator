@@ -91,14 +91,14 @@ plotSatID   = True     # If True, plots the ID of each satellite
 plotAllThro = True      # If True, it plots throughput plots for each single path between gateways. If False, it plots a single figure for overall Throughput
 plotAllCon  = True      # If True, it plots congestion maps for each single path between gateways. If False, it plots a single figure for overall congestion
 
-movementTime= 0.20#0.05   # Every movementTime seconds, the satellites positions are updated and the graph is built again
+movementTime= 10.0#5     # Every movementTime seconds, the satellites positions are updated and the graph is built again
                         # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
 ndeltas     = 5805.44/20#1 Movement speedup factor. Every movementTime sats will move movementTime*ndeltas space. If bigger, will make the rotation distance bigger
 
 Train       = True      # Global for all scenarios with different number of GTs. if set to false, the model will not train any of them
 explore     = False      # If True, makes random actions eventually, if false only exploitation
 importQVals = True     # imports either QTables or NN from a certain path
-onlinePhase = True     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
+onlinePhase = False     # when set to true, each satellite becomes a different agent. Recommended using this with importQVals=True and explore=False
 if onlinePhase:         # Just in case
     explore     = False
     importQVals = True
@@ -111,7 +111,7 @@ w4          = 5         # Normalization for the distance reward, for the travele
 
 gamma       = 0.99       # greedy factor. Smaller -> Greedy. Optimized params: 0.6 for Q-Learning, 0.99 for Deep Q-Learning
 
-GTs = [3]               # number of gateways to be tested
+GTs = [5]               # number of gateways to be tested
 # Gateways are taken from https://www.ksat.no/ground-network-services/the-ksat-global-ground-station-network/ (Except for Malaga and Aalborg)
 # GTs = [i for i in range(2,9)] # This is to make a sweep where scenarios with all the gateways in the range are considered
 
@@ -148,6 +148,7 @@ BLOCK_SIZE   = 64800
 # movementTime= 0.05      # Every movementTime seconds, the satellites positions are updated and the graph is built again
 #                         # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
 # ndeltas     = 5805.44/20#1 Movement speedup factor. This number will multiply deltaT. If bigger, will make the rotation distance bigger
+const_moved = False     # Movement flag. If up, it means it has moved
 matching    = 'Greedy'  # ['Markovian', 'Greedy']
 minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
 mixLocs     = False     # If true, every time we make a new simulation the locations are going to change their order of selection
@@ -226,10 +227,10 @@ CurrentGTnumber = -1    # Number of active gateways. This number will be updated
 
 # nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_3GTs.h5.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_3GTs.h5.h5'
-nnpath      = './pre_trained_NNs/qNetwork_2GTs.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_2GTs.h5'
+nnpath      = './pre_trained_NNs/qNetwork_3GTs.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_3GTs.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_2GTs.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_2GTs.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 
 if __name__ == '__main__':
@@ -351,7 +352,7 @@ def simProgress(simTimelimit, env):
 ###############################################################################
 
 FL_techs    = ['nothing', 'modelAnticipation', 'plane', 'full', 'combination']
-FL_tech     = FL_techs[0]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+FL_tech     = FL_techs[3]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
 if pathing != 'Deep Q-Learning':
     FL_Test = False
@@ -359,6 +360,7 @@ if pathing != 'Deep Q-Learning':
 if FL_Test:
     CKA_Values = []     # CKA matrix 
     num_samples = 10   # number of random samples to test the divergence between models
+    print(f'Federated Learning ongoing: {FL_tech}. Number of random samples to test divergence: {num_samples}')
 
 def generate_test_data(num_samples, include_not_avail=False):
     data = []
@@ -3397,6 +3399,7 @@ class Earth:
 
             # Perform Federated Learning
             if FL_Test:
+                const_moved = True
                 CKA_before, CKA_after = perform_FL(self)#, outputPath)
                 self.CKA.append([CKA_before, CKA_after, env.now])
 
@@ -4009,7 +4012,7 @@ class DDQNAgent:
                     print('----------------------------------')
                     self.qNetwork.summary()
                 else:
-                    print(f'Satellite {sat_ID} Q-Network imported')
+                    print(f'Satellite {sat_ID} Q-Network imported from:\n {nnpath}')
                 
                 if ddqn:
                     global nnpathTarget
@@ -4022,7 +4025,7 @@ class DDQNAgent:
                         print('----------------------------------')
                     else:
                         # print(f'Satellite {sat_ID} Q-Target copied from Q-Network')
-                        print(f'Satellite {sat_ID} Q-Target Q-Target imported')
+                        print(f'Satellite {sat_ID} Q-Target Q-Target imported from:\n {nnpath}')
 
             except FileNotFoundError:
                 print('----------------------------------')
@@ -5994,12 +5997,13 @@ def save_plot_rewards(outputPath, reward, GTnumber, window_size=200):
     plt.xlabel("Time [ms]", fontsize=15)
     plt.ylabel("Average rewards", fontsize=15)
     plt.grid(True)
-    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
+    # plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.15)
 
     # Save plot
     rewards_dir = os.path.join(outputPath, 'Rewards')
+    plt.tight_layout()
     os.makedirs(rewards_dir, exist_ok=True)  # create output path
-    plt.savefig(os.path.join(rewards_dir, "rewards_{}_gateways.png".format(GTnumber)), bbox_inches='tight')
+    plt.savefig(os.path.join(rewards_dir, "rewards_{}_gateways.png".format(GTnumber)))#, bbox_inches='tight')
     plt.close()
 
     # Save CSV
@@ -6399,7 +6403,7 @@ def plotCongestionMap(self, paths, outPath, GTnumber, plot_separately=True):
         
     os.makedirs(outPath, exist_ok=True)
 
-    # Identify unique routes and filter by packet threshold (500 packets)
+    # Identify unique routes and filter by packet threshold (100 packets)
     unique_routes = {}
     for block in paths:
         p = block.QPath if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning' else block.path
@@ -6410,7 +6414,7 @@ def plotCongestionMap(self, paths, outPath, GTnumber, plot_separately=True):
             else:
                 unique_routes[gateways] = 1
 
-    filtered_routes = {route: count for route, count in unique_routes.items() if count > 500} # REVIEW Packet threshold for path visualization
+    filtered_routes = {route: count for route, count in unique_routes.items() if count > 100} # REVIEW Packet threshold for path visualization 500
 
     # Plot for all routes combined
     if pathing == 'Q-Learning' or pathing == 'Deep Q-Learning':
@@ -6555,7 +6559,7 @@ def RunSimulation(GTs, inputPath, outputPath, populationData, radioKM):
             if pathing == "Deep Q-Learning":
                 # save losses
                 save_losses(outputPath, earth1, GTnumber)
-                if FL_Test:
+                if FL_Test and const_moved:
                     print('Plotting CKA values...')
                     plot_cka_over_time(earth1.CKA, outputPath, GTnumber)
                 
