@@ -20,6 +20,7 @@ import gc
 import cProfile
 from collections import defaultdict
 import glob
+import builtins
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -85,13 +86,12 @@ from collections import deque
 pathings    = ['hop', 'dataRate', 'dataRateOG', 'slant_range', 'Q-Learning', 'Deep Q-Learning']
 pathing     = pathings[5]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
 
-FL_Test     = True      # If True, it plots the model divergence the model divergence between agents
-saveISLs    = True     # save ISLs map
-plotSatID   = True     # If True, plots the ID of each satellite
+FL_Test     = False     # If True, it plots the model divergence the model divergence between agents
+plotSatID   = True      # If True, plots the ID of each satellite
 plotAllThro = True      # If True, it plots throughput plots for each single path between gateways. If False, it plots a single figure for overall Throughput
 plotAllCon  = True      # If True, it plots congestion maps for each single path between gateways. If False, it plots a single figure for overall congestion
 
-movementTime= 10.0#5     # Every movementTime seconds, the satellites positions are updated and the graph is built again
+movementTime= 10        # Every movementTime seconds, the satellites positions are updated and the graph is built again
                         # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
 ndeltas     = 5805.44/20#1 Movement speedup factor. Every movementTime sats will move movementTime*ndeltas space. If bigger, will make the rotation distance bigger
 
@@ -111,7 +111,7 @@ w4          = 5         # Normalization for the distance reward, for the travele
 
 gamma       = 0.99       # greedy factor. Smaller -> Greedy. Optimized params: 0.6 for Q-Learning, 0.99 for Deep Q-Learning
 
-GTs = [8]               # number of gateways to be tested
+GTs = [2]               # number of gateways to be tested
 # Gateways are taken from https://www.ksat.no/ground-network-services/the-ksat-global-ground-station-network/ (Except for Malaga and Aalborg)
 # GTs = [i for i in range(2,9)] # This is to make a sweep where scenarios with all the gateways in the range are considered
 
@@ -148,6 +148,7 @@ BLOCK_SIZE   = 64800
 # movementTime= 0.05      # Every movementTime seconds, the satellites positions are updated and the graph is built again
 #                         # If do not want the constellation to move, set this parameter to a bigger number than the simulation time
 # ndeltas     = 5805.44/20#1 Movement speedup factor. This number will multiply deltaT. If bigger, will make the rotation distance bigger
+saveISLs    = True     # save ISLs map
 const_moved = False     # Movement flag. If up, it means it has moved
 matching    = 'Greedy'  # ['Markovian', 'Greedy']
 minElAngle  = 30        # For satellites. Value is taken from NGSO constellation design chapter.
@@ -156,8 +157,8 @@ rotateFirst = False     # If True, the constellation starts rotated by 1 movemen
 
 # State pre-processing
 coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
-diff        = False         # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
-diff_lasthop= True          # If up, this state is the same as diff, but it includes the last hop where the block was in order to avoid loops
+diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
+diff_lastHop= False         # If up, this state is the same as diff, but it includes the last hop where the block was in order to avoid loops
 reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
 notAvail    = 0             # this value is set in the state space when the satellite neighbour is not available
 
@@ -228,10 +229,12 @@ CurrentGTnumber = -1    # Number of active gateways. This number will be updated
 
 # nnpath      = './pre_trained_NNs/qNetwork_8GTs_6secs_nocon.h5'
 # nnpathTarget= './pre_trained_NNs/qTarget_8GTs_6secs_nocon.h5'
-nnpath      = './pre_trained_NNs/qNetwork_3GTs.h5'
-nnpathTarget= './pre_trained_NNs/qTarget_3GTs.h5'
-# nnpath      = './pre_trained_NNs/qNetwork_2GTs.h5'
-# nnpathTarget= './pre_trained_NNs/qTarget_2GTs.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_3GTs.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_3GTs.h5'
+nnpath      = './pre_trained_NNs/qNetwork_2GTs.h5'
+nnpathTarget= './pre_trained_NNs/qTarget_2GTs.h5'
+# nnpath      = './pre_trained_NNs/qNetwork_2GTs_lastHop.h5'
+# nnpathTarget= './pre_trained_NNs/qTarget_2GTs_lastHop.h5'
 tablesPath  = './pre_trained_NNs/qTablesExport_8GTs/'
 
 if __name__ == '__main__':
@@ -353,7 +356,10 @@ def simProgress(simTimelimit, env):
 ###############################################################################
 
 FL_techs    = ['nothing', 'modelAnticipation', 'plane', 'full', 'combination']
-FL_tech     = FL_techs[3]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+FL_tech     = FL_techs[4]# dataRateOG is the original datarate. If we want to maximize the datarate we have to use dataRate, which is the inverse of the datarate
+if FL_tech == 'combination':
+    global FL_counter
+    FL_counter = 1
 
 if pathing != 'Deep Q-Learning':
     FL_Test = False
@@ -371,6 +377,8 @@ def generate_test_data(num_samples, include_not_avail=False):
 
     for _ in range(num_samples):
         sample = []
+        if diff_lastHop:
+            sample.append(random.randint(0, 4))
         # Queue Scores for each direction: Up, Down, Right, Left (4 scores each)
         for _ in range(4):
             # Queue scores biased towards 0 and 10
@@ -520,7 +528,21 @@ def perform_FL(earth):#, outputPath):
     elif FL_tech == 'full':
         full_federated_learning(models)
     elif FL_tech == 'combination':
-        pass
+        global FL_counter
+        if FL_counter == 1:
+            print(f'Model Anticipation, counter = {FL_counter}')
+            FL_counter += 1
+            model_anticipation_federate(models, model_names)
+
+        elif FL_counter == 2:
+            print(f'Plane FL, counter = {FL_counter}')
+            FL_counter += 1
+            federate_by_plane(models, model_names)
+
+        elif FL_counter > 2:
+            print(f'Global FL, counter = {FL_counter}')
+            FL_counter = 1
+            full_federated_learning(models)
 
     CKA_Values_after = compute_full_cka_matrix(models, data)
     update_sats_models(earth, models, model_names)
@@ -627,7 +649,7 @@ def plot_cka_over_time(cka_data, outputPath, nGTs):
 
     # Set x-axis and y-axis limits with a dynamic y-axis minimum
     plt.xlim(min(times) - 20, max(times) + 20)
-    plt.ylim(y_min, y_max)
+    # plt.ylim(y_min, y_max)
     plt.ticklabel_format(style='plain', axis='y')  # Disable scientific notation for y-axis
 
     # Labels and title
@@ -1125,7 +1147,7 @@ class Satellite:
                     sendBuffer[1].pop(0)
             except simpy.Interrupt:
                 # print(f'Simpy interrupt at sending block at satellite {self.ID} to {destination[1].ID}') # FIXME Are they really lost blocks?
-                self.orbPlane.earth.lostBlocks+=1
+                # self.orbPlane.earth.lostBlocks+=1
                 break
 
     def adjustDownRate(self):
@@ -3400,6 +3422,7 @@ class Earth:
 
             # Perform Federated Learning
             if FL_Test:
+                global const_moved
                 const_moved = True
                 CKA_before, CKA_after = perform_FL(self)#, outputPath)
                 self.CKA.append([CKA_before, CKA_after, env.now])
@@ -3746,6 +3769,8 @@ class hyperparam:
         self.w1         = w1
         self.w2         = w2
         self.w4         = w4
+        self.again      = againPenalty
+        self.unav       = unavPenalty
         self.pathing    = pathing
         self.tau        = tau
         self.updateF    = updateF
@@ -3936,13 +3961,13 @@ class DDQNAgent:
                             'Actual latitude', 'Actual longitude',                                                     # Actual Position
                             'Destination latitude', 'Destination longitude']                                           # Destination Position
         elif reducedState:
-            self.states         = ('Up Latitude', 'Up Longitude',                   # Up Link
+            self.states         = ('Up Latitude', 'Up Longitude',               # Up Link
                             'Down Latitude', 'Down Longitude',                  # Down Link
                             'Right Latitude', 'Right Longitude',                # Right Link
                             'Left Latitude', 'Left Longitude',                  # Left Link
                             'Actual latitude', 'Actual longitude',              # Current pos
                             'Destination latitude', 'Destination longitude')    # Destination pos
-        if diff_lasthop: 
+        if diff_lastHop: 
             self.states.insert(0, 'Last Hop')
 
         self.actionSize     = len(self.actions)
@@ -4011,11 +4036,11 @@ class DDQNAgent:
                 self.qNetwork = keras.models.load_model(nnpath)
                 if sat_ID is None:
                     print('----------------------------------')
-                    print(f"Q-Network imported from:\n {nnpath}!!!")
+                    print(f"Q-Network imported!!!")
                     print('----------------------------------')
                     self.qNetwork.summary()
                 else:
-                    print(f'Satellite {sat_ID} Q-Network imported from:\n {nnpath}')
+                    print(f'Satellite {sat_ID} Q-Network imported!')
                 
                 if ddqn:
                     global nnpathTarget
@@ -4024,11 +4049,11 @@ class DDQNAgent:
                     if sat_ID is None:
                         print('----------------------------------')
                         # print("DDQN enabled, TARGET NETWORK copied from Q-NETWORK:")
-                        print(f"Q-Target imported from:\n {nnpathTarget}!!!")
+                        print(f"Q-Target imported!!!")
                         print('----------------------------------')
                     else:
                         # print(f'Satellite {sat_ID} Q-Target copied from Q-Network')
-                        print(f'Satellite {sat_ID} Q-Target Q-Target imported from:\n {nnpath}')
+                        print(f'Satellite {sat_ID} Q-Target imported!')
 
             except FileNotFoundError:
                 print('----------------------------------')
@@ -4116,7 +4141,6 @@ class DDQNAgent:
         except:
             return -1
 
-
     def makeDeepAction(self, block, sat, g, earth, prevSat=None):
         '''
         There is no 'Done' state, it will simply continue until the time stops.
@@ -4152,7 +4176,7 @@ class DDQNAgent:
             newState    = getDeepStateReduced(block, sat, linkedSats)
         elif diff:
             newState    = getDeepStateDiff(block, sat, linkedSats) # This is the one being used by default
-        elif diff_lasthop:
+        elif diff_lastHop:
             newState    = getDeepStateDiffLastHop(block, sat, linkedSats)
         else:
             newState    = getDeepState(block, sat, linkedSats)
@@ -4403,6 +4427,8 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
         - Paths are created from each GT to all other GTs
         - Buffers and processes are created on all GTs and satellites used for sending the blocks throughout the network
     """
+    print = builtins.print # Idk why but print breaks here so I had to rebuilt it
+    # print(type(print))
 
     constellationType = inputParams['Constellation'][0]
     fraction = inputParams['Fraction'][0]
@@ -4510,6 +4536,8 @@ def initialize(env, popMapLocation, GTLocation, distance, inputParams, movementT
         else:
             print('----------------------------------')
             print('Creating satellites agents...')
+            if importQVals:
+                print:(f'Importing the Neural networks from: \n{nnpath}\n{nnpathTarget}')
             for plane in earth.LEO:
                 for sat in plane.sats:
                     sat.DDQNA = DDQNAgent(len(earth.gateways), hyperparams, earth, sat.ID)
@@ -5688,6 +5716,7 @@ def getDeepStateDiff(block, sat, linkedSats):
 
     return np.array(state).reshape(1, -1)
 
+
 def getDeepStateDiffLastHop(block, sat, linkedSats):
     def normalize_angle_diff(angle_diff):
         # Ensure the angle difference is within [-180, 180]
@@ -5727,6 +5756,7 @@ def getDeepStateDiffLastHop(block, sat, linkedSats):
                     actIndex = 3
             return actIndex
         except AttributeError as e:
+            print(f'An error occurred when checking if {block.QPath[-2][0]} is a neighbour satellite of {sat.ID}')
             return actIndex
 
     satDest = block.destination.linkedSat[1]
@@ -5979,6 +6009,8 @@ def saveHyperparams(outputPath, inputParams, hyperparams):
                 'w1: ' + str(hyperparams.w1), 
                 'w2: ' + str(hyperparams.w2),
                 'w4: ' + str(hyperparams.w4),
+                'againPenalty: ' + str(hyperparams.again),
+                'unavPenalty: ' + str(hyperparams.unav),
                 'Coords granularity: ' + str(hyperparams.coordGran),
                 'Update freq: ' + str(hyperparams.updateF),
                 'Batch Size: ' + str(hyperparams.batchSize),

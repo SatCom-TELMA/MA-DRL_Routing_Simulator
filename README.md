@@ -19,9 +19,9 @@ In order to run the simulators and the post-processing script, certain non-stand
 
 To set up the environment and install all required packages, follow these steps:
 
-1. **Clone the repository (Last 5 commits, since .git directory is big)**:
+1. **Clone the repository (Last 20 commits, since .git directory is big)**:
     ```sh
-    git clone --depth 5 https://github.com/SatCom-TELMA/MA-DRL_Routing_Simulator.git
+    git clone --depth 20 https://github.com/SatCom-TELMA/MA-DRL_Routing_Simulator.git
     cd YourRepositoryName
     ```
 
