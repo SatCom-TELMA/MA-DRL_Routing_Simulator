@@ -111,7 +111,7 @@ w4          = 5         # Normalization for the distance reward, for the travele
 
 gamma       = 0.99       # greedy factor. Smaller -> Greedy. Optimized params: 0.6 for Q-Learning, 0.99 for Deep Q-Learning
 
-GTs = [2]               # number of gateways to be tested
+GTs = [8]               # number of gateways to be tested
 # Gateways are taken from https://www.ksat.no/ground-network-services/the-ksat-global-ground-station-network/ (Except for Malaga and Aalborg)
 # GTs = [i for i in range(2,9)] # This is to make a sweep where scenarios with all the gateways in the range are considered
 
@@ -158,7 +158,7 @@ rotateFirst = False     # If True, the constellation starts rotated by 1 movemen
 # State pre-processing
 coordGran   = 20            # Granularity of the coordinates that will be the input of the DNN: (Lat/coordGran, Lon/coordGran)
 diff        = True          # If up, the state space gives no coordinates about the neighbor and destination positions but the difference with respect to the current positions
-diff_lastHop= False         # If up, this state is the same as diff, but it includes the last hop where the block was in order to avoid loops
+diff_lastHop= True          # If up, this state is the same as diff, but it includes the last hop where the block was in order to avoid loops
 reducedState= False         # if set to true the DNN will receive as input only the positional information, but not the queueing information
 notAvail    = 0             # this value is set in the state space when the satellite neighbour is not available
 
@@ -191,8 +191,8 @@ ArriveReward= 50        # Reward given to the system in case it sends the data b
 # w1          = 20        # rewards the getting to empty queues
 # w2          = 20        # rewards getting closes phisycally   
 # w4          = 5         # Normalization for the distance reward, for the traveled distance factor  
-againPenalty= -10        # Penalty if the satellite sends the block to a hop where it has already been
-unavPenalty = -5        # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
+againPenalty= -10       # Penalty if the satellite sends the block to a hop where it has already been
+unavPenalty = -10       # Penalty if the satellite tries to send the block to a direction where there is no linked satellite
 biggestDist = -1        # Normalization factor for the distance reward. This is updated in the creation of the graph.
 firstMove   = True      # The biggest slant range is only computed the first time in order to avoid this value to be variable
 distanceRew = 4          # 1: Distance reward normalized to total distance.
@@ -4174,7 +4174,7 @@ class DDQNAgent:
         linkedSats  = getDeepLinkedSats(sat, g, earth)
         if reducedState:
             newState    = getDeepStateReduced(block, sat, linkedSats)
-        elif diff:
+        elif diff and not diff_lastHop:
             newState    = getDeepStateDiff(block, sat, linkedSats) # This is the one being used by default
         elif diff_lastHop:
             newState    = getDeepStateDiffLastHop(block, sat, linkedSats)
