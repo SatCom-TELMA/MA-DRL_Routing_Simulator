@@ -100,6 +100,24 @@ If you encounter any issues with the reproducibility of this simulator or would 
 ## Citation
 
 If you use this work, please cite the following:
+```
+F. Lozano-Cuadra, B. Soret, I. Leyva-Mayorga and P. Popovski, "Continual Deep Reinforcement Learning for Decentralized Satellite Routing," in IEEE Transactions on Communications, doi: 10.1109/TCOMM.2025.3562522.
+```
+
+### Full Paper ([IEEE TCOM](https://ieeexplore.ieee.org/document/10969776/))([Arxiv](https://arxiv.org/abs/2405.12308))
+
+```
+@ARTICLE{10969776,
+  author={Lozano-Cuadra, Federico and Soret, Beatriz and Leyva-Mayorga, Israel and Popovski, Petar},
+  journal={IEEE Transactions on Communications}, 
+  title={Continual Deep Reinforcement Learning for Decentralized Satellite Routing}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={1-1},
+  keywords={Routing;Satellites;Satellite broadcasting;Training;Knowledge engineering;Heuristic algorithms;Continuing education;Artificial neural networks;Q-learning;Predictive models},
+  doi={10.1109/TCOMM.2025.3562522}}
+```
 
 ### Simulator Paper ([Available here](https://zenodo.org/records/13885645))
 
@@ -118,16 +136,4 @@ If you use this work, please cite the following:
       adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 ```
-
-### Full Paper ([Available here](https://arxiv.org/abs/2405.12308))
-
-```
-@article{lozano2024continual,
-  title={Continual Deep Reinforcement Learning for Decentralized Satellite Routing},
-  author={Lozano-Cuadra, Federico and Soret, Beatriz and Leyva-Mayorga, Israel and Popovski, Petar},
-  journal={arXiv preprint arXiv:2405.12308},
-  year={2024}
-}
-```
-
 
