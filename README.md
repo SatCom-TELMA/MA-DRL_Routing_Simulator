@@ -100,11 +100,12 @@ If you encounter any issues with the reproducibility of this simulator or would 
 ## Citation
 
 If you use this work, please cite the following:
+
+### Full Paper ([IEEE TCOM](https://ieeexplore.ieee.org/document/10969776/))([Arxiv](https://arxiv.org/abs/2405.12308))
+
 ```
 F. Lozano-Cuadra, B. Soret, I. Leyva-Mayorga and P. Popovski, "Continual Deep Reinforcement Learning for Decentralized Satellite Routing," in IEEE Transactions on Communications, doi: 10.1109/TCOMM.2025.3562522.
 ```
-
-### Full Paper ([IEEE TCOM](https://ieeexplore.ieee.org/document/10969776/))([Arxiv](https://arxiv.org/abs/2405.12308))
 
 ```
 @ARTICLE{10969776,
@@ -119,7 +120,11 @@ F. Lozano-Cuadra, B. Soret, I. Leyva-Mayorga and P. Popovski, "Continual Deep Re
   doi={10.1109/TCOMM.2025.3562522}}
 ```
 
-### Simulator Paper ([Available here](https://zenodo.org/records/13885645))
+### Simulator Paper ([Zenodo](https://zenodo.org/records/13885645))
+
+```
+Lozano-Cuadra, F., Thorsager, M., Leyva-Mayorga, I., & Soret, B. (2024). An open source multi-agent deep reinforcement learning routing simulator for satellite networks. Proceedings of SPAICE2024: The First Joint European Space Agency / IAA Conference on AI in and for Space, 420–424. https://doi.org/10.5281/zenodo.13885645
+```
 
 ```
 @INPROCEEDINGS{2024sais.conf..420L,
