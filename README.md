@@ -83,17 +83,6 @@ There is a guide to get the data from the population maps at https://towardsdata
 
 Some post processing results can be found in `./Post-Processing/Post-Results.ipynb` notebook.
 
-
-## Known Issues
-The updateSatelliteProcessesRL() method in the SimulationRL.py file may not work correctly and this message can appear eventually:
-`ERROR! Sat nSat_NPlane tried to send block to nSat_NPlane but did not have it in its linked satellite list`
-Meaning that a satellite is trying to send a data block to an old neighbor, where the link between them has disappeared after the update of the constellation. The data block will be dropped, but this event can be ignored as long as it occurs infrequently, as it will not significantly impact the overall outcome of the simulation.
-
-The data generation at the gateways was not handled correctly causing too few data blocks to be generated. Instead of sending ((numberOfActive - 1) / (totalNumber - 1)) to each destination, ((numberOfActive - 1) / (totalNumber)) was sent. The code has been changed to generate the correct amount of data, so to reproduce results from the report, this must be changed back. The specific code is found in the "timeToFullBlock()" method in the Gateway class. This line currently reads: flow = self.totalAvgFlow / (len(self.totalLocations) - 1) (which is the correct behaviour) and should be changed to: flow = self.totalAvgFlow / (len(self.totalLocations)).
-
-Please report any additional issue you might have.
-
-
 ## Contact me
 If you encounter any issues with the reproducibility of this simulator or would like to learn more about my research, please feel free to visit my [Google Scholar profile](https://scholar.google.es/citations?hl=es&user=6PZm2aYAAAAJ), contact me directly via email at flozano@ic.uma.es or open a new issue directly.
 
@@ -142,3 +131,12 @@ Lozano-Cuadra, F., Thorsager, M., Leyva-Mayorga, I., & Soret, B. (2024). An open
 }
 ```
 
+
+## Known Issues
+The updateSatelliteProcessesRL() method in the SimulationRL.py file may not work correctly and this message can appear eventually:
+`ERROR! Sat nSat_NPlane tried to send block to nSat_NPlane but did not have it in its linked satellite list`
+Meaning that a satellite is trying to send a data block to an old neighbor, where the link between them has disappeared after the update of the constellation. The data block will be dropped, but this event can be ignored as long as it occurs infrequently, as it will not significantly impact the overall outcome of the simulation.
+
+The data generation at the gateways was not handled correctly causing too few data blocks to be generated. Instead of sending ((numberOfActive - 1) / (totalNumber - 1)) to each destination, ((numberOfActive - 1) / (totalNumber)) was sent. The code has been changed to generate the correct amount of data, so to reproduce results from the report, this must be changed back. The specific code is found in the "timeToFullBlock()" method in the Gateway class. This line currently reads: flow = self.totalAvgFlow / (len(self.totalLocations) - 1) (which is the correct behaviour) and should be changed to: flow = self.totalAvgFlow / (len(self.totalLocations)).
+
+Please report any additional issue you might have.
