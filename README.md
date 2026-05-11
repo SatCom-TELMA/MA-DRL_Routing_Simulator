@@ -5,7 +5,7 @@ Contained in this repository is the code used for simulating data transmissions 
 ## MA-DRL routing demonstration in a moving Kepler constellation from Malaga, Spain to Los Angeles, USA
 
 <!-- [![Demo Video](Video/MA-DRL_Movement_screenshot.png)](https://raw.githubusercontent.com/SatNEx-Malaga/MA-DRL_Routing_Simulator/main/Video/MA-DRL_Movement.mp4) -->
-[![Demo Video](Video/Demo.gif)](https://drive.google.com/drive/u/0/folders/1nDlUNABkBjDDqrTPPl0srxcTpl-2QCOF)
+[![Demo Video](Video/Demo.gif)](https://drive.google.com/file/d/1214G8oXsMLaqqRrAIqweVkSTFjZ3FOHx/view?usp=sharing)
 
 > Click the gif above to see the full demo video.
 
